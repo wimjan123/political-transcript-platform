@@ -44,6 +44,7 @@ async def search_transcripts(
             selectinload(TranscriptSegment.speaker),
             selectinload(TranscriptSegment.segment_topics).selectinload(SegmentTopic.topic)
         )
+        joined_video = False
         
         # Add search conditions
         conditions = []
@@ -67,12 +68,14 @@ async def search_transcripts(
         # Source filter
         if source:
             query = query.join(Video)
+            joined_video = True
             conditions.append(Video.source.ilike(f"%{source}%"))
         
         # Date filters
         if date_from or date_to:
-            if Video not in query.column_descriptions:
+            if not joined_video:
                 query = query.join(Video)
+                joined_video = True
             if date_from:
                 conditions.append(Video.date >= date_from)
             if date_to:
@@ -108,8 +111,9 @@ async def search_transcripts(
                 text("ts_rank_cd(to_tsvector('english', transcript_text), plainto_tsquery('english', :query)) DESC")
             )
         elif sort_by == "date":
-            if Video not in query.column_descriptions:
+            if not joined_video:
                 query = query.join(Video)
+                joined_video = True
             order_col = Video.date
         elif sort_by == "speaker":
             order_col = TranscriptSegment.speaker_name

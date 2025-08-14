@@ -54,7 +54,8 @@ services:
       dockerfile: Dockerfile
     container_name: political_transcripts_web
     environment:
-      REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:8000}
+      # Use relative URLs in dev; CRA proxy will route to the API container
+      REACT_APP_API_URL: ${REACT_APP_API_URL:-}
       REACT_APP_TITLE: ${REACT_APP_TITLE:-Political Transcript Search}
     volumes:
       - ./frontend:/app

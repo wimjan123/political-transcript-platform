@@ -54,28 +54,28 @@ export interface TranscriptSegment {
   char_count: number;
   
   // Sentiment Analysis
-  sentiment_loughran_score?: number;
+  sentiment_loughran_score?: number | null;
   sentiment_loughran_label?: string;
-  sentiment_harvard_score?: number;
+  sentiment_harvard_score?: number | null;
   sentiment_harvard_label?: string;
-  sentiment_vader_score?: number;
+  sentiment_vader_score?: number | null;
   sentiment_vader_label?: string;
   
   // Content Moderation
-  moderation_harassment?: number;
-  moderation_hate?: number;
-  moderation_self_harm?: number;
-  moderation_sexual?: number;
-  moderation_violence?: number;
-  moderation_overall_score?: number;
+  moderation_harassment?: number | null;
+  moderation_hate?: number | null;
+  moderation_self_harm?: number | null;
+  moderation_sexual?: number | null;
+  moderation_violence?: number | null;
+  moderation_overall_score?: number | null;
   
   // Readability Metrics
-  flesch_kincaid_grade?: number;
-  gunning_fog_index?: number;
-  coleman_liau_index?: number;
-  automated_readability_index?: number;
-  smog_index?: number;
-  flesch_reading_ease?: number;
+  flesch_kincaid_grade?: number | null;
+  gunning_fog_index?: number | null;
+  coleman_liau_index?: number | null;
+  automated_readability_index?: number | null;
+  smog_index?: number | null;
+  flesch_reading_ease?: number | null;
   
   created_at: string;
   

@@ -14,7 +14,21 @@ import type {
   ImportStatus
 } from '@/types';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+// Determine API base URL
+// - If REACT_APP_API_URL is set, use it.
+// - If running via CRA dev server (port 3000), use relative URLs and rely on proxy.
+// - Otherwise default to same-origin relative paths.
+const inferBaseUrl = () => {
+  const envUrl = process.env.REACT_APP_API_URL;
+  if (envUrl !== undefined) return envUrl; // allow empty string to mean relative
+  if (typeof window !== 'undefined') {
+    const port = window.location.port;
+    if (port === '3000') return '';
+  }
+  return '';
+};
+
+const API_BASE_URL = inferBaseUrl();
 
 // Create axios instance
 const api = axios.create({

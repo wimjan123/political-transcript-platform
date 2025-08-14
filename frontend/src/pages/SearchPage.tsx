@@ -221,14 +221,14 @@ const SearchPage: React.FC = () => {
             <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
               <span>{segment.word_count} words</span>
               
-              {segment.sentiment_loughran_score !== undefined && (
+              {typeof segment.sentiment_loughran_score === 'number' && (
                 <div className="flex items-center space-x-1">
                   <TrendingUp className="h-4 w-4" />
                   <span className={sentimentColor}>{sentimentLabel}</span>
                 </div>
               )}
               
-              {segment.flesch_kincaid_grade !== undefined && (
+              {typeof segment.flesch_kincaid_grade === 'number' && (
                 <span>Grade: {segment.flesch_kincaid_grade.toFixed(1)}</span>
               )}
             </div>
@@ -265,13 +265,13 @@ const SearchPage: React.FC = () => {
         {isExpanded && (
           <div className="mt-4 pt-4 border-t border-gray-200 space-y-4">
             {/* Detailed Sentiment Analysis */}
-            {(segment.sentiment_loughran_score !== undefined || 
-              segment.sentiment_harvard_score !== undefined || 
-              segment.sentiment_vader_score !== undefined) && (
+            {(typeof segment.sentiment_loughran_score === 'number' || 
+              typeof segment.sentiment_harvard_score === 'number' || 
+              typeof segment.sentiment_vader_score === 'number') && (
               <div>
                 <h4 className="text-sm font-medium text-gray-900 mb-2">Sentiment Analysis</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                  {segment.sentiment_loughran_score !== undefined && (
+                  {typeof segment.sentiment_loughran_score === 'number' && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Loughran-McDonald:</span>
                       <span className={getSentimentColor(segment.sentiment_loughran_score)}>
@@ -279,7 +279,7 @@ const SearchPage: React.FC = () => {
                       </span>
                     </div>
                   )}
-                  {segment.sentiment_harvard_score !== undefined && (
+                  {typeof segment.sentiment_harvard_score === 'number' && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Harvard-IV:</span>
                       <span className={getSentimentColor(segment.sentiment_harvard_score)}>
@@ -287,7 +287,7 @@ const SearchPage: React.FC = () => {
                       </span>
                     </div>
                   )}
-                  {segment.sentiment_vader_score !== undefined && (
+                  {typeof segment.sentiment_vader_score === 'number' && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">VADER:</span>
                       <span className={getSentimentColor(segment.sentiment_vader_score)}>
@@ -300,25 +300,25 @@ const SearchPage: React.FC = () => {
             )}
 
             {/* Readability Metrics */}
-            {(segment.flesch_kincaid_grade !== undefined || 
-              segment.flesch_reading_ease !== undefined ||
-              segment.gunning_fog_index !== undefined) && (
+            {(typeof segment.flesch_kincaid_grade === 'number' || 
+              typeof segment.flesch_reading_ease === 'number' ||
+              typeof segment.gunning_fog_index === 'number') && (
               <div>
                 <h4 className="text-sm font-medium text-gray-900 mb-2">Readability Metrics</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                  {segment.flesch_kincaid_grade !== undefined && (
+                  {typeof segment.flesch_kincaid_grade === 'number' && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Flesch-Kincaid Grade:</span>
                       <span className="text-gray-900">{segment.flesch_kincaid_grade.toFixed(1)}</span>
                     </div>
                   )}
-                  {segment.flesch_reading_ease !== undefined && (
+                  {typeof segment.flesch_reading_ease === 'number' && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Reading Ease:</span>
                       <span className="text-gray-900">{segment.flesch_reading_ease.toFixed(1)}</span>
                     </div>
                   )}
-                  {segment.gunning_fog_index !== undefined && (
+                  {typeof segment.gunning_fog_index === 'number' && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Gunning Fog:</span>
                       <span className="text-gray-900">{segment.gunning_fog_index.toFixed(1)}</span>

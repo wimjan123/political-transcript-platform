@@ -460,7 +460,7 @@ const VideoDetailPage: React.FC = () => {
                 <div className="flex items-center space-x-4 text-sm text-gray-500">
                   <span>{segment.word_count} words</span>
                   
-                  {segment.sentiment_loughran_score !== undefined && (
+                  {typeof segment.sentiment_loughran_score === 'number' && (
                     <div className="flex items-center space-x-1">
                       <TrendingUp className="h-4 w-4" />
                       <span className={getSentimentColor(segment.sentiment_loughran_score)}>
@@ -469,7 +469,7 @@ const VideoDetailPage: React.FC = () => {
                     </div>
                   )}
                   
-                  {segment.flesch_kincaid_grade !== undefined && (
+                  {typeof segment.flesch_kincaid_grade === 'number' && (
                     <span>Grade: {segment.flesch_kincaid_grade.toFixed(1)}</span>
                   )}
                 </div>
