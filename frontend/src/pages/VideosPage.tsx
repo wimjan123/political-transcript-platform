@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Video, Calendar, Clock, User, Search, Filter, Eye } from 'lucide-react';
-import { videosAPI, formatDate } from '@/services/api';
-import type { Video as VideoType } from '@/types';
+import { videosAPI, formatDate } from '../services/api';
+import type { Video as VideoType } from '../types';
 
 const VideosPage: React.FC = () => {
   const [videos, setVideos] = useState<VideoType[]>([]);

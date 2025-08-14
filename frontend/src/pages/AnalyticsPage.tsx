@@ -13,8 +13,8 @@ import {
   ArcElement,
 } from 'chart.js';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
-import { analyticsAPI } from '@/services/api';
-import type { AnalyticsStats, SentimentAnalytics, TopicAnalytics } from '@/types';
+import { analyticsAPI } from '../services/api';
+import type { AnalyticsStats, SentimentAnalytics, TopicAnalytics } from '../types';
 
 ChartJS.register(
   CategoryScale,

@@ -4,8 +4,8 @@ import {
   ArrowLeft, Video, Calendar, Clock, User, MessageSquare, TrendingUp, 
   BarChart3, Search, Play, ExternalLink
 } from 'lucide-react';
-import { videosAPI, formatDate, formatTimestamp, getSentimentColor, getSentimentLabel } from '@/services/api';
-import type { Video as VideoType, TranscriptSegment, VideoStats } from '@/types';
+import { videosAPI, formatDate, formatTimestamp, getSentimentColor, getSentimentLabel } from '../services/api';
+import type { Video as VideoType, TranscriptSegment, VideoStats } from '../types';
 
 const VideoDetailPage: React.FC = () => {
   const { videoId } = useParams<{ videoId: string }>();

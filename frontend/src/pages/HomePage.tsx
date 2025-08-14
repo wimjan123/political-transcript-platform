@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, BarChart3, Video, TrendingUp, Users, MessageSquare, Calendar } from 'lucide-react';
-import { analyticsAPI } from '@/services/api';
-import type { AnalyticsStats } from '@/types';
+import { analyticsAPI } from '../services/api';
+import type { AnalyticsStats } from '../types';
 
 const HomePage: React.FC = () => {
   const [stats, setStats] = useState<AnalyticsStats | null>(null);

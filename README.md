@@ -30,7 +30,7 @@ make deploy
 
 - **Backend**: FastAPI with Python, PostgreSQL with full-text search, SQLAlchemy ORM
 - **Frontend**: React with TypeScript, TailwindCSS, Chart.js
-- **Infrastructure**: Docker with docker-compose, nginx reverse proxy
+- **Infrastructure**: Docker with docker compose, nginx reverse proxy
 
 ## Data Pipeline
 

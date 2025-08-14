@@ -5,8 +5,8 @@ import {
   Calendar, User, Tag, TrendingUp, AlertCircle, Clock,
   ExternalLink, Play
 } from 'lucide-react';
-import { searchAPI, downloadFile, formatTimestamp, getSentimentColor, getSentimentLabel } from '@/services/api';
-import type { SearchResponse, SearchParams, FilterState, TranscriptSegment } from '@/types';
+import { searchAPI, downloadFile, formatTimestamp, getSentimentColor, getSentimentLabel } from '../services/api';
+import type { SearchResponse, SearchParams, FilterState, TranscriptSegment } from '../types';
 
 const SearchPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
