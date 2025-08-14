@@ -95,7 +95,7 @@ class TranscriptSegment(Base):
     # Core transcript data
     speaker_name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
     transcript_text: Mapped[str] = mapped_column(Text, nullable=False)
-    video_seconds: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    video_seconds: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
     timestamp_start: Mapped[Optional[str]] = mapped_column(String(20))  # e.g., "00:07:02"
     timestamp_end: Mapped[Optional[str]] = mapped_column(String(20))    # e.g., "00:07:04"
     duration_seconds: Mapped[Optional[int]] = mapped_column(Integer)
