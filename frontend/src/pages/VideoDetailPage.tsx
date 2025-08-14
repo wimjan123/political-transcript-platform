@@ -26,6 +26,29 @@ const VideoDetailPage: React.FC = () => {
   const [selectedSegmentIds, setSelectedSegmentIds] = useState<Set<number>>(new Set());
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
+  const vimeoTimeFragment = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    const parts = [] as string[];
+    if (h > 0) parts.push(`${h}h`);
+    if (m > 0) parts.push(`${m}m`);
+    parts.push(`${s}s`);
+    return parts.join('');
+  };
+
+  const buildWatchUrlAt = (seconds: number) => {
+    if (!video) return undefined;
+    const base = video.vimeo_video_id
+      ? `https://vimeo.com/${video.vimeo_video_id}`
+      : (video.vimeo_embed_url || video.video_url);
+    if (!base) return undefined;
+    const frag = vimeoTimeFragment(seconds);
+    // Prefer #t= for Vimeo; for non-Vimeo links, just return base
+    if (base.includes('vimeo.com')) return `${base}#t=${frag}`;
+    return base;
+  };
+
   useEffect(() => {
     if (videoId) {
       loadVideoData();
@@ -651,9 +674,24 @@ const VideoDetailPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <button className="text-primary-600 hover:text-primary-700 transition-colors">
-                    <Play className="h-4 w-4" />
-                  </button>
+                  {(() => {
+                    const href = buildWatchUrlAt(segment.video_seconds);
+                    return href ? (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary-600 hover:text-primary-700 transition-colors"
+                        title="Open video at timestamp"
+                      >
+                        <Play className="h-4 w-4" />
+                      </a>
+                    ) : (
+                      <button className="text-gray-400 cursor-not-allowed" disabled>
+                        <Play className="h-4 w-4" />
+                      </button>
+                    );
+                  })()}
                 </div>
 
                 {/* Transcript Text */}
