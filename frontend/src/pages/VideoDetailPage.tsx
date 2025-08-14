@@ -5,6 +5,7 @@ import {
   BarChart3, Search, Play, ExternalLink, Shield, AlertTriangle, Eye
 } from 'lucide-react';
 import { videosAPI, formatDate, formatTimestamp, getSentimentColor, getSentimentLabel } from '../services/api';
+import VimeoEmbed from '../components/VimeoEmbed';
 import type { Video as VideoType, TranscriptSegment, VideoStats } from '../types';
 
 const VideoDetailPage: React.FC = () => {
@@ -274,20 +275,18 @@ const VideoDetailPage: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-8">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              {/* Video Thumbnail */}
-              {video.video_thumbnail_url && (
-                <div className="mb-6">
-                  <img 
-                    src={video.video_thumbnail_url} 
-                    alt={`Thumbnail for ${video.title}`}
-                    className="w-full max-w-md h-auto rounded-lg shadow-sm border border-gray-200"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                    }}
-                  />
-                </div>
-              )}
+              {/* Vimeo Video Embed */}
+              <div className="mb-6">
+                <VimeoEmbed
+                  vimeoVideoId={video.vimeo_video_id}
+                  vimeoEmbedUrl={video.vimeo_embed_url}
+                  title={video.title}
+                  thumbnail={video.video_thumbnail_url}
+                  width="100%"
+                  height={400}
+                  showThumbnail={false}
+                />
+              </div>
               
               <h1 className="text-3xl font-bold text-gray-900 mb-4">{video.title}</h1>
               

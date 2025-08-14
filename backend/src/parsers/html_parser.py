@@ -124,6 +124,16 @@ class TranscriptHTMLParser:
                     # Construct factbase video URL
                     metadata['video_url'] = f"https://factba.se/video/{video_id}"
         
+        # Extract Vimeo video ID from iframe
+        vimeo_iframe = soup.find('iframe', {'id': 'vimeoPlayer'})
+        if vimeo_iframe:
+            vimeo_src = vimeo_iframe.get('src', '')
+            # Pattern: https://player.vimeo.com/video/941627232?h=...
+            vimeo_id_match = re.search(r'player\.vimeo\.com/video/(\d+)', vimeo_src)
+            if vimeo_id_match:
+                metadata['vimeo_video_id'] = vimeo_id_match.group(1)
+                metadata['vimeo_embed_url'] = vimeo_src
+        
         return metadata
     
     def _extract_transcript_segments(self, soup: BeautifulSoup) -> List[Dict[str, Any]]:

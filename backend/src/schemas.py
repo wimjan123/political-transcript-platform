@@ -23,6 +23,9 @@ class VideoResponse(BaseModel):
     video_url: Optional[str]
     vimeo_video_id: Optional[str]
     vimeo_embed_url: Optional[str]
+    total_words: Optional[int]
+    total_characters: Optional[int]
+    total_segments: Optional[int]
     created_at: datetime
 
 

@@ -25,6 +25,13 @@ class Video(Base):
     url: Mapped[Optional[str]] = mapped_column(String(500))
     video_thumbnail_url: Mapped[Optional[str]] = mapped_column(String(500))
     video_url: Mapped[Optional[str]] = mapped_column(String(500))
+    vimeo_video_id: Mapped[Optional[str]] = mapped_column(String(50))
+    vimeo_embed_url: Mapped[Optional[str]] = mapped_column(String(500))
+    
+    # Statistics (calculated fields)
+    total_words: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    total_characters: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    total_segments: Mapped[Optional[int]] = mapped_column(Integer, default=0)
     
     # Metadata
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())

@@ -334,14 +334,14 @@ const SearchPage: React.FC = () => {
             )}
 
             {/* Content Moderation */}
-            {segment.moderation_overall_score !== undefined && segment.moderation_overall_score > 0.1 && (
+            {segment.moderation_overall_score !== undefined && segment.moderation_overall_score !== null && segment.moderation_overall_score > 0.1 && (
               <div>
                 <h4 className="text-sm font-medium text-gray-900 mb-2">Content Moderation</h4>
                 <div className="flex items-center space-x-2 text-sm">
                   <AlertCircle className="h-4 w-4 text-amber-500" />
                   <span className="text-gray-600">Overall Score:</span>
                   <span className="text-amber-600 font-medium">
-                    {(segment.moderation_overall_score * 100).toFixed(1)}%
+                    {((segment.moderation_overall_score || 0) * 100).toFixed(1)}%
                   </span>
                 </div>
               </div>

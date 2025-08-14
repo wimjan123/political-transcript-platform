@@ -81,6 +81,36 @@ def apply_migration():
         else:
             print("✓ video_url column already exists")
         
+        # Check if vimeo_video_id column exists
+        cursor.execute("""
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'videos' 
+            AND column_name = 'vimeo_video_id';
+        """)
+        
+        if not cursor.fetchone():
+            print("Adding vimeo_video_id column to videos table...")
+            cursor.execute("ALTER TABLE videos ADD COLUMN vimeo_video_id VARCHAR(50);")
+            conn.commit()
+            print("✓ Migration applied successfully: vimeo_video_id column added")
+        else:
+            print("✓ vimeo_video_id column already exists")
+        
+        # Check if vimeo_embed_url column exists
+        cursor.execute("""
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'videos' 
+            AND column_name = 'vimeo_embed_url';
+        """)
+        
+        if not cursor.fetchone():
+            print("Adding vimeo_embed_url column to videos table...")
+            cursor.execute("ALTER TABLE videos ADD COLUMN vimeo_embed_url VARCHAR(500);")
+            conn.commit()
+            print("✓ Migration applied successfully: vimeo_embed_url column added")
+        else:
+            print("✓ vimeo_embed_url column already exists")
+        
         cursor.close()
         conn.close()
         

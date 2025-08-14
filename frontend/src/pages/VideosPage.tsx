@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Video, Calendar, Clock, User, Search, Filter, Eye, Play, ExternalLink } from 'lucide-react';
 import { videosAPI, formatDate } from '../services/api';
 import type { Video as VideoType } from '../types';
+import VimeoEmbed from '../components/VimeoEmbed';
 
 const VideosPage: React.FC = () => {
   const [videos, setVideos] = useState<VideoType[]>([]);
@@ -274,19 +275,17 @@ const VideosPage: React.FC = () => {
               >
                 <div className="flex items-start justify-between">
                   {/* Video Thumbnail */}
-                  {video.video_thumbnail_url && (
-                    <div className="flex-shrink-0 mr-6">
-                      <img 
-                        src={video.video_thumbnail_url} 
-                        alt={`Thumbnail for ${video.title}`}
-                        className="w-32 h-24 object-cover rounded-lg border border-gray-200"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  )}
+                  <div className="flex-shrink-0 mr-6">
+                    <VimeoEmbed
+                      vimeoVideoId={video.vimeo_video_id}
+                      vimeoEmbedUrl={video.vimeo_embed_url}
+                      title={video.title}
+                      thumbnail={video.video_thumbnail_url}
+                      width={128}
+                      height={96}
+                      showThumbnail={true}
+                    />
+                  </div>
                   
                   <div className="flex-1 min-w-0">
                     {/* Video Header */}
