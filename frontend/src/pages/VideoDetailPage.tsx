@@ -402,6 +402,39 @@ const VideoDetailPage: React.FC = () => {
                 )}
               </div>
 
+              {/* Event Metadata */}
+              {(video.format || video.candidate || video.place || video.record_type) && (
+                <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                  <h3 className="text-sm font-medium text-gray-900 mb-3">Event Metadata</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    {video.format && (
+                      <div>
+                        <span className="text-gray-500">Format:</span>
+                        <span className="ml-2 font-medium">{video.format}</span>
+                      </div>
+                    )}
+                    {video.candidate && (
+                      <div>
+                        <span className="text-gray-500">Candidate:</span>
+                        <span className="ml-2 font-medium">{video.candidate}</span>
+                      </div>
+                    )}
+                    {video.place && (
+                      <div>
+                        <span className="text-gray-500">Place:</span>
+                        <span className="ml-2 font-medium">{video.place}</span>
+                      </div>
+                    )}
+                    {video.record_type && (
+                      <div>
+                        <span className="text-gray-500">Record Type:</span>
+                        <span className="ml-2 font-medium">{video.record_type}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Description */}
               {video.description && (
                 <p className="text-gray-700 mb-6 leading-relaxed">
@@ -763,24 +796,46 @@ const VideoDetailPage: React.FC = () => {
                         <span>{getReadabilityLabel(segment.flesch_kincaid_grade)} (Grade {segment.flesch_kincaid_grade.toFixed(1)})</span>
                       </div>
                     )}
+                    
+                    {typeof segment.stresslens_score === 'number' && (
+                      <div className="flex items-center space-x-1">
+                        <TrendingUp className="h-4 w-4" />
+                        <span>Stress: {segment.stresslens_score.toFixed(3)}</span>
+                        {typeof segment.stresslens_rank === 'number' && (
+                          <span className="text-gray-400">(Rank {segment.stresslens_rank})</span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Content Moderation Warning */}
                   {(() => {
                     const moderation = getModerationLevel(segment);
-                    if (moderation.level === 'none') return null;
+                    const hasFlags = segment.moderation_harassment_flag || segment.moderation_hate_flag || 
+                                   segment.moderation_violence_flag || segment.moderation_sexual_flag || 
+                                   segment.moderation_selfharm_flag;
                     
-                    const levelColors = {
+                    if (moderation.level === 'none' && !hasFlags) return null;
+                    
+                    const levelColors: { [key: string]: string } = {
                       low: 'bg-yellow-50 border-yellow-200 text-yellow-800',
                       medium: 'bg-orange-50 border-orange-200 text-orange-800',
-                      high: 'bg-red-50 border-red-200 text-red-800'
+                      high: 'bg-red-50 border-red-200 text-red-800',
+                      none: 'bg-yellow-50 border-yellow-200 text-yellow-800'
                     };
+                    
+                    const flaggedCategories = [];
+                    if (segment.moderation_harassment_flag) flaggedCategories.push('Harassment');
+                    if (segment.moderation_hate_flag) flaggedCategories.push('Hate');
+                    if (segment.moderation_violence_flag) flaggedCategories.push('Violence');
+                    if (segment.moderation_sexual_flag) flaggedCategories.push('Sexual');
+                    if (segment.moderation_selfharm_flag) flaggedCategories.push('Self-harm');
                     
                     return (
                       <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border text-sm ${levelColors[moderation.level]}`}>
                         <Shield className="h-4 w-4" />
                         <span>
-                          Content Advisory ({moderation.level}): {moderation.categories.join(', ')} 
+                          Content Advisory{moderation.level !== 'none' && ` (${moderation.level})`}: {flaggedCategories.length > 0 ? flaggedCategories.join(', ') : moderation.categories.join(', ')} 
                           {moderation.score > 0 && ` (${(moderation.score * 100).toFixed(1)}%)`}
                         </span>
                       </div>
@@ -790,7 +845,8 @@ const VideoDetailPage: React.FC = () => {
                   {/* Detailed Analytics (Expandable) */}
                   {(typeof segment.sentiment_harvard_score === 'number' || 
                     typeof segment.sentiment_vader_score === 'number' ||
-                    typeof segment.flesch_reading_ease === 'number') && (
+                    typeof segment.flesch_reading_ease === 'number' ||
+                    typeof segment.stresslens_score === 'number') && (
                     <details className="text-sm">
                       <summary className="cursor-pointer text-gray-500 hover:text-gray-700 select-none">
                         <Eye className="h-4 w-4 inline mr-2" />
@@ -835,6 +891,23 @@ const VideoDetailPage: React.FC = () => {
                           <div className="flex items-center justify-between">
                             <span className="text-gray-600">Coleman-Liau:</span>
                             <span>{segment.coleman_liau_index.toFixed(1)}</span>
+                          </div>
+                        )}
+                        
+                        {/* Stresslens Analytics */}
+                        {typeof segment.stresslens_score === 'number' && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600">Stresslens Score:</span>
+                            <span className={segment.stresslens_score > 0.5 ? 'text-red-600 font-medium' : segment.stresslens_score > 0.3 ? 'text-orange-600' : ''}>
+                              {segment.stresslens_score.toFixed(3)}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {typeof segment.stresslens_rank === 'number' && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600">Stresslens Rank:</span>
+                            <span>{segment.stresslens_rank}</span>
                           </div>
                         )}
                         

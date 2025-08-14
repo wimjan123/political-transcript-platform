@@ -23,6 +23,13 @@ class VideoResponse(BaseModel):
     video_url: Optional[str]
     vimeo_video_id: Optional[str]
     vimeo_embed_url: Optional[str]
+    
+    # Event metadata fields
+    format: Optional[str]
+    candidate: Optional[str]
+    place: Optional[str]
+    record_type: Optional[str]
+    
     total_words: Optional[int]
     total_characters: Optional[int]
     total_segments: Optional[int]
@@ -106,6 +113,17 @@ class TranscriptSegmentResponse(BaseModel):
     smog_index: Optional[float]
     flesch_reading_ease: Optional[float]
     
+    # Stresslens Analytics
+    stresslens_score: Optional[float]
+    stresslens_rank: Optional[int]
+    
+    # Content Moderation Flags
+    moderation_harassment_flag: Optional[bool]
+    moderation_hate_flag: Optional[bool]
+    moderation_violence_flag: Optional[bool]
+    moderation_sexual_flag: Optional[bool]
+    moderation_selfharm_flag: Optional[bool]
+    
     created_at: datetime
     
     # Related data
@@ -124,6 +142,24 @@ class SearchFilters(BaseModel):
     sentiment: Optional[str] = None
     min_readability: Optional[float] = None
     max_readability: Optional[float] = None
+    
+    # Event metadata filters
+    format: Optional[str] = None
+    candidate: Optional[str] = None
+    place: Optional[str] = None
+    record_type: Optional[str] = None
+    
+    # Stresslens filters
+    min_stresslens: Optional[float] = None
+    max_stresslens: Optional[float] = None
+    stresslens_rank: Optional[int] = None
+    
+    # Moderation flags filters
+    has_harassment: Optional[bool] = None
+    has_hate: Optional[bool] = None
+    has_violence: Optional[bool] = None
+    has_sexual: Optional[bool] = None
+    has_selfharm: Optional[bool] = None
 
 
 class SearchResponse(BaseModel):

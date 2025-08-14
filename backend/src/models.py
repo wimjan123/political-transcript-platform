@@ -28,6 +28,12 @@ class Video(Base):
     vimeo_video_id: Mapped[Optional[str]] = mapped_column(String(50))
     vimeo_embed_url: Mapped[Optional[str]] = mapped_column(String(500))
     
+    # Event metadata fields
+    format: Mapped[Optional[str]] = mapped_column(String(100), index=True)
+    candidate: Mapped[Optional[str]] = mapped_column(String(200), index=True)
+    place: Mapped[Optional[str]] = mapped_column(String(300), index=True)
+    record_type: Mapped[Optional[str]] = mapped_column(String(100), index=True)
+    
     # Statistics (calculated fields)
     total_words: Mapped[Optional[int]] = mapped_column(Integer, default=0)
     total_characters: Mapped[Optional[int]] = mapped_column(Integer, default=0)
@@ -137,6 +143,17 @@ class TranscriptSegment(Base):
     smog_index: Mapped[Optional[float]] = mapped_column(Float)
     flesch_reading_ease: Mapped[Optional[float]] = mapped_column(Float)
     
+    # Stresslens Analytics
+    stresslens_score: Mapped[Optional[float]] = mapped_column(Float, index=True)
+    stresslens_rank: Mapped[Optional[int]] = mapped_column(Integer, index=True)
+    
+    # Content Moderation Flags
+    moderation_harassment_flag: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    moderation_hate_flag: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    moderation_violence_flag: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    moderation_sexual_flag: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    moderation_selfharm_flag: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    
     # Metadata
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
@@ -180,3 +197,9 @@ Index('idx_segment_readability', TranscriptSegment.flesch_kincaid_grade, Transcr
 Index('idx_segment_topics_score', SegmentTopic.topic_id, SegmentTopic.score)
 Index('idx_video_date_source', Video.date, Video.source)
 Index('idx_speaker_stats', Speaker.total_segments, Speaker.avg_sentiment)
+
+# New indexes for event metadata and analytics
+Index('idx_video_event_metadata', Video.format, Video.candidate, Video.record_type, Video.date)
+Index('idx_segment_stresslens', TranscriptSegment.stresslens_score, TranscriptSegment.stresslens_rank)
+Index('idx_segment_moderation_flags', TranscriptSegment.moderation_harassment_flag, TranscriptSegment.moderation_hate_flag, TranscriptSegment.moderation_violence_flag)
+Index('idx_segment_analytics', TranscriptSegment.stresslens_score, TranscriptSegment.sentiment_loughran_score, TranscriptSegment.flesch_kincaid_grade)

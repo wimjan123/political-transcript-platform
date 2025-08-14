@@ -337,6 +337,38 @@ const VideosPage: React.FC = () => {
                       )}
                     </div>
 
+                    {/* Event Metadata */}
+                    {(video.format || video.candidate || video.place || video.record_type) && (
+                      <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          {video.format && (
+                            <div>
+                              <span className="text-gray-500">Format:</span>
+                              <span className="ml-1 font-medium">{video.format}</span>
+                            </div>
+                          )}
+                          {video.candidate && (
+                            <div>
+                              <span className="text-gray-500">Candidate:</span>
+                              <span className="ml-1 font-medium">{video.candidate}</span>
+                            </div>
+                          )}
+                          {video.place && (
+                            <div>
+                              <span className="text-gray-500">Place:</span>
+                              <span className="ml-1 font-medium">{video.place}</span>
+                            </div>
+                          )}
+                          {video.record_type && (
+                            <div>
+                              <span className="text-gray-500">Type:</span>
+                              <span className="ml-1 font-medium">{video.record_type}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Description */}
                     {video.description && (
                       <p className="text-sm text-gray-600 mb-4 line-clamp-2">

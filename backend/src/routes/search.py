@@ -29,8 +29,27 @@ async def search_transcripts(
     sentiment: Optional[str] = Query(None, description="Filter by sentiment (positive/negative/neutral)"),
     min_readability: Optional[float] = Query(None, description="Minimum readability score"),
     max_readability: Optional[float] = Query(None, description="Maximum readability score"),
+    
+    # Event metadata filters
+    format: Optional[str] = Query(None, description="Filter by event format"),
+    candidate: Optional[str] = Query(None, description="Filter by candidate name"),
+    place: Optional[str] = Query(None, description="Filter by event place"),
+    record_type: Optional[str] = Query(None, description="Filter by record type"),
+    
+    # Stresslens filters
+    min_stresslens: Optional[float] = Query(None, description="Minimum stresslens score"),
+    max_stresslens: Optional[float] = Query(None, description="Maximum stresslens score"),
+    stresslens_rank: Optional[int] = Query(None, description="Filter by stresslens rank"),
+    
+    # Moderation flags filters
+    has_harassment: Optional[bool] = Query(None, description="Filter by harassment flag"),
+    has_hate: Optional[bool] = Query(None, description="Filter by hate flag"),
+    has_violence: Optional[bool] = Query(None, description="Filter by violence flag"),
+    has_sexual: Optional[bool] = Query(None, description="Filter by sexual flag"),
+    has_selfharm: Optional[bool] = Query(None, description="Filter by self-harm flag"),
+    
     search_type: str = Query("fulltext", description="Search type: fulltext, exact, fuzzy"),
-    sort_by: str = Query("relevance", description="Sort by: relevance, date, speaker, sentiment"),
+    sort_by: str = Query("relevance", description="Sort by: relevance, date, speaker, sentiment, stresslens"),
     sort_order: str = Query("desc", description="Sort order: asc, desc"),
     db: AsyncSession = Depends(get_db)
 ):
@@ -101,6 +120,40 @@ async def search_transcripts(
             query = query.join(SegmentTopic).join(Topic)
             conditions.append(Topic.name.ilike(f"%{topic}%"))
         
+        # Event metadata filters
+        if format or candidate or place or record_type:
+            if not joined_video:
+                query = query.join(Video)
+                joined_video = True
+            if format:
+                conditions.append(Video.format.ilike(f"%{format}%"))
+            if candidate:
+                conditions.append(Video.candidate.ilike(f"%{candidate}%"))
+            if place:
+                conditions.append(Video.place.ilike(f"%{place}%"))
+            if record_type:
+                conditions.append(Video.record_type.ilike(f"%{record_type}%"))
+        
+        # Stresslens filters
+        if min_stresslens is not None:
+            conditions.append(TranscriptSegment.stresslens_score >= min_stresslens)
+        if max_stresslens is not None:
+            conditions.append(TranscriptSegment.stresslens_score <= max_stresslens)
+        if stresslens_rank is not None:
+            conditions.append(TranscriptSegment.stresslens_rank == stresslens_rank)
+        
+        # Moderation flags filters
+        if has_harassment is True:
+            conditions.append(TranscriptSegment.moderation_harassment_flag == True)
+        if has_hate is True:
+            conditions.append(TranscriptSegment.moderation_hate_flag == True)
+        if has_violence is True:
+            conditions.append(TranscriptSegment.moderation_violence_flag == True)
+        if has_sexual is True:
+            conditions.append(TranscriptSegment.moderation_sexual_flag == True)
+        if has_selfharm is True:
+            conditions.append(TranscriptSegment.moderation_selfharm_flag == True)
+        
         # Apply conditions
         if conditions:
             query = query.where(and_(*conditions))
@@ -119,6 +172,8 @@ async def search_transcripts(
             order_col = TranscriptSegment.speaker_name
         elif sort_by == "sentiment":
             order_col = TranscriptSegment.sentiment_loughran_score
+        elif sort_by == "stresslens":
+            order_col = TranscriptSegment.stresslens_score
         else:
             order_col = TranscriptSegment.created_at
         
@@ -164,7 +219,19 @@ async def search_transcripts(
                 date_to=date_to,
                 sentiment=sentiment,
                 min_readability=min_readability,
-                max_readability=max_readability
+                max_readability=max_readability,
+                format=format,
+                candidate=candidate,
+                place=place,
+                record_type=record_type,
+                min_stresslens=min_stresslens,
+                max_stresslens=max_stresslens,
+                stresslens_rank=stresslens_rank,
+                has_harassment=has_harassment,
+                has_hate=has_hate,
+                has_violence=has_violence,
+                has_sexual=has_sexual,
+                has_selfharm=has_selfharm
             )
         )
     
@@ -175,7 +242,7 @@ async def search_transcripts(
 @router.get("/suggest")
 async def search_suggestions(
     q: str = Query(..., description="Partial search query"),
-    type: str = Query("all", description="Suggestion type: all, speakers, topics, sources"),
+    type: str = Query("all", description="Suggestion type: all, speakers, topics, sources, formats, candidates, places, record_types"),
     limit: int = Query(10, ge=1, le=50, description="Maximum suggestions"),
     db: AsyncSession = Depends(get_db)
 ):
@@ -209,11 +276,51 @@ async def search_suggestions(
             # Source suggestions
             source_query = select(Video.source).where(
                 Video.source.ilike(f"%{q}%")
-            ).distinct().limit(limit if type == "sources" else limit // 3)
+            ).distinct().limit(limit if type == "sources" else limit // 7)
             
             result = await db.execute(source_query)
             sources = result.scalars().all()
             suggestions.extend([{"value": source, "type": "source"} for source in sources if source])
+        
+        if type in ["all", "formats"]:
+            # Format suggestions
+            format_query = select(Video.format).where(
+                Video.format.ilike(f"%{q}%")
+            ).distinct().limit(limit if type == "formats" else limit // 7)
+            
+            result = await db.execute(format_query)
+            formats = result.scalars().all()
+            suggestions.extend([{"value": format_val, "type": "format"} for format_val in formats if format_val])
+        
+        if type in ["all", "candidates"]:
+            # Candidate suggestions
+            candidate_query = select(Video.candidate).where(
+                Video.candidate.ilike(f"%{q}%")
+            ).distinct().limit(limit if type == "candidates" else limit // 7)
+            
+            result = await db.execute(candidate_query)
+            candidates = result.scalars().all()
+            suggestions.extend([{"value": candidate, "type": "candidate"} for candidate in candidates if candidate])
+        
+        if type in ["all", "places"]:
+            # Place suggestions
+            place_query = select(Video.place).where(
+                Video.place.ilike(f"%{q}%")
+            ).distinct().limit(limit if type == "places" else limit // 7)
+            
+            result = await db.execute(place_query)
+            places = result.scalars().all()
+            suggestions.extend([{"value": place, "type": "place"} for place in places if place])
+        
+        if type in ["all", "record_types"]:
+            # Record type suggestions
+            record_type_query = select(Video.record_type).where(
+                Video.record_type.ilike(f"%{q}%")
+            ).distinct().limit(limit if type == "record_types" else limit // 7)
+            
+            result = await db.execute(record_type_query)
+            record_types = result.scalars().all()
+            suggestions.extend([{"value": record_type, "type": "record_type"} for record_type in record_types if record_type])
         
         return {"suggestions": suggestions[:limit]}
     
@@ -231,6 +338,25 @@ async def export_search_results(
     date_from: Optional[date] = Query(None),
     date_to: Optional[date] = Query(None),
     sentiment: Optional[str] = Query(None),
+    
+    # Event metadata filters
+    event_format: Optional[str] = Query(None),
+    candidate: Optional[str] = Query(None),
+    place: Optional[str] = Query(None),
+    record_type: Optional[str] = Query(None),
+    
+    # Stresslens filters
+    min_stresslens: Optional[float] = Query(None),
+    max_stresslens: Optional[float] = Query(None),
+    stresslens_rank: Optional[int] = Query(None),
+    
+    # Moderation flags filters
+    has_harassment: Optional[bool] = Query(None),
+    has_hate: Optional[bool] = Query(None),
+    has_violence: Optional[bool] = Query(None),
+    has_sexual: Optional[bool] = Query(None),
+    has_selfharm: Optional[bool] = Query(None),
+    
     search_type: str = Query("fulltext"),
     limit: int = Query(1000, le=settings.MAX_SEARCH_RESULTS),
     db: AsyncSession = Depends(get_db)
@@ -244,6 +370,10 @@ async def export_search_results(
             q=q, page=1, page_size=limit,
             speaker=speaker, source=source, topic=topic,
             date_from=date_from, date_to=date_to, sentiment=sentiment,
+            format=event_format, candidate=candidate, place=place, record_type=record_type,
+            min_stresslens=min_stresslens, max_stresslens=max_stresslens, stresslens_rank=stresslens_rank,
+            has_harassment=has_harassment, has_hate=has_hate, has_violence=has_violence,
+            has_sexual=has_sexual, has_selfharm=has_selfharm,
             search_type=search_type, db=db
         )
         
@@ -259,7 +389,10 @@ async def export_search_results(
             # Header
             writer.writerow([
                 "Segment ID", "Speaker", "Text", "Video Title", "Source", 
-                "Date", "Timestamp", "Sentiment Score", "Primary Topic"
+                "Date", "Timestamp", "Sentiment Score", "Primary Topic",
+                "Format", "Candidate", "Place", "Record Type",
+                "Stresslens Score", "Stresslens Rank",
+                "Harassment Flag", "Hate Flag", "Violence Flag", "Sexual Flag", "Self-harm Flag"
             ])
             
             # Data rows
@@ -273,7 +406,18 @@ async def export_search_results(
                     result.video.date if result.video else "",
                     f"{result.timestamp_start}-{result.timestamp_end}",
                     result.sentiment_loughran_score,
-                    result.primary_topic if hasattr(result, 'primary_topic') else ""
+                    result.primary_topic if hasattr(result, 'primary_topic') else "",
+                    result.video.format if result.video else "",
+                    result.video.candidate if result.video else "",
+                    result.video.place if result.video else "",
+                    result.video.record_type if result.video else "",
+                    result.stresslens_score,
+                    result.stresslens_rank,
+                    result.moderation_harassment_flag,
+                    result.moderation_hate_flag,
+                    result.moderation_violence_flag,
+                    result.moderation_sexual_flag,
+                    result.moderation_selfharm_flag
                 ])
             
             output.seek(0)

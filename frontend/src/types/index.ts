@@ -13,6 +13,13 @@ export interface Video {
   video_url?: string;
   vimeo_video_id?: string;
   vimeo_embed_url?: string;
+  
+  // Event metadata fields
+  format?: string;
+  candidate?: string;
+  place?: string;
+  record_type?: string;
+  
   created_at: string;
 }
 
@@ -81,6 +88,17 @@ export interface TranscriptSegment {
   smog_index?: number | null;
   flesch_reading_ease?: number | null;
   
+  // Stresslens Analytics
+  stresslens_score?: number | null;
+  stresslens_rank?: number | null;
+  
+  // Content Moderation Flags
+  moderation_harassment_flag?: boolean;
+  moderation_hate_flag?: boolean;
+  moderation_violence_flag?: boolean;
+  moderation_sexual_flag?: boolean;
+  moderation_selfharm_flag?: boolean;
+  
   created_at: string;
   
   // Related data
@@ -98,6 +116,24 @@ export interface SearchFilters {
   sentiment?: string;
   min_readability?: number;
   max_readability?: number;
+  
+  // Event metadata filters
+  format?: string;
+  candidate?: string;
+  place?: string;
+  record_type?: string;
+  
+  // Stresslens filters
+  min_stresslens?: number;
+  max_stresslens?: number;
+  stresslens_rank?: number;
+  
+  // Moderation flags filters
+  has_harassment?: boolean;
+  has_hate?: boolean;
+  has_violence?: boolean;
+  has_sexual?: boolean;
+  has_selfharm?: boolean;
 }
 
 export interface SearchResponse {
@@ -122,14 +158,33 @@ export interface SearchParams {
   sentiment?: string;
   min_readability?: number;
   max_readability?: number;
+  
+  // Event metadata filters
+  format?: string;
+  candidate?: string;
+  place?: string;
+  record_type?: string;
+  
+  // Stresslens filters
+  min_stresslens?: number;
+  max_stresslens?: number;
+  stresslens_rank?: number;
+  
+  // Moderation flags filters
+  has_harassment?: boolean;
+  has_hate?: boolean;
+  has_violence?: boolean;
+  has_sexual?: boolean;
+  has_selfharm?: boolean;
+  
   search_type?: 'fulltext' | 'exact' | 'fuzzy';
-  sort_by?: 'relevance' | 'date' | 'speaker' | 'sentiment';
+  sort_by?: 'relevance' | 'date' | 'speaker' | 'sentiment' | 'stresslens';
   sort_order?: 'asc' | 'desc';
 }
 
 export interface Suggestion {
   value: string;
-  type: 'speaker' | 'topic' | 'source';
+  type: 'speaker' | 'topic' | 'source' | 'format' | 'candidate' | 'place' | 'record_type';
 }
 
 export interface SuggestionsResponse {
@@ -318,8 +373,27 @@ export interface FilterState {
   sentiment: string;
   minReadability: number | '';
   maxReadability: number | '';
+  
+  // Event metadata filters
+  format: string;
+  candidate: string;
+  place: string;
+  recordType: string;
+  
+  // Stresslens filters
+  minStresslens: number | '';
+  maxStresslens: number | '';
+  stresslensRank: number | '';
+  
+  // Moderation flags
+  hasHarassment: boolean;
+  hasHate: boolean;
+  hasViolence: boolean;
+  hasSexual: boolean;
+  hasSelfharm: boolean;
+  
   searchType: 'fulltext' | 'exact' | 'fuzzy';
-  sortBy: 'relevance' | 'date' | 'speaker' | 'sentiment';
+  sortBy: 'relevance' | 'date' | 'speaker' | 'sentiment' | 'stresslens';
   sortOrder: 'asc' | 'desc';
 }
 

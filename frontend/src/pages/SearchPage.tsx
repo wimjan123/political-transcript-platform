@@ -30,6 +30,25 @@ const SearchPage: React.FC = () => {
     sentiment: searchParams.get('sentiment') || '',
     minReadability: searchParams.get('min_readability') ? parseFloat(searchParams.get('min_readability')!) : '',
     maxReadability: searchParams.get('max_readability') ? parseFloat(searchParams.get('max_readability')!) : '',
+    
+    // Event metadata filters
+    format: searchParams.get('format') || '',
+    candidate: searchParams.get('candidate') || '',
+    place: searchParams.get('place') || '',
+    recordType: searchParams.get('record_type') || '',
+    
+    // Stresslens filters
+    minStresslens: searchParams.get('min_stresslens') ? parseFloat(searchParams.get('min_stresslens')!) : '',
+    maxStresslens: searchParams.get('max_stresslens') ? parseFloat(searchParams.get('max_stresslens')!) : '',
+    stresslensRank: searchParams.get('stresslens_rank') ? parseInt(searchParams.get('stresslens_rank')!) : '',
+    
+    // Moderation flags
+    hasHarassment: searchParams.get('has_harassment') === 'true',
+    hasHate: searchParams.get('has_hate') === 'true',
+    hasViolence: searchParams.get('has_violence') === 'true',
+    hasSexual: searchParams.get('has_sexual') === 'true',
+    hasSelfharm: searchParams.get('has_selfharm') === 'true',
+    
     searchType: (searchParams.get('search_type') as FilterState['searchType']) || 'fulltext',
     sortBy: (searchParams.get('sort_by') as FilterState['sortBy']) || 'relevance',
     sortOrder: (searchParams.get('sort_order') as FilterState['sortOrder']) || 'desc',
@@ -113,6 +132,25 @@ const SearchPage: React.FC = () => {
       sentiment: '',
       minReadability: '',
       maxReadability: '',
+      
+      // Event metadata filters
+      format: '',
+      candidate: '',
+      place: '',
+      recordType: '',
+      
+      // Stresslens filters
+      minStresslens: '',
+      maxStresslens: '',
+      stresslensRank: '',
+      
+      // Moderation flags
+      hasHarassment: false,
+      hasHate: false,
+      hasViolence: false,
+      hasSexual: false,
+      hasSelfharm: false,
+      
       searchType: 'fulltext',
       sortBy: 'relevance',
       sortOrder: 'desc',
@@ -235,6 +273,16 @@ const SearchPage: React.FC = () => {
               
               {typeof segment.flesch_kincaid_grade === 'number' && (
                 <span>Grade: {segment.flesch_kincaid_grade.toFixed(1)}</span>
+              )}
+              
+              {typeof segment.stresslens_score === 'number' && (
+                <div className="flex items-center space-x-1">
+                  <TrendingUp className="h-4 w-4" />
+                  <span>Stress: {segment.stresslens_score.toFixed(3)}</span>
+                  {typeof segment.stresslens_rank === 'number' && (
+                    <span className="text-gray-400">(#{segment.stresslens_rank})</span>
+                  )}
+                </div>
               )}
             </div>
 
@@ -536,6 +584,164 @@ const SearchPage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Event Metadata Filters */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Format Filter */}
+                  <div>
+                    <label className="label">Format</label>
+                    <input
+                      type="text"
+                      value={filters.format}
+                      onChange={(e) => handleFilterChange('format', e.target.value)}
+                      className="input"
+                      placeholder="Event format..."
+                    />
+                  </div>
+
+                  {/* Candidate Filter */}
+                  <div>
+                    <label className="label">Candidate</label>
+                    <input
+                      type="text"
+                      value={filters.candidate}
+                      onChange={(e) => handleFilterChange('candidate', e.target.value)}
+                      className="input"
+                      placeholder="Candidate name..."
+                    />
+                  </div>
+
+                  {/* Place Filter */}
+                  <div>
+                    <label className="label">Place</label>
+                    <input
+                      type="text"
+                      value={filters.place}
+                      onChange={(e) => handleFilterChange('place', e.target.value)}
+                      className="input"
+                      placeholder="Event location..."
+                    />
+                  </div>
+
+                  {/* Record Type Filter */}
+                  <div>
+                    <label className="label">Record Type</label>
+                    <input
+                      type="text"
+                      value={filters.recordType}
+                      onChange={(e) => handleFilterChange('recordType', e.target.value)}
+                      className="input"
+                      placeholder="Record type..."
+                    />
+                  </div>
+                </div>
+
+                {/* Stresslens Filters */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Min Stresslens */}
+                  <div>
+                    <label className="label">Min Stresslens Score</label>
+                    <input
+                      type="number"
+                      step="0.001"
+                      min="0"
+                      max="1"
+                      value={filters.minStresslens}
+                      onChange={(e) => handleFilterChange('minStresslens', e.target.value ? parseFloat(e.target.value) : '')}
+                      className="input"
+                      placeholder="0.000"
+                    />
+                  </div>
+
+                  {/* Max Stresslens */}
+                  <div>
+                    <label className="label">Max Stresslens Score</label>
+                    <input
+                      type="number"
+                      step="0.001"
+                      min="0"
+                      max="1"
+                      value={filters.maxStresslens}
+                      onChange={(e) => handleFilterChange('maxStresslens', e.target.value ? parseFloat(e.target.value) : '')}
+                      className="input"
+                      placeholder="1.000"
+                    />
+                  </div>
+
+                  {/* Stresslens Rank */}
+                  <div>
+                    <label className="label">Stresslens Rank</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={filters.stresslensRank}
+                      onChange={(e) => handleFilterChange('stresslensRank', e.target.value ? parseInt(e.target.value) : '')}
+                      className="input"
+                      placeholder="Rank number..."
+                    />
+                  </div>
+                </div>
+
+                {/* Moderation Flags */}
+                <div>
+                  <label className="label">Content Moderation Flags</label>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="hasHarassment"
+                        checked={filters.hasHarassment}
+                        onChange={(e) => handleFilterChange('hasHarassment', e.target.checked)}
+                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="hasHarassment" className="ml-2 text-sm text-gray-700">Harassment</label>
+                    </div>
+
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="hasHate"
+                        checked={filters.hasHate}
+                        onChange={(e) => handleFilterChange('hasHate', e.target.checked)}
+                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="hasHate" className="ml-2 text-sm text-gray-700">Hate</label>
+                    </div>
+
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="hasViolence"
+                        checked={filters.hasViolence}
+                        onChange={(e) => handleFilterChange('hasViolence', e.target.checked)}
+                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="hasViolence" className="ml-2 text-sm text-gray-700">Violence</label>
+                    </div>
+
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="hasSexual"
+                        checked={filters.hasSexual}
+                        onChange={(e) => handleFilterChange('hasSexual', e.target.checked)}
+                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="hasSexual" className="ml-2 text-sm text-gray-700">Sexual</label>
+                    </div>
+
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="hasSelfharm"
+                        checked={filters.hasSelfharm}
+                        onChange={(e) => handleFilterChange('hasSelfharm', e.target.checked)}
+                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="hasSelfharm" className="ml-2 text-sm text-gray-700">Self-harm</label>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Search Type and Sorting */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
@@ -562,6 +768,7 @@ const SearchPage: React.FC = () => {
                       <option value="date">Date</option>
                       <option value="speaker">Speaker</option>
                       <option value="sentiment">Sentiment</option>
+                      <option value="stresslens">Stresslens</option>
                     </select>
                   </div>
 
