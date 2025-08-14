@@ -17,6 +17,92 @@ class TranscriptHTMLParser:
     def __init__(self):
         self.video_metadata = {}
         self.segments = []
+        
+        # Pre-compile regex patterns for better performance
+        self._date_patterns = [
+            re.compile(r'([a-z]+-\d{1,2}-\d{4})'),  # month-day-year
+            re.compile(r'(\d{1,2}-\d{1,2}-\d{4})'),  # mm-dd-yyyy
+            re.compile(r'(\d{4}-\d{1,2}-\d{1,2})'),  # yyyy-mm-dd
+        ]
+        
+        self._date_in_title_pattern = re.compile(r'([A-Z][a-z]+\s+\d{1,2},\s+\d{4})')
+        self._video_id_pattern = re.compile(r'/video/(\d+)/\d+-\d+\.jpg')
+        self._vimeo_id_pattern = re.compile(r'player\.vimeo\.com/video/(\d+)')
+        self._timestamp_pattern = re.compile(r'(\d{2}:\d{2}:\d{2})-(\d{2}:\d{2}:\d{2})\s*\((\d+)\s*sec\)')
+        
+        # Moderation patterns
+        self._moderation_patterns = {
+            'harassment': re.compile(r'Harassment\s+([\d.]+)'),
+            'hate': re.compile(r'Hate\s+([\d.]+)'),
+            'self_harm': re.compile(r'Self-?harm\s+([\d.]+)'),
+            'sexual': re.compile(r'Sexual\s+([\d.]+)'),
+            'violence': re.compile(r'Violence\s+([\d.]+)')
+        }
+        
+        # Readability patterns
+        self._readability_patterns = {
+            'flesch_kincaid_grade': re.compile(r'Flesch-Kincaid Grade\s+([\d.]+)'),
+            'gunning_fog_index': re.compile(r'Gunning Fog\s+([\d.]+)'),
+            'coleman_liau_index': re.compile(r'Coleman-Liau\s+([\d.]+)'),
+            'automated_readability_index': re.compile(r'Automated Readability\s+([\d.]+)'),
+            'smog_index': re.compile(r'SMOG\s+([\d.]+)'),
+            'flesch_reading_ease': re.compile(r'Flesch Reading Ease\s+([\d.]+)')
+        }
+        
+        # Stresslens patterns
+        self._stress_patterns = [
+            (re.compile(r'High Stress\s+([\d.]+)', re.IGNORECASE), 'high'),
+            (re.compile(r'Medium Stress\s+([\d.]+)', re.IGNORECASE), 'medium'),
+            (re.compile(r'Low Stress\s+([\d.]+)', re.IGNORECASE), 'low'),
+            (re.compile(r'Stress Score\s+([\d.]+)', re.IGNORECASE), 'neutral'),
+            (re.compile(r'StressLens\s+([\d.]+)', re.IGNORECASE), 'neutral'),
+            (re.compile(r'Stress\s+([\d.]+)', re.IGNORECASE), 'neutral')
+        ]
+        
+        # Place patterns (compiled for faster matching)
+        self._place_patterns = [
+            (re.compile(r'white-house'), 'White House'),
+            (re.compile(r'mar-a-lago'), 'Mar-a-Lago'),
+            (re.compile(r'trump-tower'), 'Trump Tower'),
+            (re.compile(r'oval-office'), 'Oval Office'),
+            (re.compile(r'rose-garden'), 'Rose Garden'),
+            (re.compile(r'camp-david'), 'Camp David'),
+            (re.compile(r'florida'), 'Florida'),
+            (re.compile(r'texas'), 'Texas'),
+            (re.compile(r'california'), 'California'),
+            (re.compile(r'new-york'), 'New York'),
+            (re.compile(r'nevada'), 'Nevada'),
+            (re.compile(r'pennsylvania'), 'Pennsylvania'),
+            (re.compile(r'georgia'), 'Georgia'),
+            (re.compile(r'arizona'), 'Arizona'),
+            (re.compile(r'michigan'), 'Michigan'),
+            (re.compile(r'wisconsin'), 'Wisconsin'),
+            (re.compile(r'north-carolina'), 'North Carolina'),
+            (re.compile(r'ohio'), 'Ohio'),
+            (re.compile(r'virginia'), 'Virginia'),
+            (re.compile(r'iowa'), 'Iowa'),
+            (re.compile(r'new-hampshire'), 'New Hampshire'),
+            (re.compile(r'miami'), 'Miami'),
+            (re.compile(r'tampa'), 'Tampa'),
+            (re.compile(r'orlando'), 'Orlando'),
+            (re.compile(r'phoenix'), 'Phoenix'),
+            (re.compile(r'las-vegas'), 'Las Vegas'),
+            (re.compile(r'atlanta'), 'Atlanta'),
+            (re.compile(r'dallas'), 'Dallas'),
+            (re.compile(r'houston'), 'Houston'),
+            (re.compile(r'philadelphia'), 'Philadelphia'),
+            (re.compile(r'detroit'), 'Detroit'),
+            (re.compile(r'milwaukee'), 'Milwaukee'),
+            (re.compile(r'charlotte'), 'Charlotte'),
+            (re.compile(r'columbus'), 'Columbus'),
+            (re.compile(r'richmond'), 'Richmond'),
+            (re.compile(r'minden'), 'Minden'),
+            (re.compile(r'waco'), 'Waco'),
+            (re.compile(r'greenville'), 'Greenville'),
+            (re.compile(r'youngstown'), 'Youngstown'),
+            (re.compile(r'bedminster'), 'Bedminster'),
+            (re.compile(r'washington'), 'Washington'),
+        ]
     
     def parse_file(self, file_path: str) -> Dict[str, Any]:
         """
@@ -76,15 +162,9 @@ class TranscriptHTMLParser:
             if title_tag:
                 metadata['title'] = title_tag.get_text().replace('Roll Call Factba.se - ', '')
         
-        # Extract date from filename (e.g., "may-16-2025", "april-30-2020", "february-6-2019")
-        date_patterns = [
-            r'([a-z]+-\d{1,2}-\d{4})',  # month-day-year
-            r'(\d{1,2}-\d{1,2}-\d{4})',  # mm-dd-yyyy
-            r'(\d{4}-\d{1,2}-\d{1,2})',  # yyyy-mm-dd
-        ]
-        
-        for pattern in date_patterns:
-            date_match = re.search(pattern, filename)
+        # Extract date from filename using pre-compiled patterns
+        for pattern in self._date_patterns:
+            date_match = pattern.search(filename)
             if date_match:
                 try:
                     date_str = date_match.group(1)
@@ -108,7 +188,7 @@ class TranscriptHTMLParser:
         if not metadata['date']:
             # Try to extract from title - look for patterns like "February 6, 2019" or "August 13, 2025"
             title = metadata.get('title', '')
-            date_in_title = re.search(r'([A-Z][a-z]+\s+\d{1,2},\s+\d{4})', title)
+            date_in_title = self._date_in_title_pattern.search(title)
             if date_in_title:
                 try:
                     metadata['date'] = datetime.strptime(date_in_title.group(1), '%B %d, %Y').date()
@@ -176,55 +256,9 @@ class TranscriptHTMLParser:
         elif 'nikki-haley' in filename or 'haley' in filename:
             metadata['candidate'] = 'Nikki Haley'
         
-        # Extract place from filename (location patterns)
-        place_patterns = [
-            (r'white-house', 'White House'),
-            (r'mar-a-lago', 'Mar-a-Lago'),
-            (r'trump-tower', 'Trump Tower'),
-            (r'oval-office', 'Oval Office'),
-            (r'rose-garden', 'Rose Garden'),
-            (r'camp-david', 'Camp David'),
-            # State patterns
-            (r'florida', 'Florida'),
-            (r'texas', 'Texas'),
-            (r'california', 'California'),
-            (r'new-york', 'New York'),
-            (r'nevada', 'Nevada'),
-            (r'pennsylvania', 'Pennsylvania'),
-            (r'georgia', 'Georgia'),
-            (r'arizona', 'Arizona'),
-            (r'michigan', 'Michigan'),
-            (r'wisconsin', 'Wisconsin'),
-            (r'north-carolina', 'North Carolina'),
-            (r'ohio', 'Ohio'),
-            (r'virginia', 'Virginia'),
-            (r'iowa', 'Iowa'),
-            (r'new-hampshire', 'New Hampshire'),
-            # City patterns
-            (r'miami', 'Miami'),
-            (r'tampa', 'Tampa'),
-            (r'orlando', 'Orlando'),
-            (r'phoenix', 'Phoenix'),
-            (r'las-vegas', 'Las Vegas'),
-            (r'atlanta', 'Atlanta'),
-            (r'dallas', 'Dallas'),
-            (r'houston', 'Houston'),
-            (r'philadelphia', 'Philadelphia'),
-            (r'detroit', 'Detroit'),
-            (r'milwaukee', 'Milwaukee'),
-            (r'charlotte', 'Charlotte'),
-            (r'columbus', 'Columbus'),
-            (r'richmond', 'Richmond'),
-            (r'minden', 'Minden'),
-            (r'waco', 'Waco'),
-            (r'greenville', 'Greenville'),
-            (r'youngstown', 'Youngstown'),
-            (r'bedminster', 'Bedminster'),
-            (r'washington', 'Washington'),
-        ]
-        
-        for pattern, place_name in place_patterns:
-            if re.search(pattern, filename):
+        # Extract place from filename using pre-compiled patterns
+        for pattern, place_name in self._place_patterns:
+            if pattern.search(filename):
                 metadata['place'] = place_name
                 break
         
@@ -261,7 +295,7 @@ class TranscriptHTMLParser:
                 
                 # Extract video ID from thumbnail URL and construct video URL
                 # Pattern: https://media-cdn.factba.se/thumbs/video/941627232/941627232-1.jpg
-                video_id_match = re.search(r'/video/(\d+)/\d+-\d+\.jpg', thumb_url)
+                video_id_match = self._video_id_pattern.search(thumb_url)
                 if video_id_match:
                     video_id = video_id_match.group(1)
                     # Construct factbase video URL
@@ -272,7 +306,7 @@ class TranscriptHTMLParser:
         if vimeo_iframe:
             vimeo_src = vimeo_iframe.get('src', '')
             # Pattern: https://player.vimeo.com/video/941627232?h=...
-            vimeo_id_match = re.search(r'player\.vimeo\.com/video/(\d+)', vimeo_src)
+            vimeo_id_match = self._vimeo_id_pattern.search(vimeo_src)
             if vimeo_id_match:
                 metadata['vimeo_video_id'] = vimeo_id_match.group(1)
                 metadata['vimeo_embed_url'] = vimeo_src
@@ -348,7 +382,7 @@ class TranscriptHTMLParser:
         if timestamp_span:
             timestamp_text = timestamp_span.get_text(strip=True)
             # Parse timestamp like "00:07:02-00:07:04 (2 sec)"
-            timestamp_match = re.match(r'(\d{2}:\d{2}:\d{2})-(\d{2}:\d{2}:\d{2})\s*\((\d+)\s*sec\)', timestamp_text)
+            timestamp_match = self._timestamp_pattern.match(timestamp_text)
             if timestamp_match:
                 speaker_info['timestamp_start'] = timestamp_match.group(1)
                 speaker_info['timestamp_end'] = timestamp_match.group(2)
@@ -430,7 +464,7 @@ class TranscriptHTMLParser:
         return sentiment_data
     
     def _extract_moderation_data(self, details_div: Tag) -> Dict[str, Any]:
-        """Extract content moderation scores"""
+        """Extract content moderation scores using pre-compiled patterns"""
         moderation_data = {}
         
         # Look for moderation sections
@@ -439,30 +473,13 @@ class TranscriptHTMLParser:
         for div in moderation_divs:
             text_content = div.get_text(strip=True)
             
-            if 'Harassment' in text_content:
-                score_match = re.search(r'Harassment\s+([\d.]+)', text_content)
-                if score_match:
-                    moderation_data['moderation_harassment'] = float(score_match.group(1))
-            
-            elif 'Hate' in text_content:
-                score_match = re.search(r'Hate\s+([\d.]+)', text_content)
-                if score_match:
-                    moderation_data['moderation_hate'] = float(score_match.group(1))
-            
-            elif 'Self-harm' in text_content or 'Self harm' in text_content:
-                score_match = re.search(r'Self-?harm\s+([\d.]+)', text_content)
-                if score_match:
-                    moderation_data['moderation_self_harm'] = float(score_match.group(1))
-            
-            elif 'Sexual' in text_content:
-                score_match = re.search(r'Sexual\s+([\d.]+)', text_content)
-                if score_match:
-                    moderation_data['moderation_sexual'] = float(score_match.group(1))
-            
-            elif 'Violence' in text_content:
-                score_match = re.search(r'Violence\s+([\d.]+)', text_content)
-                if score_match:
-                    moderation_data['moderation_violence'] = float(score_match.group(1))
+            # Use pre-compiled patterns for faster matching
+            for field_name, pattern in self._moderation_patterns.items():
+                match = pattern.search(text_content)
+                if match:
+                    field_key = f'moderation_{field_name}' if field_name != 'self_harm' else 'moderation_self_harm'
+                    moderation_data[field_key] = float(match.group(1))
+                    break
         
         # Calculate overall moderation score
         scores = [v for k, v in moderation_data.items() if k.startswith('moderation_') and not k.endswith('_flag')]
@@ -497,7 +514,7 @@ class TranscriptHTMLParser:
         return topic_data
     
     def _extract_readability_data(self, details_div: Tag) -> Dict[str, Any]:
-        """Extract readability metrics"""
+        """Extract readability metrics using pre-compiled patterns"""
         readability_data = {}
         
         # Look for readability sections
@@ -506,35 +523,12 @@ class TranscriptHTMLParser:
         for div in readability_divs:
             text_content = div.get_text(strip=True)
             
-            if 'Flesch-Kincaid Grade' in text_content:
-                score_match = re.search(r'Flesch-Kincaid Grade\s+([\d.]+)', text_content)
-                if score_match:
-                    readability_data['flesch_kincaid_grade'] = float(score_match.group(1))
-            
-            elif 'Gunning Fog' in text_content:
-                score_match = re.search(r'Gunning Fog\s+([\d.]+)', text_content)
-                if score_match:
-                    readability_data['gunning_fog_index'] = float(score_match.group(1))
-            
-            elif 'Coleman-Liau' in text_content:
-                score_match = re.search(r'Coleman-Liau\s+([\d.]+)', text_content)
-                if score_match:
-                    readability_data['coleman_liau_index'] = float(score_match.group(1))
-            
-            elif 'Automated Readability' in text_content:
-                score_match = re.search(r'Automated Readability\s+([\d.]+)', text_content)
-                if score_match:
-                    readability_data['automated_readability_index'] = float(score_match.group(1))
-            
-            elif 'SMOG' in text_content:
-                score_match = re.search(r'SMOG\s+([\d.]+)', text_content)
-                if score_match:
-                    readability_data['smog_index'] = float(score_match.group(1))
-            
-            elif 'Flesch Reading Ease' in text_content:
-                score_match = re.search(r'Flesch Reading Ease\s+([\d.]+)', text_content)
-                if score_match:
-                    readability_data['flesch_reading_ease'] = float(score_match.group(1))
+            # Use pre-compiled patterns for faster matching
+            for field_name, pattern in self._readability_patterns.items():
+                match = pattern.search(text_content)
+                if match:
+                    readability_data[field_name] = float(match.group(1))
+                    break
         
         return readability_data
     
@@ -552,19 +546,9 @@ class TranscriptHTMLParser:
             if 'No StressLens' in text_content:
                 continue
                 
-            # Look for stress score patterns
-            # Patterns might be like "High Stress 0.85" or "Medium Stress 0.45"
-            stress_patterns = [
-                (r'High Stress\s+([\d.]+)', 'high'),
-                (r'Medium Stress\s+([\d.]+)', 'medium'), 
-                (r'Low Stress\s+([\d.]+)', 'low'),
-                (r'Stress Score\s+([\d.]+)', 'neutral'),
-                (r'StressLens\s+([\d.]+)', 'neutral'),
-                (r'Stress\s+([\d.]+)', 'neutral')
-            ]
-            
-            for pattern, level in stress_patterns:
-                match = re.search(pattern, text_content, re.IGNORECASE)
+            # Look for stress score patterns using pre-compiled patterns
+            for pattern, level in self._stress_patterns:
+                match = pattern.search(text_content)
                 if match:
                     score = float(match.group(1))
                     stresslens_data['stresslens_score'] = score
