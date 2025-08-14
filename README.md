@@ -1,14 +1,27 @@
 # Political Video Transcript Search Platform
 
-A complete political video transcript search platform that parses HTML transcript files and provides advanced search capabilities with analytics.
+A complete political video transcript search platform that parses HTML transcript files and provides advanced search capabilities with analytics and detailed video exploration.
 
 ## Features
 
+### Core Functionality
 - **HTML Parser**: Extracts speaker names, timestamps, video seconds, transcript text, sentiment analysis, content moderation scores, topic classification, and readability metrics
 - **PostgreSQL Database**: Full-text search capabilities optimized for millions of records
-- **FastAPI Backend**: RESTful endpoints with search, analytics, and export functionality
-- **React Frontend**: Modern interface with advanced filters and analytics dashboard
+- **FastAPI Backend**: RESTful endpoints with search, analytics, export, and video management functionality
+- **React Frontend**: Modern interface with advanced search, analytics, and video exploration features
+
+### User Experience
+- **Advanced Search**: Full-text search with filters and result highlighting
+- **Video Detail Pages**: Dedicated pages for each video with complete transcript viewing
+- **Infinite Scroll**: Seamless browsing through large transcript segments
+- **Deep Linking**: Time-based URLs that auto-navigate to specific segments
+- **Auto-Scroll & Highlight**: Automatic positioning and highlighting of target segments
+- **Context Navigation**: Easy transition from search results to full video context
+
+### Technical Features
 - **Docker Setup**: Easy development and production deployment
+- **Responsive Design**: Optimized for desktop and mobile viewing
+- **Performance Optimization**: Prefetching and lazy loading for smooth navigation
 
 ## Quick Start
 
@@ -28,9 +41,25 @@ make deploy
 
 ## Architecture
 
-- **Backend**: FastAPI with Python, PostgreSQL with full-text search, SQLAlchemy ORM
-- **Frontend**: React with TypeScript, TailwindCSS, Chart.js
-- **Infrastructure**: Docker with docker compose, nginx reverse proxy
+### Backend
+- **FastAPI**: Python-based REST API with multiple route modules
+  - `/search` - Full-text search with filters and pagination
+  - `/videos` - Video management and segment retrieval
+  - `/analytics` - Statistics and data insights
+  - `/upload` - File import and processing
+- **PostgreSQL**: Full-text search with GIN indexes optimized for millions of records
+- **SQLAlchemy ORM**: Database abstraction with async support
+
+### Frontend
+- **React 18**: Modern React with TypeScript and functional components
+- **TailwindCSS**: Utility-first styling with responsive design
+- **React Router**: Client-side routing with deep linking support
+- **Axios**: HTTP client for API communication
+
+### Infrastructure
+- **Docker Compose**: Multi-container development and production setup
+- **Nginx**: Reverse proxy and static file serving
+- **Hot Reload**: Development environment with live code updates
 
 ## Data Pipeline
 
@@ -40,6 +69,16 @@ The platform processes HTML files with this structure:
 - Content moderation: OpenAI moderation categories
 - Topic classification: Topics with scores
 - Readability metrics: 10+ different algorithms
+
+## Pages & Navigation
+
+- **Home Page** (`/`) - Landing page with platform overview
+- **Search Page** (`/search`) - Advanced search with filters and results
+- **Videos Page** (`/videos`) - Browse all available video transcripts
+- **Video Detail** (`/video/:id`) - Full transcript view with segment navigation
+  - Supports time-based deep links: `/video/:id?time=123&segment=5`
+  - Auto-scroll to specific segments and highlight target content
+- **Analytics Page** (`/analytics`) - Data insights and statistics dashboard
 
 ## Development
 
