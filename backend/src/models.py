@@ -1,0 +1,173 @@
+"""
+Database models for the Political Transcript Search Platform
+"""
+from sqlalchemy import Column, Integer, String, Text, DateTime, Float, Boolean, ForeignKey, JSON, Index
+from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy.sql import func
+from datetime import datetime
+from typing import Optional, Dict, Any, List
+
+from .database import Base
+
+
+class Video(Base):
+    """Video metadata table"""
+    __tablename__ = "videos"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    title: Mapped[str] = mapped_column(String(500), nullable=False, index=True)
+    filename: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    date: Mapped[Optional[DateTime]] = mapped_column(DateTime, index=True)
+    duration: Mapped[Optional[int]] = mapped_column(Integer)  # in seconds
+    source: Mapped[Optional[str]] = mapped_column(String(100), index=True)
+    channel: Mapped[Optional[str]] = mapped_column(String(100), index=True)
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    url: Mapped[Optional[str]] = mapped_column(String(500))
+    
+    # Metadata
+    created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
+    updated_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    segments: Mapped[List["TranscriptSegment"]] = relationship("TranscriptSegment", back_populates="video", cascade="all, delete-orphan")
+    
+    def __repr__(self):
+        return f"<Video(id={self.id}, title='{self.title}')>"
+
+
+class Speaker(Base):
+    """Speaker information table"""
+    __tablename__ = "speakers"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False, unique=True, index=True)
+    normalized_name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
+    
+    # Speaker metadata
+    party: Mapped[Optional[str]] = mapped_column(String(50))
+    title: Mapped[Optional[str]] = mapped_column(String(100))
+    bio: Mapped[Optional[str]] = mapped_column(Text)
+    
+    # Stats
+    total_segments: Mapped[int] = mapped_column(Integer, default=0)
+    total_words: Mapped[int] = mapped_column(Integer, default=0)
+    avg_sentiment: Mapped[Optional[float]] = mapped_column(Float)
+    
+    # Relationships
+    segments: Mapped[List["TranscriptSegment"]] = relationship("TranscriptSegment", back_populates="speaker")
+    
+    def __repr__(self):
+        return f"<Speaker(id={self.id}, name='{self.name}')>"
+
+
+class Topic(Base):
+    """Topic classification table"""
+    __tablename__ = "topics"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False, unique=True, index=True)
+    code: Mapped[Optional[str]] = mapped_column(String(50), index=True)
+    category: Mapped[Optional[str]] = mapped_column(String(100), index=True)
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    
+    # Stats
+    total_segments: Mapped[int] = mapped_column(Integer, default=0)
+    avg_score: Mapped[Optional[float]] = mapped_column(Float)
+    
+    # Relationships
+    segment_topics: Mapped[List["SegmentTopic"]] = relationship("SegmentTopic", back_populates="topic")
+    
+    def __repr__(self):
+        return f"<Topic(id={self.id}, name='{self.name}')>"
+
+
+class TranscriptSegment(Base):
+    """Main transcript segments table"""
+    __tablename__ = "transcript_segments"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    segment_id: Mapped[str] = mapped_column(String(50), nullable=False, index=True)  # Original segment ID from HTML
+    
+    # Foreign keys
+    video_id: Mapped[int] = mapped_column(Integer, ForeignKey("videos.id"), index=True)
+    speaker_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("speakers.id"), index=True)
+    
+    # Core transcript data
+    speaker_name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
+    transcript_text: Mapped[str] = mapped_column(Text, nullable=False)
+    video_seconds: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    timestamp_start: Mapped[Optional[str]] = mapped_column(String(20))  # e.g., "00:07:02"
+    timestamp_end: Mapped[Optional[str]] = mapped_column(String(20))    # e.g., "00:07:04"
+    duration_seconds: Mapped[Optional[int]] = mapped_column(Integer)
+    
+    # Text metrics
+    word_count: Mapped[int] = mapped_column(Integer, default=0)
+    char_count: Mapped[int] = mapped_column(Integer, default=0)
+    
+    # Sentiment Analysis (multiple algorithms)
+    sentiment_loughran_score: Mapped[Optional[float]] = mapped_column(Float)
+    sentiment_loughran_label: Mapped[Optional[str]] = mapped_column(String(20))
+    sentiment_harvard_score: Mapped[Optional[float]] = mapped_column(Float)
+    sentiment_harvard_label: Mapped[Optional[str]] = mapped_column(String(20))
+    sentiment_vader_score: Mapped[Optional[float]] = mapped_column(Float)
+    sentiment_vader_label: Mapped[Optional[str]] = mapped_column(String(20))
+    
+    # Content Moderation (OpenAI categories)
+    moderation_harassment: Mapped[Optional[float]] = mapped_column(Float)
+    moderation_hate: Mapped[Optional[float]] = mapped_column(Float)
+    moderation_self_harm: Mapped[Optional[float]] = mapped_column(Float)
+    moderation_sexual: Mapped[Optional[float]] = mapped_column(Float)
+    moderation_violence: Mapped[Optional[float]] = mapped_column(Float)
+    moderation_overall_score: Mapped[Optional[float]] = mapped_column(Float)
+    
+    # Readability Metrics
+    flesch_kincaid_grade: Mapped[Optional[float]] = mapped_column(Float)
+    gunning_fog_index: Mapped[Optional[float]] = mapped_column(Float)
+    coleman_liau_index: Mapped[Optional[float]] = mapped_column(Float)
+    automated_readability_index: Mapped[Optional[float]] = mapped_column(Float)
+    smog_index: Mapped[Optional[float]] = mapped_column(Float)
+    flesch_reading_ease: Mapped[Optional[float]] = mapped_column(Float)
+    
+    # Metadata
+    created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
+    updated_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    video: Mapped["Video"] = relationship("Video", back_populates="segments")
+    speaker: Mapped[Optional["Speaker"]] = relationship("Speaker", back_populates="segments")
+    segment_topics: Mapped[List["SegmentTopic"]] = relationship("SegmentTopic", back_populates="segment", cascade="all, delete-orphan")
+    
+    def __repr__(self):
+        return f"<TranscriptSegment(id={self.id}, speaker='{self.speaker_name}', text='{self.transcript_text[:50]}...')>"
+
+
+class SegmentTopic(Base):
+    """Many-to-many relationship between segments and topics with scores"""
+    __tablename__ = "segment_topics"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    segment_id: Mapped[int] = mapped_column(Integer, ForeignKey("transcript_segments.id"), index=True)
+    topic_id: Mapped[int] = mapped_column(Integer, ForeignKey("topics.id"), index=True)
+    
+    # Topic classification scores
+    score: Mapped[float] = mapped_column(Float, nullable=False)
+    magnitude: Mapped[Optional[float]] = mapped_column(Float)
+    confidence: Mapped[Optional[float]] = mapped_column(Float)
+    
+    # Relationships
+    segment: Mapped["TranscriptSegment"] = relationship("TranscriptSegment", back_populates="segment_topics")
+    topic: Mapped["Topic"] = relationship("Topic", back_populates="segment_topics")
+    
+    def __repr__(self):
+        return f"<SegmentTopic(segment_id={self.segment_id}, topic_id={self.topic_id}, score={self.score})>"
+
+
+# Create database indexes for better performance
+Index('idx_segment_video_speaker', TranscriptSegment.video_id, TranscriptSegment.speaker_id)
+Index('idx_segment_video_seconds', TranscriptSegment.video_id, TranscriptSegment.video_seconds)
+Index('idx_segment_sentiment', TranscriptSegment.sentiment_loughran_score, TranscriptSegment.sentiment_vader_score)
+Index('idx_segment_moderation', TranscriptSegment.moderation_overall_score)
+Index('idx_segment_readability', TranscriptSegment.flesch_kincaid_grade, TranscriptSegment.flesch_reading_ease)
+Index('idx_segment_topics_score', SegmentTopic.topic_id, SegmentTopic.score)
+Index('idx_video_date_source', Video.date, Video.source)
+Index('idx_speaker_stats', Speaker.total_segments, Speaker.avg_sentiment)

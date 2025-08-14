@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: political_transcripts_db_prod
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-political_transcripts}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+      - ./backend/migrations/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: political_transcripts_api_prod
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-political_transcripts}
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-["https://yourdomain.com"]}
+      HTML_DATA_DIR: /data/html
+      DEBUG: false
+      LOG_LEVEL: INFO
+    volumes:
+      - ./data:/data
+      - /root/polibase/out/html:/data/html:ro
+    networks:
+      - app_network
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: political_transcripts_web_prod
+    environment:
+      REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:8000}
+      REACT_APP_TITLE: ${REACT_APP_TITLE:-Political Transcript Search}
+    networks:
+      - app_network
+    depends_on:
+      - api
+
+  nginx:
+    image: nginx:alpine
+    container_name: political_transcripts_nginx_prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    networks:
+      - app_network
+    depends_on:
+      - web
+      - api
+
+volumes:
+  postgres_data_prod:
+
+networks:
+  app_network:
+    driver: bridge

@@ -1,0 +1,55 @@
+"""
+Configuration settings for the Political Transcript Search Platform
+"""
+from pydantic_settings import BaseSettings
+from typing import List, Optional
+import os
+
+
+class Settings(BaseSettings):
+    """Application settings"""
+    
+    # Database settings
+    POSTGRES_DB: str = "political_transcripts"
+    POSTGRES_USER: str = "postgres"
+    POSTGRES_PASSWORD: str = "postgres"
+    POSTGRES_HOST: str = "localhost"
+    POSTGRES_PORT: int = 5432
+    DATABASE_URL: Optional[str] = None
+    
+    # API settings
+    API_HOST: str = "0.0.0.0"
+    API_PORT: int = 8000
+    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000"]
+    
+    # Data settings
+    HTML_DATA_DIR: str = "/root/polibase/out/html"
+    PROCESSED_DATA_DIR: str = "./data/processed"
+    UPLOAD_DIR: str = "./data/uploads"
+    
+    # Security
+    SECRET_KEY: str = "your-secret-key-here"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    
+    # Application settings
+    DEBUG: bool = True
+    LOG_LEVEL: str = "INFO"
+    
+    # Search settings
+    MAX_SEARCH_RESULTS: int = 1000
+    DEFAULT_PAGE_SIZE: int = 25
+    
+    @property
+    def database_url(self) -> str:
+        """Build database URL if not provided"""
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+        return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+    
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
+
+
+# Create global settings instance
+settings = Settings()
