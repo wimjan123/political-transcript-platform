@@ -19,6 +19,10 @@ class VideoResponse(BaseModel):
     channel: Optional[str]
     description: Optional[str]
     url: Optional[str]
+    video_thumbnail_url: Optional[str]
+    video_url: Optional[str]
+    vimeo_video_id: Optional[str]
+    vimeo_embed_url: Optional[str]
     created_at: datetime
 
 
