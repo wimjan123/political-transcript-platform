@@ -220,6 +220,35 @@ export const videosAPI = {
   deleteVideo: async (videoId: number): Promise<void> => {
     await api.delete(`/api/videos/${videoId}`);
   },
+  
+  // Download a single clip (mp4)
+  downloadClip: async (
+    videoId: number,
+    startSeconds: number,
+    durationSeconds: number,
+    sourceUrl?: string
+  ): Promise<Blob> => {
+    const response = await api.post(
+      `/api/videos/${videoId}/clip`,
+      { start_seconds: startSeconds, duration_seconds: durationSeconds, source_url: sourceUrl },
+      { responseType: 'blob' }
+    );
+    return response.data;
+  },
+
+  // Download multiple clips as a zip
+  downloadClipsZip: async (
+    videoId: number,
+    items: Array<{ start_seconds: number; duration_seconds: number; label?: string }>,
+    sourceUrl?: string
+  ): Promise<Blob> => {
+    const response = await api.post(
+      `/api/videos/${videoId}/clips.zip`,
+      { items, source_url: sourceUrl },
+      { responseType: 'blob' }
+    );
+    return response.data;
+  },
 };
 
 // Upload/Import API

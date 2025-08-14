@@ -8,7 +8,7 @@ import os
 from contextlib import asynccontextmanager
 
 from .database import init_db
-from .routes import search, analytics, videos, upload
+from .routes import search, analytics, videos, upload, clips
 from .config import settings
 
 
@@ -45,6 +45,7 @@ app.include_router(search.router, prefix="/api/search", tags=["search"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
 app.include_router(videos.router, prefix="/api/videos", tags=["videos"])
 app.include_router(upload.router, prefix="/api/upload", tags=["upload"])
+app.include_router(clips.router, prefix="/api/videos", tags=["clips"])
 
 
 @app.get("/")

@@ -165,6 +165,36 @@ const VideoDetailPage: React.FC = () => {
     downloadFile(blob as unknown as Blob, `${safeTitle}_vimeo_links.txt`);
   };
 
+  const exportSelectedClips = async () => {
+    if (!video) return;
+    const selected = segments.filter(s => selectedSegmentIds.has(s.id));
+    if (selected.length === 0) return;
+    // Build items with durations; fall back to next segment start or 15s
+    const items = selected.map((s, idx) => {
+      const start = Math.max(0, s.video_seconds || 0);
+      let duration = s.duration_seconds || 0;
+      if (!duration) {
+        const i = segments.findIndex(ss => ss.id === s.id);
+        const next = i >= 0 ? segments[i + 1] : undefined;
+        if (next && typeof next.video_seconds === 'number') {
+          duration = Math.max(1, (next.video_seconds as number) - start);
+        } else {
+          duration = 15; // sensible default
+        }
+      }
+      const label = `${formatTimestamp(start)}_${(s.speaker_name || 'segment').replace(/[^a-z0-9-_]+/gi, '_')}`;
+      return { start_seconds: start, duration_seconds: duration, label };
+    });
+    try {
+      const blob = await videosAPI.downloadClipsZip(video.id, items);
+      const safeTitle = (video.title || `video-${video.id}`).replace(/[^a-z0-9-_]+/gi, '_');
+      downloadFile(blob, `${safeTitle}_clips.zip`);
+    } catch (e) {
+      console.error('Failed to export clips', e);
+      alert('Failed to generate clips. Ensure the server has ffmpeg and a downloadable video source.');
+    }
+  };
+
   // After segments load, scroll to targeted segment/time once
   useEffect(() => {
     if (segments.length === 0 || autoScrolled) return;
@@ -671,6 +701,13 @@ const VideoDetailPage: React.FC = () => {
                       className={`btn btn-primary ${selectedSegmentIds.size === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       Export Selected (.txt)
+                    </button>
+                    <button
+                      onClick={exportSelectedClips}
+                      disabled={selectedSegmentIds.size === 0}
+                      className={`btn btn-primary ${selectedSegmentIds.size === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      Export Selected (clips)
                     </button>
                     <button
                       onClick={exportSelectedVimeoLinks}
