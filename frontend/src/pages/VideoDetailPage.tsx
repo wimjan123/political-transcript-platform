@@ -125,6 +125,20 @@ const VideoDetailPage: React.FC = () => {
     }
   }, [segments, autoScrolled, urlParams]);
 
+  // If a time parameter is provided and the target is beyond current page,
+  // prefetch more pages until the time is within range or no more pages.
+  useEffect(() => {
+    const tParam = urlParams.get('t');
+    if (!tParam) return;
+    const tNum = parseInt(tParam, 10);
+    if (Number.isNaN(tNum) || segments.length === 0) return;
+
+    const last = segments[segments.length - 1];
+    if (last && last.video_seconds < tNum && hasMoreSegments && !loadingSegments) {
+      loadMoreSegments();
+    }
+  }, [segments, urlParams, hasMoreSegments, loadingSegments]);
+
   const loadMoreSegments = () => {
     if (hasMoreSegments && !loadingSegments) {
       loadSegments();
