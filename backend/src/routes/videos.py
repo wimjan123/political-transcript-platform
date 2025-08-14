@@ -9,7 +9,7 @@ from typing import Optional, List
 from datetime import date
 
 from ..database import get_db
-from ..models import Video, TranscriptSegment, Speaker
+from ..models import Video, TranscriptSegment, Speaker, SegmentTopic
 from ..schemas import VideoResponse, VideoCreateRequest, VideoUpdateRequest, TranscriptSegmentResponse
 
 router = APIRouter()
@@ -123,7 +123,8 @@ async def get_video_segments(
         query = select(TranscriptSegment).options(
             selectinload(TranscriptSegment.video),
             selectinload(TranscriptSegment.speaker),
-            selectinload(TranscriptSegment.segment_topics)
+            # Ensure topic relationship is eagerly loaded to avoid lazy-load issues
+            selectinload(TranscriptSegment.segment_topics).selectinload(SegmentTopic.topic)
         ).where(TranscriptSegment.video_id == video_id)
         
         # Apply speaker filter

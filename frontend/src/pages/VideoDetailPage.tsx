@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { 
   ArrowLeft, Video, Calendar, Clock, User, MessageSquare, TrendingUp, 
   BarChart3, Search, Play, ExternalLink
@@ -9,6 +9,7 @@ import type { Video as VideoType, TranscriptSegment, VideoStats } from '../types
 
 const VideoDetailPage: React.FC = () => {
   const { videoId } = useParams<{ videoId: string }>();
+  const [urlParams] = useSearchParams();
   const [video, setVideo] = useState<VideoType | null>(null);
   const [segments, setSegments] = useState<TranscriptSegment[]>([]);
   const [stats, setStats] = useState<VideoStats | null>(null);
@@ -19,6 +20,8 @@ const VideoDetailPage: React.FC = () => {
   const [speakerFilter, setSpeakerFilter] = useState('');
   const [hasMoreSegments, setHasMoreSegments] = useState(true);
   const [loadingSegments, setLoadingSegments] = useState(false);
+  const [highlightSegmentId, setHighlightSegmentId] = useState<number | null>(null);
+  const [autoScrolled, setAutoScrolled] = useState(false);
 
   useEffect(() => {
     if (videoId) {
@@ -84,6 +87,42 @@ const VideoDetailPage: React.FC = () => {
       setLoadingSegments(false);
     }
   };
+
+  // After segments load, scroll to targeted segment/time once
+  useEffect(() => {
+    if (segments.length === 0 || autoScrolled) return;
+
+    const tParam = urlParams.get('t');
+    const segParam = urlParams.get('segment_id');
+    let targetId: number | null = null;
+
+    if (segParam) {
+      const idNum = parseInt(segParam, 10);
+      if (!Number.isNaN(idNum)) {
+        targetId = idNum;
+      }
+    }
+
+    if (targetId === null && tParam) {
+      const tNum = parseInt(tParam, 10);
+      if (!Number.isNaN(tNum)) {
+        const candidate = segments.find(s => s.video_seconds >= tNum) || segments[0];
+        if (candidate) targetId = candidate.id;
+      }
+    }
+
+    if (targetId !== null) {
+      setHighlightSegmentId(targetId);
+      // Scroll into view after paint
+      setTimeout(() => {
+        const el = document.getElementById(`segment-${targetId}`);
+        if (el && 'scrollIntoView' in el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+      setAutoScrolled(true);
+    }
+  }, [segments, autoScrolled, urlParams]);
 
   const loadMoreSegments = () => {
     if (hasMoreSegments && !loadingSegments) {
@@ -427,7 +466,12 @@ const VideoDetailPage: React.FC = () => {
             {segments.map((segment) => (
               <div
                 key={segment.id}
-                className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
+                id={`segment-${segment.id}`}
+                className={`border rounded-lg p-4 transition-colors ${
+                  highlightSegmentId === segment.id
+                    ? 'border-amber-300 bg-amber-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
               >
                 {/* Segment Header */}
                 <div className="flex items-center justify-between mb-3">

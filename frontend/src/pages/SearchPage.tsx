@@ -206,7 +206,7 @@ const SearchPage: React.FC = () => {
             {segment.video && (
               <div className="text-sm text-gray-600 mb-2">
                 <Link
-                  to={`/videos/${segment.video.id}`}
+                  to={`/videos/${segment.video.id}?t=${segment.video_seconds}&segment_id=${segment.id}`}
                   className="font-medium text-primary-600 hover:text-primary-700 hover:underline"
                 >
                   {segment.video.title}
@@ -351,7 +351,7 @@ const SearchPage: React.FC = () => {
             <div className="flex items-center space-x-4">
               {segment.video && (
                 <Link
-                  to={`/videos/${segment.video.id}`}
+                  to={`/videos/${segment.video.id}?t=${segment.video_seconds}&segment_id=${segment.id}`}
                   className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 transition-colors"
                 >
                   <Play className="h-4 w-4 mr-1" />
@@ -360,7 +360,7 @@ const SearchPage: React.FC = () => {
               )}
               {segment.video && (
                 <Link
-                  to={`/videos/${segment.video.id}`}
+                  to={`/videos/${segment.video.id}?t=${segment.video_seconds}&segment_id=${segment.id}`}
                   className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 transition-colors"
                 >
                   <ExternalLink className="h-4 w-4 mr-1" />
