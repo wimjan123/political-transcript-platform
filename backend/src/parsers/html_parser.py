@@ -60,7 +60,11 @@ class TranscriptHTMLParser:
             'source': '',
             'channel': '',
             'description': '',
-            'url': ''
+            'url': '',
+            'format': '',
+            'candidate': '',
+            'place': '',
+            'record_type': ''
         }
         
         # Extract title from meta tag or title tag
@@ -72,16 +76,55 @@ class TranscriptHTMLParser:
             if title_tag:
                 metadata['title'] = title_tag.get_text().replace('Roll Call Factba.se - ', '')
         
-        # Extract date from filename (e.g., "may-16-2025")
-        date_match = re.search(r'([a-z]+-\d{1,2}-\d{4})', filename)
-        if date_match:
-            try:
-                date_str = date_match.group(1)
-                # Convert to proper format for parsing
-                date_str = date_str.replace('-', ' ')
-                metadata['date'] = datetime.strptime(date_str, '%B %d %Y').date()
-            except ValueError:
-                logger.warning(f"Could not parse date from filename: {filename}")
+        # Extract date from filename (e.g., "may-16-2025", "april-30-2020", "february-6-2019")
+        date_patterns = [
+            r'([a-z]+-\d{1,2}-\d{4})',  # month-day-year
+            r'(\d{1,2}-\d{1,2}-\d{4})',  # mm-dd-yyyy
+            r'(\d{4}-\d{1,2}-\d{1,2})',  # yyyy-mm-dd
+        ]
+        
+        for pattern in date_patterns:
+            date_match = re.search(pattern, filename)
+            if date_match:
+                try:
+                    date_str = date_match.group(1)
+                    
+                    # Handle month-day-year format
+                    if re.match(r'[a-z]+-\d{1,2}-\d{4}', date_str):
+                        date_str = date_str.replace('-', ' ')
+                        metadata['date'] = datetime.strptime(date_str, '%B %d %Y').date()
+                    # Handle mm-dd-yyyy format  
+                    elif re.match(r'\d{1,2}-\d{1,2}-\d{4}', date_str):
+                        metadata['date'] = datetime.strptime(date_str, '%m-%d-%Y').date()
+                    # Handle yyyy-mm-dd format
+                    elif re.match(r'\d{4}-\d{1,2}-\d{1,2}', date_str):
+                        metadata['date'] = datetime.strptime(date_str, '%Y-%m-%d').date()
+                    break
+                except ValueError:
+                    logger.warning(f"Could not parse date from filename: {filename}")
+                    continue
+        
+        # If no date found in filename, try to extract from title or meta tags
+        if not metadata['date']:
+            # Try to extract from title - look for patterns like "February 6, 2019" or "August 13, 2025"
+            title = metadata.get('title', '')
+            date_in_title = re.search(r'([A-Z][a-z]+\s+\d{1,2},\s+\d{4})', title)
+            if date_in_title:
+                try:
+                    metadata['date'] = datetime.strptime(date_in_title.group(1), '%B %d, %Y').date()
+                except ValueError:
+                    pass
+            
+            # Try to extract from meta modified time
+            if not metadata['date']:
+                modified_tag = soup.find('meta', {'property': 'article:modified_time'})
+                if modified_tag:
+                    try:
+                        modified_time = modified_tag.get('content', '')
+                        # Parse ISO format: 2024-04-22T15:47:56+00:00
+                        metadata['date'] = datetime.fromisoformat(modified_time.replace('Z', '+00:00')).date()
+                    except ValueError:
+                        pass
         
         # Extract source/channel from filename or title
         if 'fox-news' in filename:
@@ -98,6 +141,106 @@ class TranscriptHTMLParser:
             metadata['source'] = 'Newsmax'
         elif 'white-house' in filename or 'press-briefing' in filename:
             metadata['source'] = 'White House'
+        
+        # Extract event format from filename
+        if 'political-rally' in filename or 'rally' in filename:
+            metadata['format'] = 'Political Rally'
+        elif 'press-briefing' in filename or 'briefing' in filename:
+            metadata['format'] = 'Press Briefing'
+        elif 'interview' in filename:
+            metadata['format'] = 'Interview'
+        elif 'speech' in filename:
+            metadata['format'] = 'Speech'
+        elif 'remarks' in filename:
+            metadata['format'] = 'Remarks'
+        elif 'debate' in filename:
+            metadata['format'] = 'Debate'
+        elif 'town-hall' in filename:
+            metadata['format'] = 'Town Hall'
+        elif 'meeting' in filename:
+            metadata['format'] = 'Meeting'
+        elif 'conference' in filename:
+            metadata['format'] = 'Conference'
+        
+        # Extract candidate from filename
+        if 'donald-trump' in filename or 'trump' in filename:
+            metadata['candidate'] = 'Donald Trump'
+        elif 'joe-biden' in filename or 'biden' in filename:
+            metadata['candidate'] = 'Joe Biden'
+        elif 'kamala-harris' in filename or 'harris' in filename:
+            metadata['candidate'] = 'Kamala Harris'
+        elif 'mike-pence' in filename or 'pence' in filename:
+            metadata['candidate'] = 'Mike Pence'
+        elif 'ron-desantis' in filename or 'desantis' in filename:
+            metadata['candidate'] = 'Ron DeSantis'
+        elif 'nikki-haley' in filename or 'haley' in filename:
+            metadata['candidate'] = 'Nikki Haley'
+        
+        # Extract place from filename (location patterns)
+        place_patterns = [
+            (r'white-house', 'White House'),
+            (r'mar-a-lago', 'Mar-a-Lago'),
+            (r'trump-tower', 'Trump Tower'),
+            (r'oval-office', 'Oval Office'),
+            (r'rose-garden', 'Rose Garden'),
+            (r'camp-david', 'Camp David'),
+            # State patterns
+            (r'florida', 'Florida'),
+            (r'texas', 'Texas'),
+            (r'california', 'California'),
+            (r'new-york', 'New York'),
+            (r'nevada', 'Nevada'),
+            (r'pennsylvania', 'Pennsylvania'),
+            (r'georgia', 'Georgia'),
+            (r'arizona', 'Arizona'),
+            (r'michigan', 'Michigan'),
+            (r'wisconsin', 'Wisconsin'),
+            (r'north-carolina', 'North Carolina'),
+            (r'ohio', 'Ohio'),
+            (r'virginia', 'Virginia'),
+            (r'iowa', 'Iowa'),
+            (r'new-hampshire', 'New Hampshire'),
+            # City patterns
+            (r'miami', 'Miami'),
+            (r'tampa', 'Tampa'),
+            (r'orlando', 'Orlando'),
+            (r'phoenix', 'Phoenix'),
+            (r'las-vegas', 'Las Vegas'),
+            (r'atlanta', 'Atlanta'),
+            (r'dallas', 'Dallas'),
+            (r'houston', 'Houston'),
+            (r'philadelphia', 'Philadelphia'),
+            (r'detroit', 'Detroit'),
+            (r'milwaukee', 'Milwaukee'),
+            (r'charlotte', 'Charlotte'),
+            (r'columbus', 'Columbus'),
+            (r'richmond', 'Richmond'),
+            (r'minden', 'Minden'),
+            (r'waco', 'Waco'),
+            (r'greenville', 'Greenville'),
+            (r'youngstown', 'Youngstown'),
+            (r'bedminster', 'Bedminster'),
+            (r'washington', 'Washington'),
+        ]
+        
+        for pattern, place_name in place_patterns:
+            if re.search(pattern, filename):
+                metadata['place'] = place_name
+                break
+        
+        # Extract record type from format and context
+        if metadata['format'] in ['Press Briefing', 'Remarks']:
+            metadata['record_type'] = 'Official Statement'
+        elif metadata['format'] in ['Political Rally', 'Speech']:
+            metadata['record_type'] = 'Campaign Event'
+        elif metadata['format'] == 'Interview':
+            metadata['record_type'] = 'Media Interview'
+        elif metadata['format'] == 'Debate':
+            metadata['record_type'] = 'Political Debate'
+        elif metadata['format'] in ['Meeting', 'Conference']:
+            metadata['record_type'] = 'Official Meeting'
+        elif metadata['format'] == 'Town Hall':
+            metadata['record_type'] = 'Public Forum'
         
         # Extract description
         desc_tag = soup.find('meta', {'name': 'description'})
@@ -238,6 +381,10 @@ class TranscriptHTMLParser:
         readability_data = self._extract_readability_data(details_div)
         analytics_data.update(readability_data)
         
+        # Extract stresslens data
+        stresslens_data = self._extract_stresslens_data(segment_div)
+        analytics_data.update(stresslens_data)
+        
         return analytics_data
     
     def _extract_sentiment_data(self, details_div: Tag) -> Dict[str, Any]:
@@ -318,9 +465,17 @@ class TranscriptHTMLParser:
                     moderation_data['moderation_violence'] = float(score_match.group(1))
         
         # Calculate overall moderation score
-        scores = [v for k, v in moderation_data.items() if k.startswith('moderation_')]
+        scores = [v for k, v in moderation_data.items() if k.startswith('moderation_') and not k.endswith('_flag')]
         if scores:
             moderation_data['moderation_overall_score'] = max(scores)
+        
+        # Set moderation flags based on scores (threshold: 0.3)
+        threshold = 0.3
+        moderation_data['moderation_harassment_flag'] = moderation_data.get('moderation_harassment', 0) >= threshold
+        moderation_data['moderation_hate_flag'] = moderation_data.get('moderation_hate', 0) >= threshold
+        moderation_data['moderation_violence_flag'] = moderation_data.get('moderation_violence', 0) >= threshold
+        moderation_data['moderation_sexual_flag'] = moderation_data.get('moderation_sexual', 0) >= threshold
+        moderation_data['moderation_selfharm_flag'] = moderation_data.get('moderation_self_harm', 0) >= threshold
         
         return moderation_data
     
@@ -382,3 +537,72 @@ class TranscriptHTMLParser:
                     readability_data['flesch_reading_ease'] = float(score_match.group(1))
         
         return readability_data
+    
+    def _extract_stresslens_data(self, segment_div: Tag) -> Dict[str, Any]:
+        """Extract stresslens stress analytics from HTML"""
+        stresslens_data = {}
+        
+        # Look for stresslens display in the segment
+        stress_divs = segment_div.find_all('div', class_='hidden sm:block')
+        
+        for div in stress_divs:
+            text_content = div.get_text(strip=True)
+            
+            # Check for "No StressLens" case
+            if 'No StressLens' in text_content:
+                continue
+                
+            # Look for stress score patterns
+            # Patterns might be like "High Stress 0.85" or "Medium Stress 0.45"
+            stress_patterns = [
+                (r'High Stress\s+([\d.]+)', 'high'),
+                (r'Medium Stress\s+([\d.]+)', 'medium'), 
+                (r'Low Stress\s+([\d.]+)', 'low'),
+                (r'Stress Score\s+([\d.]+)', 'neutral'),
+                (r'StressLens\s+([\d.]+)', 'neutral'),
+                (r'Stress\s+([\d.]+)', 'neutral')
+            ]
+            
+            for pattern, level in stress_patterns:
+                match = re.search(pattern, text_content, re.IGNORECASE)
+                if match:
+                    score = float(match.group(1))
+                    stresslens_data['stresslens_score'] = score
+                    
+                    # Assign rank based on score level
+                    if level == 'high' or score >= 0.7:
+                        stresslens_data['stresslens_rank'] = 1
+                    elif level == 'medium' or score >= 0.4:
+                        stresslens_data['stresslens_rank'] = 2
+                    elif level == 'low' or score >= 0.2:
+                        stresslens_data['stresslens_rank'] = 3
+                    else:
+                        stresslens_data['stresslens_rank'] = 4
+                    break
+        
+        # Also check for stress level indicators in segment header
+        stress_indicators = segment_div.find_all('div', string=re.compile(r'.*[Ss]tress.*'))
+        for indicator in stress_indicators:
+            text = indicator.get_text(strip=True)
+            if 'No StressLens' not in text:
+                # Try to extract numeric values from any stress-related text
+                numbers = re.findall(r'\d+\.?\d*', text)
+                if numbers:
+                    try:
+                        score = float(numbers[0])
+                        if 0 <= score <= 1:  # Valid stress score range
+                            stresslens_data['stresslens_score'] = score
+                            # Calculate rank based on score
+                            if score >= 0.7:
+                                stresslens_data['stresslens_rank'] = 1
+                            elif score >= 0.4:
+                                stresslens_data['stresslens_rank'] = 2
+                            elif score >= 0.2:
+                                stresslens_data['stresslens_rank'] = 3
+                            else:
+                                stresslens_data['stresslens_rank'] = 4
+                            break
+                    except ValueError:
+                        continue
+        
+        return stresslens_data
