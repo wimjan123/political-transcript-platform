@@ -46,8 +46,8 @@ deploy: ## Deploy to production
 
 import-data: ## Import HTML data from source directory
 	@echo "$(GREEN)Importing HTML transcript data...$(NC)"
-	@docker compose run --rm api python scripts/import_html.py
-	@echo "$(GREEN)Data import complete!$(NC)"
+	@curl -X POST "http://localhost:8000/api/upload/import-html?force_reimport=false"
+	@echo "$(GREEN)Data import started! Check status with: curl http://localhost:8000/api/upload/import-status$(NC)"
 
 test: ## Run tests
 	@echo "$(GREEN)Running tests...$(NC)"
