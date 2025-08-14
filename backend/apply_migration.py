@@ -51,6 +51,21 @@ def apply_migration():
         else:
             print("✓ video_seconds column is already nullable or does not exist")
         
+        # Check if video_thumbnail_url column exists
+        cursor.execute("""
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'videos' 
+            AND column_name = 'video_thumbnail_url';
+        """)
+        
+        if not cursor.fetchone():
+            print("Adding video_thumbnail_url column to videos table...")
+            cursor.execute("ALTER TABLE videos ADD COLUMN video_thumbnail_url VARCHAR(500);")
+            conn.commit()
+            print("✓ Migration applied successfully: video_thumbnail_url column added")
+        else:
+            print("✓ video_thumbnail_url column already exists")
+        
         cursor.close()
         conn.close()
         

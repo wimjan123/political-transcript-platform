@@ -23,6 +23,7 @@ class Video(Base):
     channel: Mapped[Optional[str]] = mapped_column(String(100), index=True)
     description: Mapped[Optional[str]] = mapped_column(Text)
     url: Mapped[Optional[str]] = mapped_column(String(500))
+    video_thumbnail_url: Mapped[Optional[str]] = mapped_column(String(500))
     
     # Metadata
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())

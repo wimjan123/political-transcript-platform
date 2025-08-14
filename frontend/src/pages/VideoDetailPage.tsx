@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { 
   ArrowLeft, Video, Calendar, Clock, User, MessageSquare, TrendingUp, 
-  BarChart3, Search, Play, ExternalLink
+  BarChart3, Search, Play, ExternalLink, Shield, AlertTriangle, Eye
 } from 'lucide-react';
 import { videosAPI, formatDate, formatTimestamp, getSentimentColor, getSentimentLabel } from '../services/api';
 import type { Video as VideoType, TranscriptSegment, VideoStats } from '../types';
@@ -193,6 +193,44 @@ const VideoDetailPage: React.FC = () => {
     return colors[source] || 'bg-gray-100 text-gray-800';
   };
 
+  const getModerationLevel = (segment: TranscriptSegment): { level: 'low' | 'medium' | 'high' | 'none', score: number, categories: string[] } => {
+    const moderationScores = [
+      segment.moderation_harassment,
+      segment.moderation_hate,
+      segment.moderation_self_harm,
+      segment.moderation_sexual,
+      segment.moderation_violence
+    ].filter((score): score is number => typeof score === 'number');
+
+    if (moderationScores.length === 0) {
+      return { level: 'none', score: 0, categories: [] };
+    }
+
+    const maxScore = Math.max(...moderationScores);
+    const categories = [];
+
+    if (typeof segment.moderation_harassment === 'number' && segment.moderation_harassment > 0.3) categories.push('Harassment');
+    if (typeof segment.moderation_hate === 'number' && segment.moderation_hate > 0.3) categories.push('Hate');
+    if (typeof segment.moderation_self_harm === 'number' && segment.moderation_self_harm > 0.3) categories.push('Self-harm');
+    if (typeof segment.moderation_sexual === 'number' && segment.moderation_sexual > 0.3) categories.push('Sexual');
+    if (typeof segment.moderation_violence === 'number' && segment.moderation_violence > 0.3) categories.push('Violence');
+
+    if (maxScore >= 0.7) return { level: 'high', score: maxScore, categories };
+    if (maxScore >= 0.4) return { level: 'medium', score: maxScore, categories };
+    if (maxScore >= 0.1) return { level: 'low', score: maxScore, categories };
+    return { level: 'none', score: maxScore, categories };
+  };
+
+  const getReadabilityLabel = (score?: number | null) => {
+    if (typeof score !== 'number') return 'N/A';
+    
+    if (score <= 6) return 'Elementary';
+    if (score <= 8) return 'Middle School';
+    if (score <= 12) return 'High School';
+    if (score <= 16) return 'College';
+    return 'Graduate';
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -236,6 +274,21 @@ const VideoDetailPage: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-8">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
+              {/* Video Thumbnail */}
+              {video.video_thumbnail_url && (
+                <div className="mb-6">
+                  <img 
+                    src={video.video_thumbnail_url} 
+                    alt={`Thumbnail for ${video.title}`}
+                    className="w-full max-w-md h-auto rounded-lg shadow-sm border border-gray-200"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
+              
               <h1 className="text-3xl font-bold text-gray-900 mb-4">{video.title}</h1>
               
               {/* Video Metadata */}
@@ -535,21 +588,137 @@ const VideoDetailPage: React.FC = () => {
                   {segment.transcript_text}
                 </div>
 
-                {/* Segment Metadata */}
-                <div className="flex items-center space-x-4 text-sm text-gray-500">
-                  <span>{segment.word_count} words</span>
-                  
-                  {typeof segment.sentiment_loughran_score === 'number' && (
-                    <div className="flex items-center space-x-1">
-                      <TrendingUp className="h-4 w-4" />
-                      <span className={getSentimentColor(segment.sentiment_loughran_score)}>
-                        {getSentimentLabel(segment.sentiment_loughran_score)}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {typeof segment.flesch_kincaid_grade === 'number' && (
-                    <span>Grade: {segment.flesch_kincaid_grade.toFixed(1)}</span>
+                {/* Enhanced Segment Metadata */}
+                <div className="space-y-3">
+                  {/* Basic Info Row */}
+                  <div className="flex items-center space-x-4 text-sm text-gray-500">
+                    <span>{segment.word_count} words</span>
+                    
+                    {typeof segment.sentiment_loughran_score === 'number' && (
+                      <div className="flex items-center space-x-1">
+                        <TrendingUp className="h-4 w-4" />
+                        <span className={getSentimentColor(segment.sentiment_loughran_score)}>
+                          {getSentimentLabel(segment.sentiment_loughran_score)} ({segment.sentiment_loughran_score.toFixed(3)})
+                        </span>
+                      </div>
+                    )}
+                    
+                    {typeof segment.flesch_kincaid_grade === 'number' && (
+                      <div className="flex items-center space-x-1">
+                        <BarChart3 className="h-4 w-4" />
+                        <span>{getReadabilityLabel(segment.flesch_kincaid_grade)} (Grade {segment.flesch_kincaid_grade.toFixed(1)})</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Content Moderation Warning */}
+                  {(() => {
+                    const moderation = getModerationLevel(segment);
+                    if (moderation.level === 'none') return null;
+                    
+                    const levelColors = {
+                      low: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+                      medium: 'bg-orange-50 border-orange-200 text-orange-800',
+                      high: 'bg-red-50 border-red-200 text-red-800'
+                    };
+                    
+                    return (
+                      <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border text-sm ${levelColors[moderation.level]}`}>
+                        <Shield className="h-4 w-4" />
+                        <span>
+                          Content Advisory ({moderation.level}): {moderation.categories.join(', ')} 
+                          {moderation.score > 0 && ` (${(moderation.score * 100).toFixed(1)}%)`}
+                        </span>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Detailed Analytics (Expandable) */}
+                  {(typeof segment.sentiment_harvard_score === 'number' || 
+                    typeof segment.sentiment_vader_score === 'number' ||
+                    typeof segment.flesch_reading_ease === 'number') && (
+                    <details className="text-sm">
+                      <summary className="cursor-pointer text-gray-500 hover:text-gray-700 select-none">
+                        <Eye className="h-4 w-4 inline mr-2" />
+                        View detailed analytics
+                      </summary>
+                      <div className="mt-3 space-y-2 pl-6 border-l border-gray-200">
+                        {/* Additional Sentiment Scores */}
+                        {typeof segment.sentiment_harvard_score === 'number' && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600">Harvard IV Sentiment:</span>
+                            <span className={getSentimentColor(segment.sentiment_harvard_score)}>
+                              {segment.sentiment_harvard_score.toFixed(3)} ({segment.sentiment_harvard_label})
+                            </span>
+                          </div>
+                        )}
+                        
+                        {typeof segment.sentiment_vader_score === 'number' && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600">VADER Sentiment:</span>
+                            <span className={getSentimentColor(segment.sentiment_vader_score)}>
+                              {segment.sentiment_vader_score.toFixed(3)} ({segment.sentiment_vader_label})
+                            </span>
+                          </div>
+                        )}
+                        
+                        {/* Readability Metrics */}
+                        {typeof segment.flesch_reading_ease === 'number' && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600">Reading Ease:</span>
+                            <span>{segment.flesch_reading_ease.toFixed(1)}</span>
+                          </div>
+                        )}
+                        
+                        {typeof segment.gunning_fog_index === 'number' && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600">Gunning Fog:</span>
+                            <span>{segment.gunning_fog_index.toFixed(1)}</span>
+                          </div>
+                        )}
+                        
+                        {typeof segment.coleman_liau_index === 'number' && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600">Coleman-Liau:</span>
+                            <span>{segment.coleman_liau_index.toFixed(1)}</span>
+                          </div>
+                        )}
+                        
+                        {/* Moderation Detailed Scores */}
+                        {[
+                          { key: 'moderation_harassment', label: 'Harassment' },
+                          { key: 'moderation_hate', label: 'Hate' },
+                          { key: 'moderation_self_harm', label: 'Self-harm' },
+                          { key: 'moderation_sexual', label: 'Sexual' },
+                          { key: 'moderation_violence', label: 'Violence' }
+                        ].map(({ key, label }) => {
+                          const score = segment[key as keyof TranscriptSegment] as number;
+                          if (typeof score !== 'number') return null;
+                          return (
+                            <div key={key} className="flex items-center justify-between">
+                              <span className="text-gray-600">{label}:</span>
+                              <span className={score > 0.5 ? 'text-red-600 font-medium' : score > 0.3 ? 'text-orange-600' : ''}>
+                                {(score * 100).toFixed(1)}%
+                              </span>
+                            </div>
+                          );
+                        })}
+                        
+                        {/* Topic Information */}
+                        {segment.segment_topics && segment.segment_topics.length > 0 && (
+                          <div className="pt-2 border-t border-gray-200">
+                            <span className="text-gray-600 block mb-2">Topics:</span>
+                            <div className="flex flex-wrap gap-1">
+                              {segment.segment_topics.map((topicData, index) => (
+                                <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                  {topicData.topic.name} ({(topicData.score * 100).toFixed(0)}%)
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </details>
                   )}
                 </div>
               </div>

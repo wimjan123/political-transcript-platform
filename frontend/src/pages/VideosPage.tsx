@@ -273,6 +273,21 @@ const VideosPage: React.FC = () => {
                 className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start justify-between">
+                  {/* Video Thumbnail */}
+                  {video.video_thumbnail_url && (
+                    <div className="flex-shrink-0 mr-6">
+                      <img 
+                        src={video.video_thumbnail_url} 
+                        alt={`Thumbnail for ${video.title}`}
+                        className="w-32 h-24 object-cover rounded-lg border border-gray-200"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+                  
                   <div className="flex-1 min-w-0">
                     {/* Video Header */}
                     <div className="flex items-start justify-between mb-3">

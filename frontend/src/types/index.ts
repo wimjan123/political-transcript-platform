@@ -9,6 +9,7 @@ export interface Video {
   channel?: string;
   description?: string;
   url?: string;
+  video_thumbnail_url?: string;
   created_at: string;
 }
 

@@ -109,6 +109,13 @@ class TranscriptHTMLParser:
         if url_tag:
             metadata['url'] = url_tag.get('content', '')
         
+        # Extract video thumbnail URL
+        video_thumb_tag = soup.find('meta', {'name': 'twitter:image'})
+        if video_thumb_tag:
+            thumb_url = video_thumb_tag.get('content', '')
+            if 'media-cdn.factba.se' in thumb_url:
+                metadata['video_thumbnail_url'] = thumb_url
+        
         return metadata
     
     def _extract_transcript_segments(self, soup: BeautifulSoup) -> List[Dict[str, Any]]:
