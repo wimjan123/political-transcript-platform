@@ -4,7 +4,7 @@ import {
   ArrowLeft, Video, Calendar, Clock, User, MessageSquare, TrendingUp, 
   BarChart3, Search, Play, ExternalLink, Shield, AlertTriangle, Eye
 } from 'lucide-react';
-import { videosAPI, formatDate, formatTimestamp, getSentimentColor, getSentimentLabel } from '../services/api';
+import { videosAPI, formatDate, formatTimestamp, getSentimentColor, getSentimentLabel, downloadFile } from '../services/api';
 import VimeoEmbed from '../components/VimeoEmbed';
 import type { Video as VideoType, TranscriptSegment, VideoStats } from '../types';
 
@@ -23,6 +23,7 @@ const VideoDetailPage: React.FC = () => {
   const [loadingSegments, setLoadingSegments] = useState(false);
   const [highlightSegmentId, setHighlightSegmentId] = useState<number | null>(null);
   const [autoScrolled, setAutoScrolled] = useState(false);
+  const [selectedSegmentIds, setSelectedSegmentIds] = useState<Set<number>>(new Set());
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -73,6 +74,7 @@ const VideoDetailPage: React.FC = () => {
       if (reset) {
         setSegments(segmentsData);
         setSegmentsPage(1);
+        setSelectedSegmentIds(new Set());
       } else {
         setSegments(prev => [...prev, ...segmentsData]);
       }
@@ -88,6 +90,39 @@ const VideoDetailPage: React.FC = () => {
     } finally {
       setLoadingSegments(false);
     }
+  };
+
+  const toggleSelectSegment = (id: number) => {
+    setSelectedSegmentIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAllVisible = () => {
+    setSelectedSegmentIds(prev => {
+      const next = new Set(prev);
+      segments.forEach(s => next.add(s.id));
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedSegmentIds(new Set());
+
+  const exportSelectedTxt = () => {
+    if (!video) return;
+    const selected = segments.filter(s => selectedSegmentIds.has(s.id));
+    if (selected.length === 0) return;
+    const lines = selected.map(s => {
+      const ts = formatTimestamp(s.video_seconds);
+      const speaker = s.speaker_name || 'Unknown';
+      return `[${ts}] ${speaker}: ${s.transcript_text}`;
+    });
+    const blob = new Blob([lines.join('\n\n') + '\n'], { type: 'text/plain;charset=utf-8' });
+    const safeTitle = (video.title || `video-${video.id}`).replace(/[^a-z0-9-_]+/gi, '_');
+    downloadFile(blob as unknown as Blob, `${safeTitle}_segments.txt`);
   };
 
   // After segments load, scroll to targeted segment/time once
@@ -343,18 +378,24 @@ const VideoDetailPage: React.FC = () => {
                   <Search className="h-4 w-4 mr-2" />
                   Search This Video
                 </Link>
-                
-                {video.video_url && (
-                  <a
-                    href={video.video_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-primary mr-4"
-                  >
-                    <Play className="h-4 w-4 mr-2" />
-                    Watch Video
-                  </a>
-                )}
+
+                {(() => {
+                  const vimeoWatchUrl = video.vimeo_video_id
+                    ? `https://vimeo.com/${video.vimeo_video_id}`
+                    : (video.vimeo_embed_url || video.video_url);
+                  if (!vimeoWatchUrl) return null;
+                  return (
+                    <a
+                      href={vimeoWatchUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-primary mr-4"
+                    >
+                      <Play className="h-4 w-4 mr-2" />
+                      Watch Video
+                    </a>
+                  );
+                })()}
                 
                 {video.url && (
                   <a
@@ -533,8 +574,22 @@ const VideoDetailPage: React.FC = () => {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-medium text-gray-900">Transcript Segments</h2>
             
-            {/* Speaker Filter */}
+            {/* Selection + Speaker Filter */}
             <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={exportSelectedTxt}
+                  disabled={selectedSegmentIds.size === 0}
+                  className={`btn btn-primary ${selectedSegmentIds.size === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  Export Selected (.txt)
+                </button>
+                <button onClick={selectAllVisible} className="btn btn-outline">Select Visible</button>
+                {selectedSegmentIds.size > 0 && (
+                  <button onClick={clearSelection} className="text-sm text-gray-500 hover:text-gray-700">Clear ({selectedSegmentIds.size})</button>
+                )}
+              </div>
+
               {speakerFilter && (
                 <span className="text-sm text-gray-500">
                   Filtered by: <strong>{speakerFilter}</strong>
@@ -575,6 +630,13 @@ const VideoDetailPage: React.FC = () => {
                 {/* Segment Header */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedSegmentIds.has(segment.id)}
+                      onChange={() => toggleSelectSegment(segment.id)}
+                      className="h-4 w-4"
+                      aria-label="Select segment"
+                    />
                     <div className="flex items-center space-x-2">
                       <User className="h-4 w-4 text-gray-400" />
                       <span className="font-medium text-gray-900">{segment.speaker_name}</span>
