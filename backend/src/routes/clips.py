@@ -35,11 +35,25 @@ class ClipsZipRequest(BaseModel):
     source_url: Optional[str] = None
 
 
+def _looks_like_vimeo(url: str) -> bool:
+    return "vimeo.com" in url
+
+
 async def _resolve_source_url(video: Video, override: Optional[str]) -> tuple[str, dict]:
     if override:
+        # If an explicit Vimeo URL is provided, resolve it
+        if _looks_like_vimeo(override):
+            stream = resolve_vimeo_stream(override)
+            if stream:
+                return stream
         return override, {}
     # Prefer a direct video_url if present
     if video.video_url and video.video_url.startswith(("http://", "https://", "/")):
+        # If it's a Vimeo page/embed URL, resolve a stream instead of returning page URL
+        if _looks_like_vimeo(video.video_url):
+            stream = resolve_vimeo_stream(video.video_url)
+            if stream:
+                return stream
         return video.video_url, {}
     # Try well-known local locations by filename
     for base in ("/data/uploads", "/data/processed", "/data"):
