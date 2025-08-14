@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { 
   ArrowLeft, Video, Calendar, Clock, User, MessageSquare, TrendingUp, 
@@ -22,6 +22,7 @@ const VideoDetailPage: React.FC = () => {
   const [loadingSegments, setLoadingSegments] = useState(false);
   const [highlightSegmentId, setHighlightSegmentId] = useState<number | null>(null);
   const [autoScrolled, setAutoScrolled] = useState(false);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (videoId) {
@@ -129,6 +130,26 @@ const VideoDetailPage: React.FC = () => {
       loadSegments();
     }
   };
+
+  // Infinite scroll sentinel
+  useEffect(() => {
+    const sentinel = bottomRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            loadMoreSegments();
+          }
+        });
+      },
+      { root: null, rootMargin: '200px', threshold: 0 }
+    );
+    observer.observe(sentinel);
+    return () => {
+      observer.disconnect();
+    };
+  }, [bottomRef, hasMoreSegments, loadingSegments]);
 
   const formatDuration = (seconds?: number) => {
     if (!seconds) return 'Unknown';
@@ -519,6 +540,7 @@ const VideoDetailPage: React.FC = () => {
                 </div>
               </div>
             ))}
+            <div ref={bottomRef} />
           </div>
 
           {/* Load More Button */}

@@ -3,7 +3,7 @@ Video management endpoints for the Political Transcript Search Platform
 """
 from fastapi import APIRouter, Depends, Query, HTTPException, Path
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc
+from sqlalchemy import select, func, desc, case
 from sqlalchemy.orm import selectinload
 from typing import Optional, List
 from datetime import date
@@ -203,7 +203,7 @@ async def get_video_stats(
         
         # Get sentiment distribution
         sentiment_dist_query = select(
-            func.case(
+            case(
                 (TranscriptSegment.sentiment_loughran_score > 0, 'positive'),
                 (TranscriptSegment.sentiment_loughran_score < 0, 'negative'),
                 else_='neutral'
