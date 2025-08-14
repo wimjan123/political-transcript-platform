@@ -24,6 +24,7 @@ class Video(Base):
     description: Mapped[Optional[str]] = mapped_column(Text)
     url: Mapped[Optional[str]] = mapped_column(String(500))
     video_thumbnail_url: Mapped[Optional[str]] = mapped_column(String(500))
+    video_url: Mapped[Optional[str]] = mapped_column(String(500))
     
     # Metadata
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())

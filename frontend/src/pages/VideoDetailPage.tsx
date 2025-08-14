@@ -345,6 +345,18 @@ const VideoDetailPage: React.FC = () => {
                   Search This Video
                 </Link>
                 
+                {video.video_url && (
+                  <a
+                    href={video.video_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-primary mr-4"
+                  >
+                    <Play className="h-4 w-4 mr-2" />
+                    Watch Video
+                  </a>
+                )}
+                
                 {video.url && (
                   <a
                     href={video.url}
@@ -353,7 +365,7 @@ const VideoDetailPage: React.FC = () => {
                     className="btn btn-outline"
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
-                    Original Source
+                    Transcript Source
                   </a>
                 )}
               </div>

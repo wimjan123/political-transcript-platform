@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Video, Calendar, Clock, User, Search, Filter, Eye } from 'lucide-react';
+import { Video, Calendar, Clock, User, Search, Filter, Eye, Play, ExternalLink } from 'lucide-react';
 import { videosAPI, formatDate } from '../services/api';
 import type { Video as VideoType } from '../types';
 
@@ -346,7 +346,19 @@ const VideosPage: React.FC = () => {
                     )}
 
                     {/* Actions */}
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center flex-wrap gap-3">
+                      {video.video_url && (
+                        <a
+                          href={video.video_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                        >
+                          <Play className="h-4 w-4 mr-1" />
+                          Watch Video
+                        </a>
+                      )}
+                      
                       <Link
                         to={`/videos/${video.id}`}
                         className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
@@ -368,19 +380,23 @@ const VideosPage: React.FC = () => {
                   {/* Video Info */}
                   <div className="flex-shrink-0 ml-6">
                     <div className="text-right">
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-gray-500 mb-2">
                         Added {formatDate(video.created_at)}
                       </div>
-                      {video.url && (
-                        <a
-                          href={video.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 font-medium mt-2 transition-colors"
-                        >
-                          Original Source
-                        </a>
-                      )}
+                      
+                      <div className="space-y-2">
+                        {video.url && (
+                          <a
+                            href={video.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                          >
+                            <ExternalLink className="h-3 w-3 inline mr-1" />
+                            Transcript Source
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

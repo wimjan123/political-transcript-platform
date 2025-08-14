@@ -10,6 +10,7 @@ export interface Video {
   description?: string;
   url?: string;
   video_thumbnail_url?: string;
+  video_url?: string;
   created_at: string;
 }
 

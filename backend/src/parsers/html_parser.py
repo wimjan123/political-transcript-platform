@@ -109,12 +109,20 @@ class TranscriptHTMLParser:
         if url_tag:
             metadata['url'] = url_tag.get('content', '')
         
-        # Extract video thumbnail URL
+        # Extract video thumbnail URL and construct video URL
         video_thumb_tag = soup.find('meta', {'name': 'twitter:image'})
         if video_thumb_tag:
             thumb_url = video_thumb_tag.get('content', '')
             if 'media-cdn.factba.se' in thumb_url:
                 metadata['video_thumbnail_url'] = thumb_url
+                
+                # Extract video ID from thumbnail URL and construct video URL
+                # Pattern: https://media-cdn.factba.se/thumbs/video/941627232/941627232-1.jpg
+                video_id_match = re.search(r'/video/(\d+)/\d+-\d+\.jpg', thumb_url)
+                if video_id_match:
+                    video_id = video_id_match.group(1)
+                    # Construct factbase video URL
+                    metadata['video_url'] = f"https://factba.se/video/{video_id}"
         
         return metadata
     
