@@ -24,6 +24,7 @@ const VideoDetailPage: React.FC = () => {
   const [highlightSegmentId, setHighlightSegmentId] = useState<number | null>(null);
   const [autoScrolled, setAutoScrolled] = useState(false);
   const [selectedSegmentIds, setSelectedSegmentIds] = useState<Set<number>>(new Set());
+  const [selectionMode, setSelectionMode] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const vimeoTimeFragment = (seconds: number) => {
@@ -146,6 +147,22 @@ const VideoDetailPage: React.FC = () => {
     const blob = new Blob([lines.join('\n\n') + '\n'], { type: 'text/plain;charset=utf-8' });
     const safeTitle = (video.title || `video-${video.id}`).replace(/[^a-z0-9-_]+/gi, '_');
     downloadFile(blob as unknown as Blob, `${safeTitle}_segments.txt`);
+  };
+
+  const exportSelectedVimeoLinks = () => {
+    if (!video) return;
+    const selected = segments.filter(s => selectedSegmentIds.has(s.id));
+    if (selected.length === 0) return;
+    const lines = selected.map(s => {
+      const start = formatTimestamp(s.video_seconds);
+      const end = s.duration_seconds ? formatTimestamp(s.video_seconds + s.duration_seconds) : undefined;
+      const url = buildWatchUrlAt(s.video_seconds) || '';
+      const range = end ? `[${start} - ${end}]` : `[${start}]`;
+      return `${range} ${s.speaker_name || 'Unknown'}: ${s.transcript_text}\n${url}`;
+    });
+    const blob = new Blob([lines.join('\n\n') + '\n'], { type: 'text/plain;charset=utf-8' });
+    const safeTitle = (video.title || `video-${video.id}`).replace(/[^a-z0-9-_]+/gi, '_');
+    downloadFile(blob as unknown as Blob, `${safeTitle}_vimeo_links.txt`);
   };
 
   // After segments load, scroll to targeted segment/time once
@@ -601,15 +618,39 @@ const VideoDetailPage: React.FC = () => {
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <button
-                  onClick={exportSelectedTxt}
-                  disabled={selectedSegmentIds.size === 0}
-                  className={`btn btn-primary ${selectedSegmentIds.size === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  onClick={() => {
+                    setSelectionMode((prev) => {
+                      const next = !prev;
+                      if (!next) clearSelection();
+                      return next;
+                    });
+                  }}
+                  className={`btn ${selectionMode ? 'btn-outline' : 'btn-primary'}`}
                 >
-                  Export Selected (.txt)
+                  {selectionMode ? 'Disable Selection' : 'Select Segments'}
                 </button>
-                <button onClick={selectAllVisible} className="btn btn-outline">Select Visible</button>
-                {selectedSegmentIds.size > 0 && (
-                  <button onClick={clearSelection} className="text-sm text-gray-500 hover:text-gray-700">Clear ({selectedSegmentIds.size})</button>
+
+                {selectionMode && (
+                  <>
+                    <button
+                      onClick={exportSelectedTxt}
+                      disabled={selectedSegmentIds.size === 0}
+                      className={`btn btn-primary ${selectedSegmentIds.size === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      Export Selected (.txt)
+                    </button>
+                    <button
+                      onClick={exportSelectedVimeoLinks}
+                      disabled={selectedSegmentIds.size === 0}
+                      className={`btn btn-outline ${selectedSegmentIds.size === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      Export Selected (Vimeo links)
+                    </button>
+                    <button onClick={selectAllVisible} className="btn btn-outline">Select Visible</button>
+                    {selectedSegmentIds.size > 0 && (
+                      <button onClick={clearSelection} className="text-sm text-gray-500 hover:text-gray-700">Clear ({selectedSegmentIds.size})</button>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -653,13 +694,15 @@ const VideoDetailPage: React.FC = () => {
                 {/* Segment Header */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedSegmentIds.has(segment.id)}
-                      onChange={() => toggleSelectSegment(segment.id)}
-                      className="h-4 w-4"
-                      aria-label="Select segment"
-                    />
+                    {selectionMode && (
+                      <input
+                        type="checkbox"
+                        checked={selectedSegmentIds.has(segment.id)}
+                        onChange={() => toggleSelectSegment(segment.id)}
+                        className="h-4 w-4"
+                        aria-label="Select segment"
+                      />
+                    )}
                     <div className="flex items-center space-x-2">
                       <User className="h-4 w-4 text-gray-400" />
                       <span className="font-medium text-gray-900">{segment.speaker_name}</span>
