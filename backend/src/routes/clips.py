@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..database import get_db
 from ..models import Video
 from ..services.ffmpeg import clip_video, FFmpegError
+from ..services.vimeo import resolve_vimeo_stream
 
 
 router = APIRouter()
@@ -45,8 +46,17 @@ async def _resolve_source_url(video: Video, override: Optional[str]) -> str:
         candidate = os.path.join(base, video.filename)
         if os.path.exists(candidate):
             return candidate
-    # Vimeo-only source not supported for server-side downloads without resolver
-    raise HTTPException(status_code=400, detail="Unable to resolve a downloadable video source for this video.")
+    # Attempt Vimeo stream resolution if available
+    if video.vimeo_video_id:
+        stream = resolve_vimeo_stream(video.vimeo_video_id)
+        if stream:
+            return stream
+    if video.vimeo_embed_url:
+        stream = resolve_vimeo_stream(video.vimeo_embed_url)
+        if stream:
+            return stream
+
+    raise HTTPException(status_code=400, detail="Unable to resolve a downloadable video source (file or Vimeo stream) for this video.")
 
 
 @router.post("/{video_id}/clip")

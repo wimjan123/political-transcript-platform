@@ -35,15 +35,12 @@ def clip_video(
     out_path = os.path.join(output_dir, f"clip_{uuid.uuid4().hex}.mp4")
 
     # Build ffmpeg command
-    cmd = [
-        ffmpeg_bin,
+    # Place -ss after -i for HLS for better accuracy
+    is_hls = ".m3u8" in input_url
+    common = [
         "-hide_banner",
         "-loglevel",
         "error",
-        "-ss",
-        str(max(0.0, float(start_seconds))),
-        "-i",
-        input_url,
         "-t",
         str(max(0.1, float(duration_seconds))),
         "-c:v",
@@ -59,10 +56,14 @@ def clip_video(
         out_path,
     ]
 
+    if is_hls:
+        cmd = [ffmpeg_bin, "-hide_banner", "-loglevel", "error", "-i", input_url, "-ss", str(max(0.0, float(start_seconds)))] + common
+    else:
+        cmd = [ffmpeg_bin, "-hide_banner", "-loglevel", "error", "-ss", str(max(0.0, float(start_seconds))), "-i", input_url] + common
+
     proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if proc.returncode != 0 or not os.path.exists(out_path):
         raise FFmpegError(
             f"ffmpeg failed (code {proc.returncode}): {proc.stderr.decode('utf-8', errors='ignore')}"
         )
     return out_path
-

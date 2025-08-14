@@ -28,6 +28,9 @@ textstat==0.7.3
 # Search and indexing
 whoosh==2.7.4
 
+# Media fetching
+yt-dlp==2024.08.06
+
 # Security and auth
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
