@@ -11,6 +11,8 @@ export interface Video {
   url?: string;
   video_thumbnail_url?: string;
   video_url?: string;
+  vimeo_video_id?: string;
+  vimeo_embed_url?: string;
   created_at: string;
 }
 
@@ -280,6 +282,19 @@ export interface ImportStatus {
   current_file?: string;
   errors: string[];
   estimated_completion?: string;
+}
+
+// Database Status Types
+export interface DatabaseStatus {
+  import_status: ImportStatus;
+  database_stats: {
+    total_videos: number;
+    total_segments: number;
+    total_speakers: number;
+    total_topics: number;
+    storage_size?: string;
+    last_import?: string;
+  };
 }
 
 // UI State Types

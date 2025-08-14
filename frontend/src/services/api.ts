@@ -340,14 +340,14 @@ export const formatDateTime = (dateString: string): string => {
   });
 };
 
-export const getSentimentColor = (score?: number): string => {
+export const getSentimentColor = (score?: number | null): string => {
   if (score === undefined || score === null) return 'text-gray-500';
   if (score > 0.1) return 'text-green-600';
   if (score < -0.1) return 'text-red-600';
   return 'text-gray-600';
 };
 
-export const getSentimentLabel = (score?: number): string => {
+export const getSentimentLabel = (score?: number | null): string => {
   if (score === undefined || score === null) return 'Unknown';
   if (score > 0.1) return 'Positive';
   if (score < -0.1) return 'Negative';
@@ -361,5 +361,9 @@ export const getReadabilityGrade = (score?: number): string => {
   if (score <= 12) return 'High School';
   return 'College';
 };
+
+// Convenience exports for commonly used functions
+export const getImportStatus = uploadAPI.getImportStatus;
+export const getAnalyticsStats = analyticsAPI.getStats;
 
 export default api;

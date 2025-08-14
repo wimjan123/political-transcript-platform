@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Search, BarChart3, Video, Menu, X } from 'lucide-react';
+import { Search, BarChart3, Video, Database, Menu, X } from 'lucide-react';
 
 const Layout: React.FC = () => {
   const location = useLocation();
@@ -10,6 +10,7 @@ const Layout: React.FC = () => {
     { name: 'Search', href: '/search', icon: Search },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
     { name: 'Videos', href: '/videos', icon: Video },
+    { name: 'Database', href: '/database-status', icon: Database },
   ];
 
   const isActive = (path: string) => {
