@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { 
   Search, Filter, Download, ChevronDown, ChevronRight, 
   Calendar, User, Tag, TrendingUp, AlertCircle, Clock,
@@ -205,7 +205,12 @@ const SearchPage: React.FC = () => {
             {/* Video Info */}
             {segment.video && (
               <div className="text-sm text-gray-600 mb-2">
-                <span className="font-medium">{segment.video.title}</span>
+                <Link
+                  to={`/videos/${segment.video.id}`}
+                  className="font-medium text-primary-600 hover:text-primary-700 hover:underline"
+                >
+                  {segment.video.title}
+                </Link>
                 {segment.video.source && (
                   <span className="ml-2 badge badge-blue">{segment.video.source}</span>
                 )}
@@ -345,15 +350,23 @@ const SearchPage: React.FC = () => {
             {/* Actions */}
             <div className="flex items-center space-x-4">
               {segment.video && (
-                <button className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 transition-colors">
+                <Link
+                  to={`/videos/${segment.video.id}`}
+                  className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 transition-colors"
+                >
                   <Play className="h-4 w-4 mr-1" />
                   Play Clip
-                </button>
+                </Link>
               )}
-              <button className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 transition-colors">
-                <ExternalLink className="h-4 w-4 mr-1" />
-                View Context
-              </button>
+              {segment.video && (
+                <Link
+                  to={`/videos/${segment.video.id}`}
+                  className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 transition-colors"
+                >
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  View Context
+                </Link>
+              )}
             </div>
           </div>
         )}
