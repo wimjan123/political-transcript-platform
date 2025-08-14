@@ -9,8 +9,6 @@ from typing import Dict, List, Optional, Callable, Any
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy import select
 from datetime import datetime
-import concurrent.futures
-from functools import partial
 
 from ..parsers.html_parser import TranscriptHTMLParser
 from ..models import Video, Speaker, Topic, TranscriptSegment, SegmentTopic
@@ -23,15 +21,12 @@ logger = logging.getLogger(__name__)
 class ImportService:
     """Service for importing HTML transcript files into the database"""
     
-    def __init__(self, max_workers: int = 4):
+    def __init__(self):
         self.parser = TranscriptHTMLParser()
-        self.max_workers = max_workers
         self.engine = create_async_engine(
             settings.database_url.replace("postgresql://", "postgresql+asyncpg://"),
             echo=False,
-            pool_pre_ping=True,
-            pool_size=max_workers + 5,  # Increase pool size for concurrent connections
-            max_overflow=max_workers * 2
+            pool_pre_ping=True
         )
         self.SessionLocal = async_sessionmaker(
             self.engine,
@@ -46,7 +41,7 @@ class ImportService:
         progress_callback: Optional[Callable[[int, int, str, List[str]], None]] = None
     ) -> Dict[str, Any]:
         """
-        Import all HTML files from a directory with parallel processing
+        Import all HTML files from a directory
         
         Args:
             html_dir: Directory containing HTML files
@@ -62,54 +57,31 @@ class ImportService:
         failed_files = 0
         errors = []
         
-        logger.info(f"Starting parallel import of {total_files} HTML files from {html_dir} using {self.max_workers} workers")
+        logger.info(f"Starting import of {total_files} HTML files from {html_dir}")
         
-        # Create semaphore to limit concurrent database operations
-        semaphore = asyncio.Semaphore(self.max_workers)
-        
-        # Process files in batches to provide progress updates
-        batch_size = max(1, self.max_workers * 2)
-        
-        for batch_start in range(0, total_files, batch_size):
-            batch_end = min(batch_start + batch_size, total_files)
-            batch_files = html_files[batch_start:batch_end]
-            
-            # Create tasks for this batch
-            tasks = []
-            for file_path in batch_files:
-                task = self._import_file_with_semaphore(
-                    semaphore, str(file_path), force_reimport
-                )
-                tasks.append(task)
-            
-            # Process batch concurrently
-            batch_results = await asyncio.gather(*tasks, return_exceptions=True)
-            
-            # Process results and update counters
-            for i, result in enumerate(batch_results):
-                file_path = batch_files[i]
-                current_file_index = batch_start + i
-                
+        for i, file_path in enumerate(html_files):
+            try:
                 if progress_callback:
-                    progress_callback(current_file_index, total_files, str(file_path), errors)
+                    progress_callback(i, total_files, str(file_path), errors)
                 
-                if isinstance(result, Exception):
-                    failed_files += 1
-                    error_msg = f"{file_path.name}: {str(result)}"
-                    errors.append(error_msg)
-                    logger.error(f"Error importing {file_path}: {str(result)}")
-                elif result and result.get("success"):
+                result = await self.import_html_file(str(file_path), force_reimport)
+                if result["success"]:
                     processed_files += 1
                 else:
                     failed_files += 1
-                    error_msg = f"{file_path.name}: {result.get('error', 'Unknown error') if result else 'Unknown error'}"
-                    errors.append(error_msg)
+                    errors.append(f"{file_path.name}: {result.get('error', 'Unknown error')}")
+                
+            except Exception as e:
+                failed_files += 1
+                error_msg = f"{file_path.name}: {str(e)}"
+                errors.append(error_msg)
+                logger.error(f"Error importing {file_path}: {str(e)}")
         
         # Final progress update
         if progress_callback:
             progress_callback(total_files, total_files, "", errors)
         
-        logger.info(f"Parallel import completed: {processed_files} successful, {failed_files} failed")
+        logger.info(f"Import completed: {processed_files} successful, {failed_files} failed")
         
         return {
             "total_files": total_files,
@@ -117,16 +89,6 @@ class ImportService:
             "total_failed": failed_files,
             "errors": errors
         }
-    
-    async def _import_file_with_semaphore(
-        self, 
-        semaphore: asyncio.Semaphore, 
-        file_path: str, 
-        force_reimport: bool
-    ) -> Dict[str, Any]:
-        """Import a single file with semaphore control for concurrency"""
-        async with semaphore:
-            return await self.import_html_file(file_path, force_reimport)
     
     async def import_html_file(self, file_path: str, force_reimport: bool = False) -> Dict[str, Any]:
         """
@@ -200,15 +162,11 @@ class ImportService:
             }
     
     async def _process_segments(self, db: AsyncSession, video: Video, segments_data: List[Dict[str, Any]]):
-        """Process and import transcript segments with batch operations"""
+        """Process and import transcript segments"""
         
         # Create speaker lookup cache
         speaker_cache = {}
         topic_cache = {}
-        
-        # Batch collect segments and topics for bulk insert
-        segments_to_add = []
-        segment_topics_to_add = []
         
         for segment_data in segments_data:
             try:
@@ -222,43 +180,24 @@ class ImportService:
                     **{k: v for k, v in segment_data.items() if k in TranscriptSegment.__table__.columns.keys()}
                 )
                 
-                segments_to_add.append(segment)
+                db.add(segment)
+                await db.flush()  # Get segment ID
                 
                 # Process topics if present
                 if "primary_topic" in segment_data and segment_data["primary_topic"]:
                     topic = await self._get_or_create_topic(db, segment_data["primary_topic"], topic_cache)
                     if topic:
-                        # We'll need to add this after segments are inserted to get IDs
-                        segment_topics_to_add.append({
-                            'segment': segment,
-                            'topic_id': topic.id,
-                            'score': 1.0,
-                            'confidence': 1.0
-                        })
+                        segment_topic = SegmentTopic(
+                            segment_id=segment.id,
+                            topic_id=topic.id,
+                            score=1.0,  # Default score for primary topic
+                            confidence=1.0
+                        )
+                        db.add(segment_topic)
                 
             except Exception as e:
                 logger.warning(f"Error processing segment: {str(e)}")
                 continue
-        
-        # Batch add segments
-        if segments_to_add:
-            db.add_all(segments_to_add)
-            await db.flush()  # Get segment IDs
-            
-            # Now add segment topics with proper segment IDs
-            if segment_topics_to_add:
-                topic_objects = []
-                for st_data in segment_topics_to_add:
-                    segment_topic = SegmentTopic(
-                        segment_id=st_data['segment'].id,
-                        topic_id=st_data['topic_id'],
-                        score=st_data['score'],
-                        confidence=st_data['confidence']
-                    )
-                    topic_objects.append(segment_topic)
-                
-                if topic_objects:
-                    db.add_all(topic_objects)
     
     async def _get_or_create_speaker(
         self, 
@@ -266,7 +205,7 @@ class ImportService:
         speaker_name: str, 
         cache: Dict[str, Speaker]
     ) -> Optional[Speaker]:
-        """Get existing speaker or create new one with conflict handling"""
+        """Get existing speaker or create new one"""
         
         if not speaker_name or speaker_name.strip() == "":
             return None
@@ -284,21 +223,13 @@ class ImportService:
         speaker = result.scalar_one_or_none()
         
         if not speaker:
-            try:
-                # Create new speaker
-                speaker = Speaker(
-                    name=speaker_name,
-                    normalized_name=normalized_name
-                )
-                db.add(speaker)
-                await db.flush()
-            except Exception:
-                # Handle race condition - speaker might have been created by another process
-                await db.rollback()
-                result = await db.execute(speaker_query)
-                speaker = result.scalar_one_or_none()
-                if not speaker:
-                    raise  # Re-raise if it's not a duplicate key error
+            # Create new speaker
+            speaker = Speaker(
+                name=speaker_name,
+                normalized_name=normalized_name
+            )
+            db.add(speaker)
+            await db.flush()
         
         # Cache for future use
         cache[normalized_name] = speaker
@@ -310,7 +241,7 @@ class ImportService:
         topic_name: str, 
         cache: Dict[str, Topic]
     ) -> Optional[Topic]:
-        """Get existing topic or create new one with conflict handling"""
+        """Get existing topic or create new one"""
         
         if not topic_name or topic_name.strip() == "":
             return None
@@ -327,21 +258,13 @@ class ImportService:
         topic = result.scalar_one_or_none()
         
         if not topic:
-            try:
-                # Create new topic
-                topic = Topic(
-                    name=topic_name,
-                    category=self._categorize_topic(topic_name)
-                )
-                db.add(topic)
-                await db.flush()
-            except Exception:
-                # Handle race condition - topic might have been created by another process
-                await db.rollback()
-                result = await db.execute(topic_query)
-                topic = result.scalar_one_or_none()
-                if not topic:
-                    raise  # Re-raise if it's not a duplicate key error
+            # Create new topic
+            topic = Topic(
+                name=topic_name,
+                category=self._categorize_topic(topic_name)
+            )
+            db.add(topic)
+            await db.flush()
         
         # Cache for future use
         cache[topic_name] = topic
