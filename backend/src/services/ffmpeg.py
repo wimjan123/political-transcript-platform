@@ -2,7 +2,7 @@ import os
 import shlex
 import subprocess
 import uuid
-from typing import Optional
+from typing import Optional, Dict
 
 
 class FFmpegError(RuntimeError):
@@ -22,6 +22,7 @@ def clip_video(
     start_seconds: float,
     duration_seconds: float,
     output_dir: str = "/tmp",
+    http_headers: Optional[Dict[str, str]] = None,
 ) -> str:
     """Create a clipped MP4 using ffmpeg and return the output file path.
 
@@ -56,10 +57,21 @@ def clip_video(
         out_path,
     ]
 
+    header_args: list[str] = []
+    if http_headers:
+        # ffmpeg expects one -headers arg where lines are CRLF-joined
+        header_lines = []
+        for k, v in http_headers.items():
+            if not v:
+                continue
+            header_lines.append(f"{k}: {v}")
+        if header_lines:
+            header_args = ["-headers", "\r\n".join(header_lines) + "\r\n"]
+
     if is_hls:
-        cmd = [ffmpeg_bin, "-hide_banner", "-loglevel", "error", "-i", input_url, "-ss", str(max(0.0, float(start_seconds)))] + common
+        cmd = [ffmpeg_bin, "-hide_banner", "-loglevel", "error"] + header_args + ["-i", input_url, "-ss", str(max(0.0, float(start_seconds)))] + common
     else:
-        cmd = [ffmpeg_bin, "-hide_banner", "-loglevel", "error", "-ss", str(max(0.0, float(start_seconds))), "-i", input_url] + common
+        cmd = [ffmpeg_bin, "-hide_banner", "-loglevel", "error"] + header_args + ["-ss", str(max(0.0, float(start_seconds))), "-i", input_url] + common
 
     proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if proc.returncode != 0 or not os.path.exists(out_path):

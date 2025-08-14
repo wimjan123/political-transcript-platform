@@ -35,17 +35,17 @@ class ClipsZipRequest(BaseModel):
     source_url: Optional[str] = None
 
 
-async def _resolve_source_url(video: Video, override: Optional[str]) -> str:
+async def _resolve_source_url(video: Video, override: Optional[str]) -> tuple[str, dict]:
     if override:
-        return override
+        return override, {}
     # Prefer a direct video_url if present
     if video.video_url and video.video_url.startswith(("http://", "https://", "/")):
-        return video.video_url
+        return video.video_url, {}
     # Try well-known local locations by filename
     for base in ("/data/uploads", "/data/processed", "/data"):
         candidate = os.path.join(base, video.filename)
         if os.path.exists(candidate):
-            return candidate
+            return candidate, {}
     # Attempt Vimeo stream resolution if available
     if video.vimeo_video_id:
         stream = resolve_vimeo_stream(video.vimeo_video_id)
@@ -77,11 +77,11 @@ async def create_clip(video_id: int, req: ClipRequest, db: AsyncSession = Depend
         raise HTTPException(status_code=422, detail="Duration must be positive")
 
     # Resolve source URL or path
-    source_url = await _resolve_source_url(video, req.source_url)
+    source_url, headers = await _resolve_source_url(video, req.source_url)
 
     # Generate clip
     try:
-        out_path = clip_video(source_url, req.start_seconds, duration)
+        out_path = clip_video(source_url, req.start_seconds, duration, http_headers=headers)
     except FFmpegError as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -105,14 +105,14 @@ async def create_clips_zip(video_id: int, req: ClipsZipRequest, db: AsyncSession
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
 
-    source_url = await _resolve_source_url(video, req.source_url)
+    source_url, headers = await _resolve_source_url(video, req.source_url)
 
     tmp_dir = tempfile.mkdtemp(prefix="clips_")
     clip_paths: List[str] = []
     try:
         for idx, item in enumerate(req.items, start=1):
             try:
-                clip_path = clip_video(source_url, item.start_seconds, item.duration_seconds, output_dir=tmp_dir)
+                clip_path = clip_video(source_url, item.start_seconds, item.duration_seconds, output_dir=tmp_dir, http_headers=headers)
                 clip_paths.append(clip_path)
             except FFmpegError as e:
                 # Skip failed items but continue others
