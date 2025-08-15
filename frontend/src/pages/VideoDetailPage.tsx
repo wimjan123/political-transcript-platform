@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { 
   ArrowLeft, Video, Calendar, Clock, User, MessageSquare, TrendingUp, 
-  BarChart3, Search, Play, ExternalLink, Shield, AlertTriangle, Eye
+  BarChart3, Search, Play, ExternalLink, Shield, AlertTriangle, Eye, Plus
 } from 'lucide-react';
+import { playlist } from '@/services/playlist';
 import { videosAPI, formatDate, formatTimestamp, getSentimentColor, getSentimentLabel, downloadFile } from '../services/api';
 import VimeoEmbed from '../components/VimeoEmbed';
 import type { Video as VideoType, TranscriptSegment, VideoStats } from '../types';
@@ -208,6 +209,31 @@ const VideoDetailPage: React.FC = () => {
       console.error('Failed to export clips', e);
       alert('Failed to generate clips. Ensure the server has ffmpeg and a downloadable video source.');
     }
+  };
+
+  const addSelectedSegmentsToPlaylist = () => {
+    const selected = segments.filter(s => selectedSegmentIds.has(s.id));
+    if (selected.length === 0) return;
+    playlist.addSegments(selected as any);
+  };
+
+  const addSelectedClipsToPlaylist = () => {
+    const selected = segments.filter(s => selectedSegmentIds.has(s.id));
+    if (!video || selected.length === 0) return;
+    selected.forEach((s) => {
+      const start = Math.max(0, s.video_seconds || 0);
+      let duration = s.duration_seconds || 0;
+      if (!duration) {
+        const i = segments.findIndex(ss => ss.id === s.id);
+        const next = i >= 0 ? segments[i + 1] : undefined;
+        if (next && typeof next.video_seconds === 'number') {
+          duration = Math.max(1, (next.video_seconds as number) - start);
+        } else {
+          duration = 15;
+        }
+      }
+      playlist.addClip(video, start, duration, `${s.speaker_name || 'segment'}`);
+    });
   };
 
   // After segments load, scroll to targeted segment/time once
@@ -768,6 +794,13 @@ const VideoDetailPage: React.FC = () => {
                   Clear
                 </button>
               )}
+
+              {selectionMode && (
+                <>
+                  <button onClick={addSelectedSegmentsToPlaylist} className="btn btn-outline ml-2">Add Selected (segments)</button>
+                  <button onClick={addSelectedClipsToPlaylist} className="btn btn-outline ml-2">Add Selected (clips)</button>
+                </>
+              )}
             </div>
           </div>
 
@@ -827,6 +860,13 @@ const VideoDetailPage: React.FC = () => {
                       </button>
                     );
                   })()}
+                  <button
+                    onClick={() => playlist.addSegment(segment as any)}
+                    className="text-primary-600 hover:text-primary-700 transition-colors ml-2"
+                    title="Add segment to playlist"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
                 </div>
 
                 {/* Transcript Text */}

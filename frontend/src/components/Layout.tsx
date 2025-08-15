@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Search, BarChart3, Video, Database, Upload, Menu, X } from 'lucide-react';
+import { Search, BarChart3, Video, Database, Upload, Menu, X, ListMusic } from 'lucide-react';
+import { playlist, usePlaylistCount } from '@/services/playlist';
 
 const Layout: React.FC = () => {
   const location = useLocation();
@@ -12,7 +13,9 @@ const Layout: React.FC = () => {
     { name: 'Videos', href: '/videos', icon: Video },
     { name: 'Ingest', href: '/ingest', icon: Upload },
     { name: 'Database', href: '/database-status', icon: Database },
+    { name: 'Playlist', href: '/playlist', icon: ListMusic },
   ];
+  const playlistCount = usePlaylistCount();
 
   const isActive = (path: string) => {
     return location.pathname.startsWith(path);
@@ -56,6 +59,11 @@ const Layout: React.FC = () => {
                     >
                       <Icon className="h-4 w-4 mr-2" />
                       {item.name}
+                      {item.name === 'Playlist' && playlistCount > 0 && (
+                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                          {playlistCount}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}

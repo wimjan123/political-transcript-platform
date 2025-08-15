@@ -9,6 +9,7 @@ import VideoDetailPage from './pages/VideoDetailPage';
 import DatabaseStatusPage from './pages/DatabaseStatusPage';
 import IngestPage from './pages/IngestPage';
 import NotFoundPage from './pages/NotFoundPage';
+import PlaylistPage from './pages/PlaylistPage';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="videos" element={<VideosPage />} />
           <Route path="videos/:videoId" element={<VideoDetailPage />} />
+          <Route path="playlist" element={<PlaylistPage />} />
           <Route path="database-status" element={<DatabaseStatusPage />} />
           <Route path="ingest" element={<IngestPage />} />
           <Route path="*" element={<NotFoundPage />} />

@@ -3,8 +3,9 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { 
   Search, Filter, Download, ChevronDown, ChevronRight, 
   Calendar, User, Tag, TrendingUp, AlertCircle, Clock,
-  ExternalLink, Play
+  ExternalLink, Play, Plus
 } from 'lucide-react';
+import { playlist } from '@/services/playlist';
 import { searchAPI, downloadFile, formatTimestamp, getSentimentColor, getSentimentLabel } from '../services/api';
 import type { SearchResponse, SearchParams, FilterState, TranscriptSegment } from '../types';
 
@@ -457,9 +458,9 @@ const SearchPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Expanded Details */}
-        {isExpanded && (
-          <div className="mt-4 pt-4 border-t border-gray-200 space-y-4">
+            {/* Expanded Details */}
+            {isExpanded && (
+              <div className="mt-4 pt-4 border-t border-gray-200 space-y-4">
             {/* Detailed Sentiment Analysis */}
             {(typeof segment.sentiment_loughran_score === 'number' || 
               typeof segment.sentiment_harvard_score === 'number' || 
@@ -557,6 +558,17 @@ const SearchPage: React.FC = () => {
                   <ExternalLink className="h-4 w-4 mr-1" />
                   View Context
                 </Link>
+              )}
+              {segment.video && (
+                <button
+                  type="button"
+                  onClick={() => playlist.addSegment(segment as any)}
+                  className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 transition-colors"
+                  title="Add segment to playlist"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add to Playlist
+                </button>
               )}
             </div>
           </div>
