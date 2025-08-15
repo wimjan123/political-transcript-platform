@@ -19,6 +19,7 @@ const VideoDetailPage: React.FC = () => {
   const [segmentsPage, setSegmentsPage] = useState(1);
   const [segmentsPageSize] = useState(50);
   const [speakerFilter, setSpeakerFilter] = useState('');
+  const [keywordFilter, setKeywordFilter] = useState('');
   const [hasMoreSegments, setHasMoreSegments] = useState(true);
   const [loadingSegments, setLoadingSegments] = useState(false);
   const [highlightSegmentId, setHighlightSegmentId] = useState<number | null>(null);
@@ -60,7 +61,7 @@ const VideoDetailPage: React.FC = () => {
     if (videoId) {
       loadSegments(true);
     }
-  }, [speakerFilter]);
+  }, [speakerFilter, keywordFilter]);
 
   const loadVideoData = async () => {
     try {
@@ -92,7 +93,8 @@ const VideoDetailPage: React.FC = () => {
         parseInt(videoId!),
         page,
         segmentsPageSize,
-        speakerFilter || undefined
+        speakerFilter || undefined,
+        keywordFilter || undefined
       );
 
       if (reset) {
@@ -134,6 +136,19 @@ const VideoDetailPage: React.FC = () => {
   };
 
   const clearSelection = () => setSelectedSegmentIds(new Set());
+
+  const highlightText = (text: string, query: string) => {
+    if (!query.trim()) return text;
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escaped})`, 'gi');
+    return text.split(regex).map((part, i) =>
+      regex.test(part) ? (
+        <mark key={i} className="bg-yellow-200 px-1 rounded">{part}</mark>
+      ) : (
+        <React.Fragment key={i}>{part}</React.Fragment>
+      )
+    );
+  };
 
   const exportSelectedTxt = () => {
     if (!video) return;
@@ -724,9 +739,9 @@ const VideoDetailPage: React.FC = () => {
                 )}
               </div>
 
-              {speakerFilter && (
+              {(speakerFilter || keywordFilter) && (
                 <span className="text-sm text-gray-500">
-                  Filtered by: <strong>{speakerFilter}</strong>
+                  Filtered by: {speakerFilter && (<><strong>{speakerFilter}</strong> (speaker)</>)} {speakerFilter && keywordFilter && '•'} {keywordFilter && (<><strong>{keywordFilter}</strong> (keyword)</>)}
                 </span>
               )}
               
@@ -737,10 +752,17 @@ const VideoDetailPage: React.FC = () => {
                 placeholder="Filter by speaker..."
                 className="text-sm border border-gray-300 rounded-md px-3 py-2 w-48 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
               />
+              <input
+                type="text"
+                value={keywordFilter}
+                onChange={(e) => setKeywordFilter(e.target.value)}
+                placeholder="Filter by keyword..."
+                className="ml-2 text-sm border border-gray-300 rounded-md px-3 py-2 w-64 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+              />
               
-              {speakerFilter && (
+              {(speakerFilter || keywordFilter) && (
                 <button
-                  onClick={() => setSpeakerFilter('')}
+                  onClick={() => { setSpeakerFilter(''); setKeywordFilter(''); }}
                   className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
                 >
                   Clear
@@ -809,7 +831,7 @@ const VideoDetailPage: React.FC = () => {
 
                 {/* Transcript Text */}
                 <div className="text-gray-900 mb-3 leading-relaxed">
-                  {segment.transcript_text}
+                  {keywordFilter ? highlightText(segment.transcript_text, keywordFilter) : segment.transcript_text}
                 </div>
 
                 {/* Enhanced Segment Metadata */}

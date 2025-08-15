@@ -224,10 +224,11 @@ export const videosAPI = {
     videoId: number,
     page: number = 1,
     pageSize: number = 50,
-    speaker?: string
+    speaker?: string,
+    q?: string
   ): Promise<TranscriptSegment[]> => {
     const response = await api.get(`/api/videos/${videoId}/segments`, {
-      params: { page, page_size: pageSize, speaker },
+      params: { page, page_size: pageSize, speaker, q },
     });
     return response.data;
   },

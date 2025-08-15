@@ -105,6 +105,7 @@ async def get_video_segments(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(50, ge=1, le=200, description="Results per page"),
     speaker: Optional[str] = Query(None, description="Filter by speaker"),
+    q: Optional[str] = Query(None, description="Filter by keyword in transcript text"),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -127,9 +128,11 @@ async def get_video_segments(
             selectinload(TranscriptSegment.segment_topics).selectinload(SegmentTopic.topic)
         ).where(TranscriptSegment.video_id == video_id)
         
-        # Apply speaker filter
+        # Apply filters
         if speaker:
             query = query.where(TranscriptSegment.speaker_name.ilike(f"%{speaker}%"))
+        if q:
+            query = query.where(TranscriptSegment.transcript_text.ilike(f"%{q}%"))
         
         # Order by video seconds
         query = query.order_by(TranscriptSegment.video_seconds)
