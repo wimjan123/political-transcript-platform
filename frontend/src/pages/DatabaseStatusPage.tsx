@@ -76,7 +76,9 @@ const DatabaseStatusPage: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-    
+  }, []); // Only run once on mount
+
+  useEffect(() => {
     // Safety timeout to prevent infinite loading
     const safetyTimeout = setTimeout(() => {
       if (loading) {
@@ -86,19 +88,20 @@ const DatabaseStatusPage: React.FC = () => {
       }
     }, 10000);
 
+    return () => clearTimeout(safetyTimeout);
+  }, [loading]);
+
+  useEffect(() => {
     // Auto-refresh every 30 seconds if import is running or embeddings are being generated
     const interval = setInterval(() => {
-      if (importStatus?.status === 'running' || 
-          (embeddingStatus && embeddingStatus.completion_percentage < 100)) {
+      if (!loading && (importStatus?.status === 'running' || 
+          (embeddingStatus && embeddingStatus.completion_percentage < 100))) {
         fetchData();
       }
     }, 30000);
 
-    return () => {
-      clearInterval(interval);
-      clearTimeout(safetyTimeout);
-    };
-  }, [importStatus?.status, embeddingStatus?.completion_percentage]);
+    return () => clearInterval(interval);
+  }, [importStatus?.status, embeddingStatus?.completion_percentage, loading]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -120,7 +123,7 @@ const DatabaseStatusPage: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (loading && !importStatus && !databaseStats && !embeddingStatus) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -159,7 +162,7 @@ const DatabaseStatusPage: React.FC = () => {
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
+              {loading ? 'Loading...' : 'Refresh'}
             </button>
           </div>
         </div>
