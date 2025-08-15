@@ -11,14 +11,17 @@ import {
   BarChart3,
   Video,
   Users,
-  Tag
+  Tag,
+  Brain,
+  Zap
 } from 'lucide-react';
-import { ImportStatus, AnalyticsStats } from '../types';
-import { getImportStatus, getAnalyticsStats } from '../services/api';
+import { ImportStatus, AnalyticsStats, EmbeddingStatus } from '../types';
+import { getImportStatus, getAnalyticsStats, getEmbeddingStatus } from '../services/api';
 
 const DatabaseStatusPage: React.FC = () => {
   const [importStatus, setImportStatus] = useState<ImportStatus | null>(null);
   const [databaseStats, setDatabaseStats] = useState<AnalyticsStats | null>(null);
+  const [embeddingStatus, setEmbeddingStatus] = useState<EmbeddingStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -28,13 +31,15 @@ const DatabaseStatusPage: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      const [statusResponse, statsResponse] = await Promise.all([
+      const [statusResponse, statsResponse, embeddingResponse] = await Promise.all([
         getImportStatus(),
-        getAnalyticsStats()
+        getAnalyticsStats(),
+        getEmbeddingStatus()
       ]);
       
       setImportStatus(statusResponse);
       setDatabaseStats(statsResponse);
+      setEmbeddingStatus(embeddingResponse);
       setLastUpdated(new Date());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch database status');
@@ -46,15 +51,16 @@ const DatabaseStatusPage: React.FC = () => {
   useEffect(() => {
     fetchData();
     
-    // Auto-refresh every 30 seconds if import is running
+    // Auto-refresh every 30 seconds if import is running or embeddings are being generated
     const interval = setInterval(() => {
-      if (importStatus?.status === 'running') {
+      if (importStatus?.status === 'running' || 
+          (embeddingStatus && embeddingStatus.completion_percentage < 100)) {
         fetchData();
       }
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [importStatus?.status]);
+  }, [importStatus?.status, embeddingStatus?.completion_percentage]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -131,7 +137,7 @@ const DatabaseStatusPage: React.FC = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 gap-8">
           {/* Import Status */}
           {importStatus && (
             <div className="bg-white shadow rounded-lg">
@@ -221,6 +227,125 @@ const DatabaseStatusPage: React.FC = () => {
             </div>
           )}
 
+          {/* Semantic Search Embeddings Status */}
+          {embeddingStatus && (
+            <div className="bg-white shadow rounded-lg">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-medium text-gray-900 flex items-center">
+                  <Brain className="h-5 w-5 mr-2 text-purple-600" />
+                  Semantic Search Embeddings
+                </h2>
+              </div>
+              <div className="p-6">
+                <div className="space-y-4">
+                  {/* Progress Section */}
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium text-gray-700">
+                        Embedding Generation Progress
+                      </span>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        embeddingStatus.completion_percentage >= 100 
+                          ? 'text-green-600 bg-green-50'
+                          : embeddingStatus.completion_percentage > 0
+                          ? 'text-blue-600 bg-blue-50'
+                          : 'text-gray-600 bg-gray-50'
+                      }`}>
+                        {embeddingStatus.completion_percentage >= 100 ? 'Complete' : 
+                         embeddingStatus.completion_percentage > 0 ? 'Generating...' : 'Not Started'}
+                      </span>
+                    </div>
+                    
+                    <div className="flex justify-between text-sm text-gray-600 mb-1">
+                      <span>Progress</span>
+                      <span>{embeddingStatus.completion_percentage.toFixed(1)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div
+                        className={`h-3 rounded-full transition-all duration-300 ${
+                          embeddingStatus.completion_percentage >= 100 
+                            ? 'bg-green-500' 
+                            : 'bg-purple-600'
+                        }`}
+                        style={{ width: `${Math.min(embeddingStatus.completion_percentage, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Statistics */}
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="text-xl font-bold text-gray-900">
+                        {embeddingStatus.total_segments.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-gray-600">Total Segments</div>
+                    </div>
+                    <div className="bg-purple-50 rounded-lg p-3">
+                      <div className="text-xl font-bold text-purple-600">
+                        {embeddingStatus.segments_with_embeddings.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-gray-600">With Embeddings</div>
+                    </div>
+                    <div className="bg-orange-50 rounded-lg p-3">
+                      <div className="text-xl font-bold text-orange-600">
+                        {embeddingStatus.segments_without_embeddings.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-gray-600">Remaining</div>
+                    </div>
+                  </div>
+
+                  {/* Model Information */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                      <Zap className="h-4 w-4 mr-1" />
+                      Model Information
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-600">Model:</span>
+                        <span className="ml-2 font-mono text-purple-600">
+                          {embeddingStatus.embedding_model}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Dimensions:</span>
+                        <span className="ml-2 font-mono text-purple-600">
+                          {embeddingStatus.embedding_dimensions}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Last Updated */}
+                  {embeddingStatus.latest_generation_time && (
+                    <div className="text-xs text-gray-500">
+                      Last updated: {new Date(embeddingStatus.latest_generation_time).toLocaleString()}
+                    </div>
+                  )}
+
+                  {/* Status Message */}
+                  <div className="bg-blue-50 border-l-4 border-blue-400 p-3">
+                    <div className="flex">
+                      <div className="ml-3">
+                        <p className="text-sm text-blue-700">
+                          {embeddingStatus.completion_percentage >= 100 
+                            ? '✅ Semantic search is fully operational with all segments embedded.'
+                            : embeddingStatus.completion_percentage > 0 
+                            ? '🔄 Embeddings are being generated in the background. Semantic search is partially available.'
+                            : '⏳ Embedding generation has not started yet. Use regular search for now.'
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Database Statistics and other sections */}
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Database Statistics */}
           {databaseStats && (
             <div className="bg-white shadow rounded-lg">

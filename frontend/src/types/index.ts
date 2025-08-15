@@ -99,6 +99,9 @@ export interface TranscriptSegment {
   moderation_sexual_flag?: boolean;
   moderation_selfharm_flag?: boolean;
   
+  // Semantic Search
+  similarity_score?: number;
+  
   created_at: string;
   
   // Related data
@@ -177,9 +180,12 @@ export interface SearchParams {
   has_sexual?: boolean;
   has_selfharm?: boolean;
   
-  search_type?: 'fulltext' | 'exact' | 'fuzzy';
-  sort_by?: 'relevance' | 'date' | 'speaker' | 'sentiment' | 'stresslens';
+  search_type?: 'fulltext' | 'exact' | 'fuzzy' | 'semantic';
+  sort_by?: 'relevance' | 'date' | 'speaker' | 'sentiment' | 'stresslens' | 'similarity';
   sort_order?: 'asc' | 'desc';
+  
+  // Semantic search specific
+  similarity_threshold?: number;
 }
 
 export interface Suggestion {
@@ -339,6 +345,17 @@ export interface ImportStatus {
   estimated_completion?: string;
 }
 
+// Embedding Types
+export interface EmbeddingStatus {
+  total_segments: number;
+  segments_with_embeddings: number;
+  segments_without_embeddings: number;
+  completion_percentage: number;
+  latest_generation_time?: string;
+  embedding_model: string;
+  embedding_dimensions: number;
+}
+
 // Database Status Types
 export interface DatabaseStatus {
   import_status: ImportStatus;
@@ -392,9 +409,12 @@ export interface FilterState {
   hasSexual: boolean;
   hasSelfharm: boolean;
   
-  searchType: 'fulltext' | 'exact' | 'fuzzy';
-  sortBy: 'relevance' | 'date' | 'speaker' | 'sentiment' | 'stresslens';
+  searchType: 'fulltext' | 'exact' | 'fuzzy' | 'semantic';
+  sortBy: 'relevance' | 'date' | 'speaker' | 'sentiment' | 'stresslens' | 'similarity';
   sortOrder: 'asc' | 'desc';
+  
+  // Semantic search specific
+  similarityThreshold: number | '';
 }
 
 // Chart data types for analytics

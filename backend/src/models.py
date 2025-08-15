@@ -154,6 +154,10 @@ class TranscriptSegment(Base):
     moderation_sexual_flag: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     moderation_selfharm_flag: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     
+    # Vector Embeddings for Semantic Search
+    embedding: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Will store as text, converted to vector in queries
+    embedding_generated_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
+    
     # Metadata
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
@@ -203,3 +207,6 @@ Index('idx_video_event_metadata', Video.format, Video.candidate, Video.record_ty
 Index('idx_segment_stresslens', TranscriptSegment.stresslens_score, TranscriptSegment.stresslens_rank)
 Index('idx_segment_moderation_flags', TranscriptSegment.moderation_harassment_flag, TranscriptSegment.moderation_hate_flag, TranscriptSegment.moderation_violence_flag)
 Index('idx_segment_analytics', TranscriptSegment.stresslens_score, TranscriptSegment.sentiment_loughran_score, TranscriptSegment.flesch_kincaid_grade)
+
+# Indexes for semantic search embeddings
+Index('idx_segment_embedding_generated', TranscriptSegment.embedding_generated_at)

@@ -1,6 +1,7 @@
 """
 Search endpoints for the Political Transcript Search Platform
 """
+import logging
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, text, or_, and_
@@ -12,8 +13,10 @@ from ..database import get_db
 from ..models import TranscriptSegment, Video, Speaker, Topic, SegmentTopic
 from ..schemas import SearchResponse, SearchFilters, TranscriptSegmentResponse
 from ..config import settings
+from ..services.embedding_service import embedding_service
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.get("/", response_model=SearchResponse)
@@ -434,3 +437,208 @@ async def export_search_results(
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Export error: {str(e)}")
+
+
+@router.get("/semantic")
+async def semantic_search(
+    q: str = Query(..., description="Search query for semantic search"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(25, ge=1, le=100, description="Results per page"),
+    similarity_threshold: float = Query(0.5, ge=0, le=1, description="Minimum similarity threshold (0-1)"),
+    
+    # Filter parameters (same as regular search)
+    speaker: Optional[str] = Query(None, description="Filter by speaker name"),
+    source: Optional[str] = Query(None, description="Filter by video source"),
+    date_from: Optional[date] = Query(None, description="Filter from date (YYYY-MM-DD)"),
+    date_to: Optional[date] = Query(None, description="Filter to date (YYYY-MM-DD)"),
+    
+    # Event metadata filters
+    format: Optional[str] = Query(None, description="Filter by event format"),
+    candidate: Optional[str] = Query(None, description="Filter by candidate name"),
+    place: Optional[str] = Query(None, description="Filter by event place"),
+    record_type: Optional[str] = Query(None, description="Filter by record type"),
+    
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Perform semantic search on transcript segments using vector embeddings
+    
+    This endpoint uses pre-computed embeddings to find semantically similar content,
+    even when the exact keywords don't appear in the text.
+    """
+    try:
+        # Build filters dictionary
+        filters = {}
+        if speaker:
+            filters["speaker"] = speaker
+        if date_from:
+            filters["min_date"] = date_from
+        if date_to:
+            filters["max_date"] = date_to
+            
+        # Perform semantic search
+        raw_results = await embedding_service.semantic_search(
+            db=db,
+            query_text=q,
+            limit=page_size * 2,  # Get more results to account for post-filtering
+            similarity_threshold=similarity_threshold,
+            filters=filters
+        )
+        
+        # Apply additional filters that aren't handled by the embedding service
+        filtered_results = []
+        for result in raw_results:
+            # Get video information for additional filtering
+            video_query = select(Video).where(Video.id == result["video_id"])
+            video_result = await db.execute(video_query)
+            video = video_result.scalar_one_or_none()
+            
+            # Apply video-level filters
+            if source and video and video.source and source.lower() not in video.source.lower():
+                continue
+            if format and video and video.format and format.lower() not in video.format.lower():
+                continue
+            if candidate and video and video.candidate and candidate.lower() not in video.candidate.lower():
+                continue
+            if place and video and video.place and place.lower() not in video.place.lower():
+                continue
+            if record_type and video and video.record_type and record_type.lower() not in video.record_type.lower():
+                continue
+            
+            # Add video info to result
+            if video:
+                result["video"] = {
+                    "id": video.id,
+                    "title": video.title,
+                    "source": video.source,
+                    "date": video.date,
+                    "format": video.format,
+                    "candidate": video.candidate,
+                    "place": video.place,
+                    "record_type": video.record_type,
+                    "video_thumbnail_url": video.video_thumbnail_url
+                }
+            
+            filtered_results.append(result)
+        
+        # Apply pagination
+        total_results = len(filtered_results)
+        start_idx = (page - 1) * page_size
+        end_idx = start_idx + page_size
+        paginated_results = filtered_results[start_idx:end_idx]
+        
+        # Convert to response format
+        segment_responses = []
+        for result in paginated_results:
+            segment_response = {
+                "id": result["id"],
+                "segment_id": result["segment_id"],
+                "speaker_name": result["speaker_name"],
+                "transcript_text": result["transcript_text"],
+                "video_id": result["video_id"],
+                "video_seconds": result["video_seconds"],
+                "timestamp_start": result["timestamp_start"],
+                "timestamp_end": result["timestamp_end"],
+                "word_count": len(result["transcript_text"].split()) if result["transcript_text"] else 0,
+                "char_count": len(result["transcript_text"]) if result["transcript_text"] else 0,
+                "sentiment_loughran_score": result.get("sentiment_loughran_score"),
+                "stresslens_score": result.get("stresslens_score"),
+                "similarity_score": result["similarity_score"],
+                "video": result.get("video"),
+                "segment_topics": []  # TODO: Add topics if needed
+            }
+            segment_responses.append(segment_response)
+        
+        # Build response
+        return {
+            "results": segment_responses,
+            "total": total_results,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": (total_results + page_size - 1) // page_size,
+            "query": q,
+            "search_type": "semantic",
+            "similarity_threshold": similarity_threshold,
+            "filters": {
+                "speaker": speaker,
+                "source": source,
+                "date_from": date_from,
+                "date_to": date_to,
+                "format": format,
+                "candidate": candidate,
+                "place": place,
+                "record_type": record_type
+            }
+        }
+    
+    except Exception as e:
+        logger.error(f"Semantic search error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Semantic search error: {str(e)}")
+
+
+@router.post("/generate-embeddings")
+async def generate_embeddings_endpoint(
+    force_regenerate: bool = Query(False, description="Force regeneration of existing embeddings"),
+    batch_size: int = Query(100, ge=10, le=1000, description="Batch size for processing"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Generate or regenerate embeddings for all transcript segments
+    
+    This is typically run after importing new data or when updating the embedding model.
+    """
+    try:
+        result = await embedding_service.generate_embeddings_for_segments(
+            db=db,
+            force_regenerate=force_regenerate,
+            batch_size=batch_size
+        )
+        
+        return {
+            "message": "Embedding generation completed",
+            "stats": result
+        }
+    
+    except Exception as e:
+        logger.error(f"Embedding generation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Embedding generation error: {str(e)}")
+
+
+@router.get("/embedding-status")
+async def embedding_status(db: AsyncSession = Depends(get_db)):
+    """
+    Get status of embedding generation for transcript segments
+    """
+    try:
+        # Count segments with and without embeddings
+        total_query = select(func.count(TranscriptSegment.id))
+        total_result = await db.execute(total_query)
+        total_segments = total_result.scalar_one()
+        
+        with_embeddings_query = select(func.count(TranscriptSegment.id)).where(
+            TranscriptSegment.embedding_generated_at.isnot(None)
+        )
+        with_embeddings_result = await db.execute(with_embeddings_query)
+        with_embeddings = with_embeddings_result.scalar_one()
+        
+        without_embeddings = total_segments - with_embeddings
+        completion_percentage = (with_embeddings / total_segments * 100) if total_segments > 0 else 0
+        
+        # Get latest embedding generation timestamp
+        latest_query = select(func.max(TranscriptSegment.embedding_generated_at))
+        latest_result = await db.execute(latest_query)
+        latest_generation = latest_result.scalar_one()
+        
+        return {
+            "total_segments": total_segments,
+            "segments_with_embeddings": with_embeddings,
+            "segments_without_embeddings": without_embeddings,
+            "completion_percentage": round(completion_percentage, 2),
+            "latest_generation_time": latest_generation,
+            "embedding_model": embedding_service.model_name,
+            "embedding_dimensions": embedding_service.embedding_dim
+        }
+    
+    except Exception as e:
+        logger.error(f"Embedding status error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Embedding status error: {str(e)}")

@@ -52,6 +52,7 @@ const SearchPage: React.FC = () => {
     searchType: (searchParams.get('search_type') as FilterState['searchType']) || 'fulltext',
     sortBy: (searchParams.get('sort_by') as FilterState['sortBy']) || 'relevance',
     sortOrder: (searchParams.get('sort_order') as FilterState['sortOrder']) || 'desc',
+    similarityThreshold: searchParams.get('similarity_threshold') ? parseFloat(searchParams.get('similarity_threshold')!) : 0.5,
   });
   
   const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'));
@@ -92,7 +93,12 @@ const SearchPage: React.FC = () => {
         )
       };
 
-      const results = await searchAPI.search(searchParameters);
+      const results = filters.searchType === 'semantic' 
+        ? await searchAPI.semanticSearch({ 
+            ...searchParameters, 
+            similarity_threshold: typeof filters.similarityThreshold === 'number' ? filters.similarityThreshold : 0.5 
+          })
+        : await searchAPI.search(searchParameters);
       setSearchResults(results);
 
       // Update URL
@@ -154,6 +160,7 @@ const SearchPage: React.FC = () => {
       searchType: 'fulltext',
       sortBy: 'relevance',
       sortOrder: 'desc',
+      similarityThreshold: 0.5,
     });
   };
 
@@ -263,6 +270,15 @@ const SearchPage: React.FC = () => {
             {/* Metadata Row */}
             <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
               <span>{segment.word_count} words</span>
+              
+              {typeof segment.similarity_score === 'number' && (
+                <div className="flex items-center space-x-1">
+                  <Search className="h-4 w-4" />
+                  <span className="font-medium text-blue-600">
+                    {(segment.similarity_score * 100).toFixed(1)}% match
+                  </span>
+                </div>
+              )}
               
               {typeof segment.sentiment_loughran_score === 'number' && (
                 <div className="flex items-center space-x-1">
@@ -754,8 +770,31 @@ const SearchPage: React.FC = () => {
                       <option value="fulltext">Full-text Search</option>
                       <option value="exact">Exact Match</option>
                       <option value="fuzzy">Fuzzy Search</option>
+                      <option value="semantic">Semantic Search</option>
                     </select>
                   </div>
+
+                  {filters.searchType === 'semantic' && (
+                    <div>
+                      <label className="label">
+                        Similarity Threshold
+                        <span className="text-sm text-gray-500 ml-2">(0.0 - 1.0)</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        value={filters.similarityThreshold}
+                        onChange={(e) => handleFilterChange('similarityThreshold', parseFloat(e.target.value) || 0.5)}
+                        className="input"
+                        placeholder="0.5"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Higher values return more similar results. Lower values cast a wider net.
+                      </p>
+                    </div>
+                  )}
 
                   <div>
                     <label className="label">Sort By</label>
@@ -769,6 +808,9 @@ const SearchPage: React.FC = () => {
                       <option value="speaker">Speaker</option>
                       <option value="sentiment">Sentiment</option>
                       <option value="stresslens">Stresslens</option>
+                      {filters.searchType === 'semantic' && (
+                        <option value="similarity">Similarity Score</option>
+                      )}
                     </select>
                   </div>
 
@@ -821,6 +863,11 @@ const SearchPage: React.FC = () => {
                 </h2>
                 <p className="text-sm text-gray-500">
                   {searchResults.total.toLocaleString()} results for "{searchResults.query}"
+                  <span className="ml-2 inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
+                    {filters.searchType === 'semantic' ? '🧠 Semantic' : 
+                     filters.searchType === 'fulltext' ? '🔍 Full-text' :
+                     filters.searchType === 'exact' ? '🎯 Exact' : '🔄 Fuzzy'}
+                  </span>
                   {searchResults.total > 0 && (
                     <span>
                       {' '}• Showing {((searchResults.page - 1) * searchResults.page_size) + 1}-

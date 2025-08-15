@@ -82,7 +82,7 @@ class TranscriptSegmentResponse(BaseModel):
     segment_id: str
     speaker_name: str
     transcript_text: str
-    video_seconds: int
+    video_seconds: Optional[int]
     timestamp_start: Optional[str]
     timestamp_end: Optional[str]
     duration_seconds: Optional[int]

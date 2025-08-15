@@ -97,6 +97,26 @@ export const searchAPI = {
     });
     return response.data;
   },
+
+  // Semantic search
+  semanticSearch: async (params: SearchParams & { similarity_threshold?: number }): Promise<SearchResponse> => {
+    const response = await api.get('/api/search/semantic', { params });
+    return response.data;
+  },
+
+  // Generate embeddings
+  generateEmbeddings: async (forceRegenerate: boolean = false, batchSize: number = 100): Promise<any> => {
+    const response = await api.post('/api/search/generate-embeddings', null, {
+      params: { force_regenerate: forceRegenerate, batch_size: batchSize },
+    });
+    return response.data;
+  },
+
+  // Get embedding status
+  getEmbeddingStatus: async (): Promise<any> => {
+    const response = await api.get('/api/search/embedding-status');
+    return response.data;
+  },
 };
 
 // Analytics API
@@ -394,5 +414,6 @@ export const getReadabilityGrade = (score?: number): string => {
 // Convenience exports for commonly used functions
 export const getImportStatus = uploadAPI.getImportStatus;
 export const getAnalyticsStats = analyticsAPI.getStats;
+export const getEmbeddingStatus = searchAPI.getEmbeddingStatus;
 
 export default api;

@@ -14,6 +14,7 @@ from ..parsers.html_parser import TranscriptHTMLParser
 from ..models import Video, Speaker, Topic, TranscriptSegment, SegmentTopic
 from ..database import Base
 from ..config import settings
+from .embedding_service import embedding_service
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,7 @@ class ImportService:
         self,
         html_dir: str,
         force_reimport: bool = False,
+        generate_embeddings: bool = True,
         progress_callback: Optional[Callable[[int, int, str, List[str]], None]] = None
     ) -> Dict[str, Any]:
         """
@@ -46,6 +48,7 @@ class ImportService:
         Args:
             html_dir: Directory containing HTML files
             force_reimport: Whether to reimport existing files
+            generate_embeddings: Whether to generate embeddings after import
             progress_callback: Callback for progress updates
             
         Returns:
@@ -83,11 +86,27 @@ class ImportService:
         
         logger.info(f"Import completed: {processed_files} successful, {failed_files} failed")
         
+        # Generate embeddings if requested and there were successful imports
+        embedding_stats = None
+        if generate_embeddings and processed_files > 0:
+            logger.info("Starting embedding generation for newly imported segments")
+            try:
+                async with self.SessionLocal() as db:
+                    embedding_stats = await embedding_service.generate_embeddings_for_segments(
+                        db=db,
+                        force_regenerate=False  # Only generate for new segments
+                    )
+                logger.info(f"Embedding generation completed: {embedding_stats}")
+            except Exception as e:
+                logger.error(f"Error generating embeddings: {str(e)}")
+                errors.append(f"Embedding generation failed: {str(e)}")
+        
         return {
             "total_files": total_files,
             "total_processed": processed_files,
             "total_failed": failed_files,
-            "errors": errors
+            "errors": errors,
+            "embedding_stats": embedding_stats
         }
     
     async def import_html_file(self, file_path: str, force_reimport: bool = False) -> Dict[str, Any]:
@@ -341,3 +360,30 @@ class ImportService:
             )
         
         await db.commit()
+    
+    async def generate_embeddings_for_all_segments(
+        self, 
+        force_regenerate: bool = False,
+        batch_size: int = 100
+    ) -> Dict[str, Any]:
+        """
+        Generate embeddings for all transcript segments in the database
+        
+        Args:
+            force_regenerate: Whether to regenerate embeddings for segments that already have them
+            batch_size: Number of segments to process in each batch
+            
+        Returns:
+            Dictionary with processing statistics
+        """
+        logger.info("Starting embedding generation for all transcript segments")
+        
+        async with self.SessionLocal() as db:
+            result = await embedding_service.generate_embeddings_for_segments(
+                db=db,
+                force_regenerate=force_regenerate,
+                batch_size=batch_size
+            )
+        
+        logger.info(f"Embedding generation completed: {result}")
+        return result

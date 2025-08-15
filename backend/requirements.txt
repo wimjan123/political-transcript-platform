@@ -7,6 +7,7 @@ gunicorn==21.2.0
 sqlalchemy==2.0.23
 asyncpg==0.29.0
 psycopg2-binary==2.9.9
+pgvector==0.2.4
 alembic==1.12.1
 
 # HTTP and async
@@ -24,6 +25,8 @@ numpy==1.25.2
 # Text processing and NLP
 nltk==3.8.1
 textstat==0.7.3
+sentence-transformers==2.2.2
+torch>=2.0.0
 
 # Search and indexing
 whoosh==2.7.4
