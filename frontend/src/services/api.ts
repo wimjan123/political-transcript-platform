@@ -411,6 +411,45 @@ export const getReadabilityGrade = (score?: number): string => {
   return 'College';
 };
 
+// Ingest API
+export const ingestAPI = {
+  // Get YouTube video info
+  getYouTubeInfo: async (url: string): Promise<any> => {
+    const response = await api.get('/api/ingest/video-info', { params: { url } });
+    return response.data;
+  },
+
+  // Test OpenAI API key
+  testOpenAIKey: async (apiKey: string): Promise<any> => {
+    const response = await api.post('/api/ingest/test-api-key', { api_key: apiKey });
+    return response.data;
+  },
+
+  // Start YouTube video ingestion
+  startYouTubeIngestion: async (request: any): Promise<any> => {
+    const response = await api.post('/api/ingest/youtube', request);
+    return response.data;
+  },
+
+  // Get processing status
+  getProcessingStatus: async (videoId: string): Promise<any> => {
+    const response = await api.get(`/api/ingest/status/${videoId}`);
+    return response.data;
+  },
+
+  // Get all processing statuses
+  getAllProcessingStatus: async (): Promise<any> => {
+    const response = await api.get('/api/ingest/status');
+    return response.data;
+  },
+
+  // Clear processing status
+  clearProcessingStatus: async (videoId: string): Promise<any> => {
+    const response = await api.delete(`/api/ingest/status/${videoId}`);
+    return response.data;
+  },
+};
+
 // Convenience exports for commonly used functions
 export const getImportStatus = uploadAPI.getImportStatus;
 export const getAnalyticsStats = analyticsAPI.getStats;

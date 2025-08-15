@@ -356,6 +356,46 @@ export interface EmbeddingStatus {
   embedding_dimensions: number;
 }
 
+// Ingest Types
+export interface YouTubeVideoInfo {
+  video_id: string;
+  title: string;
+  duration: number;
+  uploader: string;
+  channel: string;
+  thumbnail: string;
+  upload_date?: string;
+  view_count: number;
+}
+
+export interface YouTubeIngestRequest {
+  url: string;
+  openai_api_key: string;
+  title_override?: string;
+  speaker_override?: string;
+}
+
+export interface IngestStatus {
+  status: 'processing' | 'completed' | 'error';
+  progress: string;
+  video_id?: number;
+  error?: string;
+  started_at?: string;
+  completed_at?: string;
+  result?: {
+    video_id: number;
+    total_segments: number;
+    total_duration: number;
+    title: string;
+  };
+}
+
+export interface OpenAIKeyTestResult {
+  valid: boolean;
+  whisper_available: boolean;
+  message: string;
+}
+
 // Database Status Types
 export interface DatabaseStatus {
   import_status: ImportStatus;
