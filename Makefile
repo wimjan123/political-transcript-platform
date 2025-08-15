@@ -90,6 +90,30 @@ shell-db: ## Open PostgreSQL shell
 backup-db: ## Backup database
 	@echo "$(GREEN)Creating database backup...$(NC)"
 	@docker compose exec db pg_dump -U postgres political_transcripts > backup_$(shell date +%Y%m%d_%H%M%S).sql
+
+# Meilisearch configuration
+MEILI_HOST ?= http://localhost:7700
+MEILI_MASTER_KEY ?= change-me
+
+.PHONY: meili-up meili-down meili-init meili-sync
+
+meili-up: ## Start Meilisearch only
+	@echo "$(GREEN)Starting Meilisearch...$(NC)"
+	@docker compose up -d meilisearch
+
+meili-down: ## Stop Meilisearch service
+	@echo "$(YELLOW)Stopping Meilisearch...$(NC)"
+	@docker compose stop meilisearch
+
+meili-init: ## Create Meili indexes and apply settings
+	@echo "$(GREEN)Initializing Meilisearch indexes...$(NC)"
+	@docker compose run --rm -e MEILI_HOST=http://political_transcripts_meilisearch:7700 -e MEILI_MASTER_KEY=$(MEILI_MASTER_KEY) api \
+		python scripts/meili_sync.py --init
+
+meili-sync: ## Incremental sync from Postgres into Meilisearch
+	@echo "$(GREEN)Syncing data to Meilisearch...$(NC)"
+	@docker compose run --rm -e MEILI_HOST=http://political_transcripts_meilisearch:7700 -e MEILI_MASTER_KEY=$(MEILI_MASTER_KEY) api \
+		python scripts/meili_sync.py --incremental --batch-size=1000
 	@echo "$(GREEN)Database backup complete!$(NC)"
 
 restore-db: ## Restore database (usage: make restore-db FILE=backup.sql)

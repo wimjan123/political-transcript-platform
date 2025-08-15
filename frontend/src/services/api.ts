@@ -104,6 +104,20 @@ export const searchAPI = {
     return response.data;
   },
 
+  // Meilisearch endpoint (lexical, hybrid, semantic)
+  searchMeili: async (
+    params: {
+      q: string;
+      page?: number;
+      page_size?: number;
+      mode?: 'lexical' | 'hybrid' | 'semantic';
+      index?: 'segments' | 'events';
+    } & Record<string, any>
+  ): Promise<SearchResponse> => {
+    const response = await api.get('/api/search/meili', { params });
+    return response.data;
+  },
+
   // Generate embeddings
   generateEmbeddings: async (forceRegenerate: boolean = false, batchSize: number = 100): Promise<any> => {
     const response = await api.post('/api/search/generate-embeddings', null, {

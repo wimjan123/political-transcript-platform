@@ -33,6 +33,7 @@ moviepy>=1.0.3
 
 # Search and indexing
 whoosh==2.7.4
+elasticsearch==8.11.0
 
 # Media fetching
 yt-dlp==2024.08.06

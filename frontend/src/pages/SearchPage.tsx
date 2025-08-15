@@ -58,6 +58,96 @@ const SearchPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'));
   const [pageSize, setPageSize] = useState(parseInt(searchParams.get('page_size') || '25'));
 
+  // Meilisearch toggles
+  const [searchEngine, setSearchEngine] = useState<'postgres' | 'meili'>((searchParams.get('engine') as any) || 'postgres');
+  const [meiliMode, setMeiliMode] = useState<'lexical' | 'hybrid' | 'semantic'>((searchParams.get('mode') as any) || 'lexical');
+  const [meiliIndex, setMeiliIndex] = useState<'segments' | 'events'>((searchParams.get('index') as any) || 'segments');
+  
+  // Selection + export state
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedSegmentIds, setSelectedSegmentIds] = useState<Set<number>>(new Set());
+
+  const vimeoTimeFragment = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    const parts: string[] = [];
+    if (h > 0) parts.push(`${h}h`);
+    if (m > 0) parts.push(`${m}m`);
+    parts.push(`${s}s`);
+    return parts.join('');
+  };
+
+  const buildWatchUrlAt = (segment: TranscriptSegment) => {
+    const v = segment.video;
+    if (!v || typeof segment.video_seconds !== 'number') return undefined;
+    const base = v.vimeo_video_id ? `https://vimeo.com/${v.vimeo_video_id}` : (v.vimeo_embed_url || v.video_url);
+    if (!base) return undefined;
+    const frag = vimeoTimeFragment(segment.video_seconds);
+    if (base.includes('vimeo.com')) return `${base}#t=${frag}`;
+    return base;
+  };
+
+  const toggleSelectSegment = (id: number) => {
+    setSelectedSegmentIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAllVisible = () => {
+    if (!searchResults) return;
+    setSelectedSegmentIds(prev => {
+      const next = new Set(prev);
+      searchResults.results.forEach(s => next.add(s.id));
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedSegmentIds(new Set());
+
+  const exportSelectedTxt = () => {
+    if (!searchResults) return;
+    const selected = searchResults.results.filter(s => selectedSegmentIds.has(s.id));
+    if (selected.length === 0) return;
+    const lines = selected.map(s => {
+      const ts = typeof s.video_seconds === 'number' ? formatTimestamp(s.video_seconds) : '';
+      const start = ts ? `[${ts}]` : '';
+      const dateStr = s.video?.date ? `[${new Date(s.video.date).toISOString().slice(0,10)}]` : '';
+      const placeStr = s.video?.place ? `[${s.video.place}]` : '';
+      const headerBits = [dateStr, placeStr, start].filter(Boolean).join(' ');
+      const speaker = s.speaker_name || 'Unknown';
+      const videoInfo = s.video?.title ? ` — ${s.video.title}` : '';
+      return `${headerBits} ${speaker}: ${s.transcript_text}${videoInfo}`.trim();
+    });
+    const blob = new Blob([lines.join('\n\n') + '\n'], { type: 'text/plain;charset=utf-8' });
+    const filename = `search_segments_${new Date().toISOString().replace(/[:.]/g,'-')}.txt`;
+    downloadFile(blob as unknown as Blob, filename);
+  };
+
+  const exportSelectedWithLinks = () => {
+    if (!searchResults) return;
+    const selected = searchResults.results.filter(s => selectedSegmentIds.has(s.id));
+    if (selected.length === 0) return;
+    const lines = selected.map(s => {
+      const start = typeof s.video_seconds === 'number' ? formatTimestamp(s.video_seconds) : '';
+      const end = (typeof s.video_seconds === 'number' && typeof s.duration_seconds === 'number') 
+        ? formatTimestamp(s.video_seconds + s.duration_seconds) : undefined;
+      const range = end ? `[${start} - ${end}]` : (start ? `[${start}]` : '');
+      const dateStr = s.video?.date ? `[${new Date(s.video.date).toISOString().slice(0,10)}]` : '';
+      const placeStr = s.video?.place ? `[${s.video.place}]` : '';
+      const headerBits = [dateStr, placeStr, range].filter(Boolean).join(' ');
+      const speaker = s.speaker_name || 'Unknown';
+      const videoInfo = s.video?.title ? ` — ${s.video.title}` : '';
+      const url = buildWatchUrlAt(s) || '';
+      return `${headerBits} ${speaker}: ${s.transcript_text}${videoInfo}\n${url}`.trim();
+    });
+    const blob = new Blob([lines.join('\n\n') + '\n'], { type: 'text/plain;charset=utf-8' });
+    const filename = `search_segments_links_${new Date().toISOString().replace(/[:.]/g,'-')}.txt`;
+    downloadFile(blob as unknown as Blob, filename);
+  };
+
   useEffect(() => {
     if (query.trim()) {
       performSearch();
@@ -93,12 +183,22 @@ const SearchPage: React.FC = () => {
         )
       };
 
-      const results = filters.searchType === 'semantic' 
-        ? await searchAPI.semanticSearch({ 
-            ...searchParameters, 
-            similarity_threshold: typeof filters.similarityThreshold === 'number' ? filters.similarityThreshold : 0.5 
-          })
-        : await searchAPI.search(searchParameters);
+      let results: SearchResponse;
+      if (searchEngine === 'meili') {
+        const meiliParams: any = {
+          ...searchParameters,
+          mode: meiliMode,
+          index: meiliIndex,
+        };
+        results = await searchAPI.searchMeili(meiliParams);
+      } else if (filters.searchType === 'semantic') {
+        results = await searchAPI.semanticSearch({
+          ...searchParameters,
+          similarity_threshold: typeof filters.similarityThreshold === 'number' ? filters.similarityThreshold : 0.5,
+        });
+      } else {
+        results = await searchAPI.search(searchParameters);
+      }
       setSearchResults(results);
 
       // Update URL
@@ -108,6 +208,11 @@ const SearchPage: React.FC = () => {
           newParams.set(key, value.toString());
         }
       });
+      newParams.set('engine', searchEngine);
+      if (searchEngine === 'meili') {
+        newParams.set('mode', meiliMode);
+        newParams.set('index', meiliIndex);
+      }
       setSearchParams(newParams);
 
     } catch (error) {
@@ -264,11 +369,21 @@ const SearchPage: React.FC = () => {
 
             {/* Transcript Text */}
             <div className="text-gray-900 mb-4 leading-relaxed">
+              {selectionMode && (
+                <label className="inline-flex items-center mr-3 align-top">
+                  <input
+                    type="checkbox"
+                    className="mr-2"
+                    checked={selectedSegmentIds.has(segment.id)}
+                    onChange={() => toggleSelectSegment(segment.id)}
+                  />
+                </label>
+              )}
               {highlightText(segment.transcript_text, query)}
             </div>
 
             {/* Metadata Row */}
-            <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
+            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 mb-3">
               <span>{segment.word_count} words</span>
               
               {typeof segment.similarity_score === 'number' && (
@@ -299,6 +414,18 @@ const SearchPage: React.FC = () => {
                     <span className="text-gray-400">(#{segment.stresslens_rank})</span>
                   )}
                 </div>
+              )}
+
+              {/* Match info chips */}
+              {segment.segment_topics && segment.segment_topics.length > 0 && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  Top topic: {segment.segment_topics[0].topic.name}
+                </span>
+              )}
+              {typeof segment.moderation_overall_score === 'number' && segment.moderation_overall_score > 0 && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                  Mod: {(segment.moderation_overall_score * 100).toFixed(0)}%
+                </span>
               )}
             </div>
 
@@ -475,6 +602,48 @@ const SearchPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Search Engine + Mode */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="label">Search Engine</label>
+                <select
+                  value={searchEngine}
+                  onChange={(e) => setSearchEngine(e.target.value as any)}
+                  className="input"
+                >
+                  <option value="postgres">Database (Postgres)</option>
+                  <option value="meili">Meilisearch</option>
+                </select>
+              </div>
+              {searchEngine === 'meili' && (
+                <>
+                  <div>
+                    <label className="label">Meili Mode</label>
+                    <select
+                      value={meiliMode}
+                      onChange={(e) => setMeiliMode(e.target.value as any)}
+                      className="input"
+                    >
+                      <option value="lexical">Lexical</option>
+                      <option value="hybrid">Hybrid</option>
+                      <option value="semantic">Semantic</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label">Meili Index</label>
+                    <select
+                      value={meiliIndex}
+                      onChange={(e) => setMeiliIndex(e.target.value as any)}
+                      className="input"
+                    >
+                      <option value="segments">Segments</option>
+                      <option value="events">Events</option>
+                    </select>
+                  </div>
+                </>
+              )}
+            </div>
+
             {/* Filter Toggle */}
             <div className="flex items-center justify-between">
               <button
@@ -502,6 +671,21 @@ const SearchPage: React.FC = () => {
                 
                 {searchResults && searchResults.results.length > 0 && (
                   <div className="flex items-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectionMode(!selectionMode)}
+                      className={`inline-flex items-center px-3 py-2 border text-sm font-medium rounded-md ${selectionMode ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-gray-300'} hover:bg-gray-50`}
+                    >
+                      {selectionMode ? 'Exit Selection' : 'Select Segments'}
+                    </button>
+                    {selectionMode && (
+                      <>
+                        <button type="button" onClick={selectAllVisible} className="btn btn-outline">Select Page</button>
+                        <button type="button" onClick={clearSelection} className="btn btn-outline">Clear</button>
+                        <button type="button" onClick={exportSelectedTxt} className="btn btn-primary">Export Text</button>
+                        <button type="button" onClick={exportSelectedWithLinks} className="btn btn-primary">Export + Links</button>
+                      </>
+                    )}
                     <button
                       onClick={() => handleExport('csv')}
                       disabled={isExporting}

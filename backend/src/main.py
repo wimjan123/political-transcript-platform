@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 
 from .database import init_db
 from .routes import search, analytics, videos, upload, ingest, clips
+from .routes import meili_search
 from .config import settings
 
 
@@ -42,6 +43,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(search.router, prefix="/api/search", tags=["search"])
+app.include_router(meili_search.router, prefix="/api/search", tags=["search-meili"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
 app.include_router(videos.router, prefix="/api/videos", tags=["videos"])
 app.include_router(upload.router, prefix="/api/upload", tags=["upload"])

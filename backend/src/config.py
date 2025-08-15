@@ -39,6 +39,17 @@ class Settings(BaseSettings):
     MAX_SEARCH_RESULTS: int = 1000
     DEFAULT_PAGE_SIZE: int = 25
     
+    # Elasticsearch settings
+    ELASTICSEARCH_URL: str = "http://localhost:9200"
+    ELASTICSEARCH_INDEX: str = "transcript_segments"
+    ELASTICSEARCH_TIMEOUT: int = 30
+
+    # Meilisearch settings
+    MEILI_HOST: str = "http://localhost:7700"
+    MEILI_MASTER_KEY: str = ""
+    MEILI_EMBEDDER_ID: str | None = None
+    MEILI_TIMEOUT: int = 30
+    
     @property
     def database_url(self) -> str:
         """Build database URL if not provided"""

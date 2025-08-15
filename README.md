@@ -61,6 +61,30 @@ make deploy
 - **Nginx**: Reverse proxy and static file serving
 - **Hot Reload**: Development environment with live code updates
 
+## Hybrid and Semantic Search with Meilisearch
+
+The platform supports a separate Meilisearch layer for fast lexical, hybrid, and semantic search while keeping PostgreSQL as the source of truth.
+
+- Start Meilisearch: `make meili-up`
+- Initialize indexes and settings: `make meili-init`
+- Incremental sync from Postgres: `make meili-sync`
+- Stop Meilisearch: `make meili-down`
+
+Search modes available on the Search page when Meili is selected:
+- Lexical: standard keyword ranking (BM25)
+- Hybrid: BM25 + semantic reranking (semanticRatio=0.6)
+- Semantic: semantic-only retrieval (semanticRatio=1)
+
+Filters are mapped to Meilisearch filter strings, preserving existing filters such as date range, candidate, place, record type, topics, moderation flags/scores, stresslens thresholds, and document counts/duration.
+
+Security note:
+- Set `MEILI_MASTER_KEY` in your `.env` for production use. You can also override via Makefile: `MEILI_MASTER_KEY=your-key make meili-up`.
+
+Notes:
+- Meilisearch runs in its own container with a persistent volume (`./meili_data`).
+- PostgreSQL remains the source of truth. The ETL script (`backend/scripts/meili_sync.py`) reads from Postgres and upserts to Meili.
+- If you plan to use Meili semantic embeddings, configure an embedder on your Meili server and set the embedder id in backend settings (`MEILI_EMBEDDER_ID`).
+
 ## Data Pipeline
 
 The platform processes HTML files with this structure:
