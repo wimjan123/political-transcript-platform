@@ -1,13 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { playlist, type PlaylistItem } from '../services/playlist';
 import { videosAPI, downloadFile, formatTimestamp } from '../services/api';
 import { Trash2, Download, ExternalLink } from 'lucide-react';
 
 const PlaylistPage: React.FC = () => {
+  const [active, setActive] = useState<string>(playlist.getActive());
   const [items, setItems] = useState<PlaylistItem[]>(playlist.getAll());
+  const [newName, setNewName] = useState('');
 
   useEffect(() => {
-    const onUpdate = () => setItems(playlist.getAll());
+    const onUpdate = () => {
+      setActive(playlist.getActive());
+      setItems(playlist.getAll());
+    };
     window.addEventListener('playlist:updated', onUpdate);
     window.addEventListener('storage', onUpdate);
     return () => {
@@ -18,6 +23,21 @@ const PlaylistPage: React.FC = () => {
 
   const remove = (id: string) => playlist.remove(id);
   const clear = () => playlist.clear();
+  const playlists = useMemo(() => playlist.getPlaylists(), [active, items.length]);
+  const setActiveList = (name: string) => playlist.setActive(name);
+  const createList = () => {
+    const name = newName.trim() || 'Untitled';
+    playlist.create(name);
+    playlist.setActive(name);
+    setNewName('');
+  };
+  const renameList = (oldName: string) => {
+    const next = prompt('Rename playlist', oldName)?.trim();
+    if (next && next !== oldName) playlist.rename(oldName, next);
+  };
+  const deleteList = (name: string) => {
+    if (confirm(`Delete playlist "${name}"?`)) playlist.removePlaylist(name);
+  };
 
   const exportText = () => {
     const lines = items.map(it => {
@@ -87,7 +107,32 @@ const PlaylistPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">Playlist</h1>
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">Playlist</h1>
+            <div className="mt-2 flex items-center gap-2">
+              <label className="text-sm text-gray-600">Active:</label>
+              <select
+                value={active}
+                onChange={(e) => setActiveList(e.target.value)}
+                className="text-sm border border-gray-300 rounded-md px-2 py-1"
+              >
+                {playlists.map((n) => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+              <input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="New playlist name"
+                className="text-sm border border-gray-300 rounded-md px-2 py-1"
+              />
+              <button onClick={createList} className="btn btn-outline">Create</button>
+              <button onClick={() => renameList(active)} className="btn btn-outline">Rename</button>
+              {playlists.length > 1 && (
+                <button onClick={() => deleteList(active)} className="btn btn-outline text-red-600">Delete</button>
+              )}
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             <button onClick={exportText} className="btn btn-outline"><Download className="h-4 w-4 mr-1" />Export Text</button>
             <button onClick={exportLinks} className="btn btn-outline"><ExternalLink className="h-4 w-4 mr-1" />Export Links</button>
