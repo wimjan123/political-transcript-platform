@@ -20,19 +20,43 @@ export type PlaylistItem = {
 };
 
 const STORAGE_KEY = 'pts_playlist_v1';
+let memoryStore: PlaylistItem[] = [];
+
+const storageAvailable = (): boolean => {
+  try {
+    const x = '__pts_test__';
+    localStorage.setItem(x, x);
+    localStorage.removeItem(x);
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 const read = (): PlaylistItem[] => {
+  if (!storageAvailable()) return memoryStore;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const data = JSON.parse(raw);
     if (Array.isArray(data)) return data as PlaylistItem[];
-  } catch {}
+  } catch {
+    // fall back to memory store if parsing/set blocked
+    return memoryStore;
+  }
   return [];
 };
 
 const write = (items: PlaylistItem[]) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  if (storageAvailable()) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    } catch {
+      memoryStore = items;
+    }
+  } else {
+    memoryStore = items;
+  }
   window.dispatchEvent(new CustomEvent('playlist:updated'));
 };
 

@@ -862,10 +862,11 @@ const VideoDetailPage: React.FC = () => {
                   })()}
                   <button
                     onClick={() => playlist.addSegment(segment as any)}
-                    className="text-primary-600 hover:text-primary-700 transition-colors ml-2"
+                    className="p-2 text-primary-600 hover:text-primary-700 transition-colors ml-1"
                     title="Add segment to playlist"
+                    aria-label="Add segment to playlist"
                   >
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-5 w-5" />
                   </button>
                 </div>
 

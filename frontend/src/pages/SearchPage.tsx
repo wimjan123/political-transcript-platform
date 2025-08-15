@@ -458,8 +458,31 @@ const SearchPage: React.FC = () => {
           </button>
         </div>
 
-            {/* Expanded Details */}
-            {isExpanded && (
+        {/* Right-side actions: expand and quick add */}
+        <div className="flex items-center ml-4 space-x-1">
+          {segment.video && (
+            <button
+              type="button"
+              onClick={() => playlist.addSegment(segment as any)}
+              className="p-2 text-primary-600 hover:text-primary-700"
+              aria-label="Add segment to playlist"
+              title="Add to Playlist"
+            >
+              <Plus className="h-5 w-5" />
+            </button>
+          )}
+          {/* Expand/Collapse Button */}
+          <button
+            onClick={() => toggleSegmentExpansion(segment.id)}
+            className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label={isExpanded ? 'Collapse' : 'Expand'}
+          >
+            {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+          </button>
+        </div>
+
+        {/* Expanded Details */}
+        {isExpanded && (
               <div className="mt-4 pt-4 border-t border-gray-200 space-y-4">
             {/* Detailed Sentiment Analysis */}
             {(typeof segment.sentiment_loughran_score === 'number' || 
