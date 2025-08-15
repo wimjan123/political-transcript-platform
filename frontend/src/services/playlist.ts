@@ -1,4 +1,5 @@
-import type { TranscriptSegment, Video } from '@/types';
+import type { TranscriptSegment, Video } from '../types';
+import { useEffect, useState } from 'react';
 
 export type PlaylistItem = {
   id: string;
@@ -107,15 +108,10 @@ export const playlist = {
   },
 };
 
-export const usePlaylistCount = () => {
-  const [count, setCount] = (window as any).React?.useState<number>(playlist.count()) || [0, () => {}];
-  // Fallback if not in React context
-  const react = (window as any).React as typeof import('react') | undefined;
-  if (!react) return 0;
-  const { useEffect, useState } = react;
-  const [c, setC] = useState(playlist.count());
+export const usePlaylistCount = (): number => {
+  const [count, setCount] = useState<number>(playlist.count());
   useEffect(() => {
-    const onUpdate = () => setC(playlist.count());
+    const onUpdate = () => setCount(playlist.count());
     window.addEventListener('playlist:updated', onUpdate);
     window.addEventListener('storage', onUpdate);
     return () => {
@@ -123,6 +119,5 @@ export const usePlaylistCount = () => {
       window.removeEventListener('storage', onUpdate);
     };
   }, []);
-  return c;
+  return count;
 };
-

@@ -4,7 +4,7 @@ import {
   ArrowLeft, Video, Calendar, Clock, User, MessageSquare, TrendingUp, 
   BarChart3, Search, Play, ExternalLink, Shield, AlertTriangle, Eye, Plus
 } from 'lucide-react';
-import { playlist } from '@/services/playlist';
+import { playlist } from '../services/playlist';
 import { videosAPI, formatDate, formatTimestamp, getSentimentColor, getSentimentLabel, downloadFile } from '../services/api';
 import VimeoEmbed from '../components/VimeoEmbed';
 import type { Video as VideoType, TranscriptSegment, VideoStats } from '../types';

@@ -5,7 +5,7 @@ import {
   Calendar, User, Tag, TrendingUp, AlertCircle, Clock,
   ExternalLink, Play, Plus
 } from 'lucide-react';
-import { playlist } from '@/services/playlist';
+import { playlist } from '../services/playlist';
 import { searchAPI, downloadFile, formatTimestamp, getSentimentColor, getSentimentLabel } from '../services/api';
 import type { SearchResponse, SearchParams, FilterState, TranscriptSegment } from '../types';
 

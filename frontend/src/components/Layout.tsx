@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Search, BarChart3, Video, Database, Upload, Menu, X, ListMusic } from 'lucide-react';
-import { playlist, usePlaylistCount } from '@/services/playlist';
+import { playlist, usePlaylistCount } from '../services/playlist';
 
 const Layout: React.FC = () => {
   const location = useLocation();

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { playlist, type PlaylistItem } from '@/services/playlist';
-import { videosAPI, downloadFile, formatTimestamp } from '@/services/api';
+import { playlist, type PlaylistItem } from '../services/playlist';
+import { videosAPI, downloadFile, formatTimestamp } from '../services/api';
 import { Trash2, Download, ExternalLink } from 'lucide-react';
 
 const PlaylistPage: React.FC = () => {
@@ -68,8 +68,8 @@ const PlaylistPage: React.FC = () => {
     });
     if (byVideo.size === 0) return alert('No clip items with duration in playlist.');
 
-    for (const [videoId, arr] of byVideo.entries()) {
-      const clipItems = arr.map(it => ({
+    for (const [videoId, arr] of Array.from(byVideo.entries())) {
+      const clipItems = arr.map((it: PlaylistItem) => ({
         start_seconds: it.startSeconds,
         duration_seconds: it.durationSeconds as number,
         label: it.label || it.speaker || undefined,
@@ -126,4 +126,3 @@ const PlaylistPage: React.FC = () => {
 };
 
 export default PlaylistPage;
-
