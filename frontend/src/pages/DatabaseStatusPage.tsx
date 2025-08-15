@@ -31,17 +31,43 @@ const DatabaseStatusPage: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      const [statusResponse, statsResponse, embeddingResponse] = await Promise.all([
-        getImportStatus(),
-        getAnalyticsStats(),
-        getEmbeddingStatus()
-      ]);
+      console.log('Starting to fetch database status data...');
       
-      setImportStatus(statusResponse);
-      setDatabaseStats(statsResponse);
-      setEmbeddingStatus(embeddingResponse);
+      // Fetch data individually to better handle errors
+      try {
+        console.log('Fetching import status...');
+        const statusResponse = await getImportStatus();
+        console.log('Import status received:', statusResponse);
+        setImportStatus(statusResponse);
+      } catch (err) {
+        console.error('Failed to fetch import status:', err);
+        setImportStatus(null);
+      }
+
+      try {
+        console.log('Fetching analytics stats...');
+        const statsResponse = await getAnalyticsStats();
+        console.log('Analytics stats received:', statsResponse);
+        setDatabaseStats(statsResponse);
+      } catch (err) {
+        console.error('Failed to fetch analytics stats:', err);
+        setDatabaseStats(null);
+      }
+
+      try {
+        console.log('Fetching embedding status...');
+        const embeddingResponse = await getEmbeddingStatus();
+        console.log('Embedding status received:', embeddingResponse);
+        setEmbeddingStatus(embeddingResponse);
+      } catch (err) {
+        console.error('Failed to fetch embedding status:', err);
+        setEmbeddingStatus(null);
+      }
+
       setLastUpdated(new Date());
+      console.log('All data fetching completed');
     } catch (err) {
+      console.error('Error in fetchData:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch database status');
     } finally {
       setLoading(false);
@@ -51,6 +77,15 @@ const DatabaseStatusPage: React.FC = () => {
   useEffect(() => {
     fetchData();
     
+    // Safety timeout to prevent infinite loading
+    const safetyTimeout = setTimeout(() => {
+      if (loading) {
+        console.warn('Force stopping loading after 10 seconds');
+        setLoading(false);
+        setError('Loading timed out. Please try refreshing the page.');
+      }
+    }, 10000);
+
     // Auto-refresh every 30 seconds if import is running or embeddings are being generated
     const interval = setInterval(() => {
       if (importStatus?.status === 'running' || 
@@ -59,7 +94,10 @@ const DatabaseStatusPage: React.FC = () => {
       }
     }, 30000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(safetyTimeout);
+    };
   }, [importStatus?.status, embeddingStatus?.completion_percentage]);
 
   const getStatusColor = (status: string) => {
