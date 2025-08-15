@@ -36,7 +36,7 @@ const PlaylistPage: React.FC = () => {
     if (next && next !== oldName) playlist.rename(oldName, next);
   };
   const deleteList = (name: string) => {
-    if (confirm(`Delete playlist "${name}"?`)) playlist.removePlaylist(name);
+    if (window.confirm(`Delete playlist "${name}"?`)) playlist.removePlaylist(name);
   };
 
   const exportText = () => {

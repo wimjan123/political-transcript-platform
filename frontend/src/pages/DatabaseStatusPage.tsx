@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Database, 
   RefreshCw, 
@@ -13,10 +13,14 @@ import {
   Users,
   Tag,
   Brain,
-  Zap
+  Zap,
+  Upload,
+  Download,
+  Square,
+  FileText
 } from 'lucide-react';
 import { ImportStatus, AnalyticsStats, EmbeddingStatus } from '../types';
-import { getImportStatus, getAnalyticsStats, getEmbeddingStatus } from '../services/api';
+import { getImportStatus, getAnalyticsStats, getEmbeddingStatus, uploadAPI, searchAPI } from '../services/api';
 
 const DatabaseStatusPage: React.FC = () => {
   const [importStatus, setImportStatus] = useState<ImportStatus | null>(null);
@@ -25,8 +29,10 @@ const DatabaseStatusPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -72,11 +78,11 @@ const DatabaseStatusPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, []); // Only run once on mount
+  }, [fetchData]); // Only run once on mount
 
   useEffect(() => {
     // Safety timeout to prevent infinite loading
@@ -101,7 +107,68 @@ const DatabaseStatusPage: React.FC = () => {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [importStatus?.status, embeddingStatus?.completion_percentage, loading]);
+  }, [importStatus?.status, embeddingStatus?.completion_percentage, embeddingStatus, loading, fetchData]);
+
+  const handleStartImport = async (forceReimport: boolean = false) => {
+    try {
+      setActionLoading('import');
+      setActionMessage(null);
+      
+      const result = await uploadAPI.startHtmlImport(undefined, forceReimport);
+      setActionMessage(`Import started: ${result.message}`);
+      
+      // Refresh data after starting import
+      setTimeout(() => {
+        fetchData();
+      }, 1000);
+    } catch (err) {
+      console.error('Failed to start import:', err);
+      setActionMessage(`Failed to start import: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleCancelImport = async () => {
+    try {
+      setActionLoading('cancel');
+      setActionMessage(null);
+      
+      const result = await uploadAPI.cancelImport();
+      setActionMessage(`Import cancelled: ${result.message}`);
+      
+      // Refresh data after cancelling
+      setTimeout(() => {
+        fetchData();
+      }, 1000);
+    } catch (err) {
+      console.error('Failed to cancel import:', err);
+      setActionMessage(`Failed to cancel import: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleStartEmbeddings = async (forceRegenerate: boolean = false) => {
+    try {
+      setActionLoading('embeddings');
+      setActionMessage(null);
+      
+      const result = await searchAPI.generateEmbeddings(forceRegenerate, 100);
+      setActionMessage(`Embedding generation started: ${result.message || 'Started successfully'}`);
+      
+      // Refresh data after starting embeddings
+      setTimeout(() => {
+        fetchData();
+      }, 1000);
+    } catch (err) {
+      console.error('Failed to start embedding generation:', err);
+      setActionMessage(`Failed to start embedding generation: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -177,6 +244,136 @@ const DatabaseStatusPage: React.FC = () => {
             </div>
           </div>
         )}
+
+        {actionMessage && (
+          <div className="mb-6 bg-blue-50 border-l-4 border-blue-400 p-4">
+            <div className="flex">
+              <CheckCircle className="h-5 w-5 text-blue-400" />
+              <div className="ml-3">
+                <p className="text-sm text-blue-700">{actionMessage}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Database Controls */}
+        <div className="bg-white shadow rounded-lg mb-8">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-medium text-gray-900 flex items-center">
+              <FileText className="h-5 w-5 mr-2" />
+              Database Controls
+            </h2>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* HTML Import Controls */}
+              <div className="space-y-3">
+                <h3 className="font-medium text-gray-900 flex items-center">
+                  <Upload className="h-4 w-4 mr-2" />
+                  HTML Import
+                </h3>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => handleStartImport(false)}
+                    disabled={actionLoading === 'import' || importStatus?.status === 'running'}
+                    className="w-full inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {actionLoading === 'import' ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Play className="h-4 w-4 mr-2" />
+                    )}
+                    Start Import
+                  </button>
+                  <button
+                    onClick={() => handleStartImport(true)}
+                    disabled={actionLoading === 'import' || importStatus?.status === 'running'}
+                    className="w-full inline-flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Force Reimport
+                  </button>
+                  {importStatus?.status === 'running' && (
+                    <button
+                      onClick={handleCancelImport}
+                      disabled={actionLoading === 'cancel'}
+                      className="w-full inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {actionLoading === 'cancel' ? (
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Square className="h-4 w-4 mr-2" />
+                      )}
+                      Cancel Import
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Embedding Controls */}
+              <div className="space-y-3">
+                <h3 className="font-medium text-gray-900 flex items-center">
+                  <Brain className="h-4 w-4 mr-2" />
+                  Embeddings
+                </h3>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => handleStartEmbeddings(false)}
+                    disabled={actionLoading === 'embeddings' || (embeddingStatus?.completion_percentage ?? 0) >= 100}
+                    className="w-full inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {actionLoading === 'embeddings' ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Zap className="h-4 w-4 mr-2" />
+                    )}
+                    Generate Embeddings
+                  </button>
+                  <button
+                    onClick={() => handleStartEmbeddings(true)}
+                    disabled={actionLoading === 'embeddings'}
+                    className="w-full inline-flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Regenerate All
+                  </button>
+                </div>
+              </div>
+
+              {/* Status Summary */}
+              <div className="space-y-3">
+                <h3 className="font-medium text-gray-900 flex items-center">
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Quick Stats
+                </h3>
+                <div className="space-y-2 text-sm">
+                  {databaseStats && (
+                    <>
+                      <div className="flex justify-between">
+                        <span>Videos:</span>
+                        <span className="font-medium">{databaseStats.total_videos.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Segments:</span>
+                        <span className="font-medium">{databaseStats.total_segments.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Speakers:</span>
+                        <span className="font-medium">{databaseStats.total_speakers.toLocaleString()}</span>
+                      </div>
+                    </>
+                  )}
+                  {embeddingStatus && (
+                    <div className="flex justify-between">
+                      <span>Embeddings:</span>
+                      <span className="font-medium">{embeddingStatus.completion_percentage.toFixed(1)}%</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 gap-8">
           {/* Import Status */}
