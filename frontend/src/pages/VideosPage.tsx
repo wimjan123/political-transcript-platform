@@ -119,18 +119,18 @@ const VideosPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Video Library</h1>
-          <p className="text-gray-600">
+        <div className="mb-10">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent mb-3">Video Library</h1>
+          <p className="text-lg text-gray-600 leading-relaxed">
             Browse and explore the complete collection of political video transcripts
           </p>
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-6 mb-8">
           {/* Filter Toggle */}
           <div className="flex items-center justify-between mb-4">
             <button
@@ -267,33 +267,35 @@ const VideosPage: React.FC = () => {
 
         {/* Videos Grid */}
         {videos.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {videos.map((video) => (
               <div
                 key={video.id}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+                className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-6 hover:shadow-2xl hover:border-blue-300/50 transition-all duration-300 transform hover:-translate-y-1"
               >
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col lg:flex-row items-start gap-6">
                   {/* Video Thumbnail */}
-                  <div className="flex-shrink-0 mr-6">
-                    <VimeoEmbed
-                      vimeoVideoId={video.vimeo_video_id}
-                      vimeoEmbedUrl={video.vimeo_embed_url}
-                      title={video.title}
-                      thumbnail={video.video_thumbnail_url}
-                      width={128}
-                      height={96}
-                      showThumbnail={true}
-                    />
+                  <div className="flex-shrink-0 w-full lg:w-48">
+                    <div className="rounded-xl overflow-hidden shadow-lg">
+                      <VimeoEmbed
+                        vimeoVideoId={video.vimeo_video_id}
+                        vimeoEmbedUrl={video.vimeo_embed_url}
+                        title={video.title}
+                        thumbnail={video.video_thumbnail_url}
+                        width={192}
+                        height={108}
+                        showThumbnail={true}
+                      />
+                    </div>
                   </div>
                   
                   <div className="flex-1 min-w-0">
                     {/* Video Header */}
-                    <div className="flex items-start justify-between mb-3">
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    <div className="flex items-start justify-between mb-4">
+                      <h3 className="text-xl font-bold text-gray-900 mb-2 leading-tight">
                         <Link
                           to={`/videos/${video.id}`}
-                          className="hover:text-primary-600 transition-colors"
+                          className="hover:bg-gradient-to-r hover:from-blue-600 hover:to-purple-600 hover:bg-clip-text hover:text-transparent transition-all duration-200"
                         >
                           {video.title}
                         </Link>

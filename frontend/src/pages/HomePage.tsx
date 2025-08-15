@@ -43,40 +43,41 @@ const HomePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
-        <div className="max-w-7xl mx-auto">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-purple-600/5 to-pink-600/10"></div>
+        <div className="max-w-7xl mx-auto relative">
           <div className="relative z-10 pb-8 sm:pb-16 md:pb-20 lg:pb-28 xl:pb-32">
             <main className="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
               <div className="text-center">
-                <h1 className="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
-                  <span className="block">Search Political</span>
-                  <span className="block text-primary-600">Transcripts</span>
+                <h1 className="text-4xl tracking-tight font-extrabold sm:text-5xl md:text-6xl lg:text-7xl">
+                  <span className="block bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">Search Political</span>
+                  <span className="block bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">Transcripts</span>
                 </h1>
-                <p className="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
+                <p className="mt-6 max-w-md mx-auto text-base text-gray-600 sm:text-lg md:mt-8 md:text-xl md:max-w-3xl leading-relaxed">
                   Advanced search and analytics platform for political video transcripts. 
                   Discover insights through powerful full-text search, sentiment analysis, 
                   and comprehensive analytics.
                 </p>
 
                 {/* Search Bar */}
-                <div className="mt-8 max-w-2xl mx-auto">
-                  <form onSubmit={handleSearch} className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Search className="h-5 w-5 text-gray-400" />
+                <div className="mt-10 max-w-2xl mx-auto">
+                  <form onSubmit={handleSearch} className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Search className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                     </div>
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 text-sm shadow-sm"
+                      className="block w-full pl-12 pr-32 py-4 border border-gray-300/50 rounded-xl leading-5 bg-white/80 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-base shadow-xl hover:shadow-2xl transition-all duration-300"
                       placeholder="Search transcripts, speakers, topics..."
                     />
-                    <div className="absolute inset-y-0 right-0 flex items-center">
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-2">
                       <button
                         type="submit"
-                        className="mr-2 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+                        className="inline-flex items-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-lg hover:shadow-xl"
                       >
                         Search
                       </button>
@@ -84,13 +85,13 @@ const HomePage: React.FC = () => {
                   </form>
                   
                   {/* Quick Search Suggestions */}
-                  <div className="mt-4 flex flex-wrap justify-center gap-2">
-                    <span className="text-sm text-gray-500">Try:</span>
+                  <div className="mt-6 flex flex-wrap justify-center gap-2 items-center">
+                    <span className="text-sm text-gray-500 font-medium">Try:</span>
                     {['immigration', 'healthcare', 'economy', 'climate change'].map((term) => (
                       <button
                         key={term}
                         onClick={() => setSearchQuery(term)}
-                        className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 hover:bg-gray-200 transition-colors"
+                        className="inline-flex items-center px-4 py-2 rounded-full text-xs font-medium bg-white/60 backdrop-blur-sm text-gray-700 hover:bg-white/80 hover:text-gray-900 border border-gray-200/50 hover:border-gray-300/50 transition-all duration-200 shadow-sm hover:shadow-md"
                       >
                         {term}
                       </button>
@@ -99,17 +100,17 @@ const HomePage: React.FC = () => {
                 </div>
 
                 {/* CTA Buttons */}
-                <div className="mt-8 flex justify-center space-x-4">
+                <div className="mt-10 flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
                   <Link
                     to="/search"
-                    className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 transition-colors"
+                    className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-semibold rounded-xl text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                   >
                     <Search className="h-5 w-5 mr-2" />
                     Advanced Search
                   </Link>
                   <Link
                     to="/analytics"
-                    className="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                    className="inline-flex items-center justify-center px-8 py-3 border border-gray-300/50 text-base font-semibold rounded-xl text-gray-700 bg-white/80 backdrop-blur-sm hover:bg-white/90 hover:border-gray-400/50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                   >
                     <BarChart3 className="h-5 w-5 mr-2" />
                     View Analytics
@@ -123,21 +124,23 @@ const HomePage: React.FC = () => {
 
       {/* Stats Section */}
       {stats && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {/* Videos */}
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
+            <div className="bg-white/80 backdrop-blur-sm overflow-hidden shadow-xl rounded-2xl border border-gray-200/50 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+              <div className="p-6">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <Video className="h-6 w-6 text-gray-400" />
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                      <Video className="h-6 w-6 text-white" />
+                    </div>
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
+                      <dt className="text-sm font-medium text-gray-600 truncate">
                         Total Videos
                       </dt>
-                      <dd className="text-lg font-medium text-gray-900">
+                      <dd className="text-2xl font-bold text-gray-900 mt-1">
                         {isLoading ? '...' : formatNumber(stats.total_videos)}
                       </dd>
                     </dl>
@@ -147,18 +150,20 @@ const HomePage: React.FC = () => {
             </div>
 
             {/* Segments */}
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
+            <div className="bg-white/80 backdrop-blur-sm overflow-hidden shadow-xl rounded-2xl border border-gray-200/50 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+              <div className="p-6">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <MessageSquare className="h-6 w-6 text-gray-400" />
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+                      <MessageSquare className="h-6 w-6 text-white" />
+                    </div>
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
+                      <dt className="text-sm font-medium text-gray-600 truncate">
                         Transcript Segments
                       </dt>
-                      <dd className="text-lg font-medium text-gray-900">
+                      <dd className="text-2xl font-bold text-gray-900 mt-1">
                         {isLoading ? '...' : formatNumber(stats.total_segments)}
                       </dd>
                     </dl>
@@ -168,18 +173,20 @@ const HomePage: React.FC = () => {
             </div>
 
             {/* Speakers */}
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
+            <div className="bg-white/80 backdrop-blur-sm overflow-hidden shadow-xl rounded-2xl border border-gray-200/50 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+              <div className="p-6">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <Users className="h-6 w-6 text-gray-400" />
+                    <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
+                      <Users className="h-6 w-6 text-white" />
+                    </div>
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
+                      <dt className="text-sm font-medium text-gray-600 truncate">
                         Speakers
                       </dt>
-                      <dd className="text-lg font-medium text-gray-900">
+                      <dd className="text-2xl font-bold text-gray-900 mt-1">
                         {isLoading ? '...' : formatNumber(stats.total_speakers)}
                       </dd>
                     </dl>
@@ -189,18 +196,20 @@ const HomePage: React.FC = () => {
             </div>
 
             {/* Topics */}
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
+            <div className="bg-white/80 backdrop-blur-sm overflow-hidden shadow-xl rounded-2xl border border-gray-200/50 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+              <div className="p-6">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <TrendingUp className="h-6 w-6 text-gray-400" />
+                    <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
+                      <TrendingUp className="h-6 w-6 text-white" />
+                    </div>
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
+                      <dt className="text-sm font-medium text-gray-600 truncate">
                         Topics
                       </dt>
-                      <dd className="text-lg font-medium text-gray-900">
+                      <dd className="text-2xl font-bold text-gray-900 mt-1">
                         {isLoading ? '...' : formatNumber(stats.total_topics)}
                       </dd>
                     </dl>
@@ -213,16 +222,16 @@ const HomePage: React.FC = () => {
       )}
 
       {/* Features Section */}
-      <div className="py-12 bg-gray-50">
+      <div className="py-20 bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="lg:text-center">
-            <h2 className="text-base text-primary-600 font-semibold tracking-wide uppercase">
+            <h2 className="text-base bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent font-bold tracking-wide uppercase">
               Features
             </h2>
-            <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+            <p className="mt-4 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl lg:text-5xl">
               Powerful Political Analysis Tools
             </p>
-            <p className="mt-4 max-w-2xl text-xl text-gray-500 lg:mx-auto">
+            <p className="mt-6 max-w-3xl text-xl text-gray-600 lg:mx-auto leading-relaxed">
               Comprehensive platform for searching, analyzing, and understanding political discourse
             </p>
           </div>

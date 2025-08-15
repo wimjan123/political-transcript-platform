@@ -22,45 +22,45 @@ const Layout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100">
       {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b border-gray-200">
+      <nav className="bg-white/80 backdrop-blur-md shadow-lg border-b border-gray-200/50 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex">
               {/* Logo */}
-              <Link to="/" className="flex items-center px-4">
+              <Link to="/" className="flex items-center px-4 group">
                 <div className="flex-shrink-0 flex items-center">
-                  <div className="h-8 w-8 bg-primary-600 rounded-lg flex items-center justify-center">
+                  <div className="h-8 w-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center group-hover:shadow-lg transition-all duration-300">
                     <Search className="h-5 w-5 text-white" />
                   </div>
-                  <span className="ml-2 text-xl font-semibold text-gray-900 hidden sm:block">
+                  <span className="ml-3 text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent hidden sm:block">
                     Political Transcript Search
                   </span>
-                  <span className="ml-2 text-xl font-semibold text-gray-900 sm:hidden">
+                  <span className="ml-3 text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent sm:hidden">
                     PTS
                   </span>
                 </div>
               </Link>
 
               {/* Desktop Navigation */}
-              <div className="hidden md:ml-6 md:flex md:space-x-8">
+              <div className="hidden md:ml-6 md:flex md:space-x-2">
                 {navigation.map((item) => {
                   const Icon = item.icon;
                   return (
                     <Link
                       key={item.name}
                       to={item.href}
-                      className={`inline-flex items-center px-1 pt-1 text-sm font-medium border-b-2 transition-colors ${
+                      className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                         isActive(item.href)
-                          ? 'border-primary-500 text-primary-600'
-                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 hover:shadow-sm'
                       }`}
                     >
                       <Icon className="h-4 w-4 mr-2" />
                       {item.name}
                       {item.name === 'Playlist' && playlistCount > 0 && (
-                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white">
                           {playlistCount}
                         </span>
                       )}
@@ -74,7 +74,7 @@ const Layout: React.FC = () => {
             <div className="md:hidden">
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+                className="inline-flex items-center justify-center p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100/80 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 transition-all duration-200"
               >
                 <span className="sr-only">Open main menu</span>
                 {isMobileMenuOpen ? (
@@ -89,8 +89,8 @@ const Layout: React.FC = () => {
 
         {/* Mobile menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden">
-            <div className="pt-2 pb-3 space-y-1">
+          <div className="md:hidden bg-white/95 backdrop-blur-md border-t border-gray-200/50">
+            <div className="pt-2 pb-3 space-y-1 px-3">
               {navigation.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -98,16 +98,21 @@ const Layout: React.FC = () => {
                     key={item.name}
                     to={item.href}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`block pl-3 pr-4 py-2 text-base font-medium border-l-4 transition-colors ${
+                    className={`flex items-center px-3 py-3 rounded-lg text-base font-medium transition-all duration-200 ${
                       isActive(item.href)
-                        ? 'border-primary-500 text-primary-700 bg-primary-50'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 hover:border-gray-300'
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 hover:shadow-sm'
                     }`}
                   >
-                    <div className="flex items-center">
-                      <Icon className="h-5 w-5 mr-3" />
-                      {item.name}
-                    </div>
+                    <Icon className="h-5 w-5 mr-3" />
+                    {item.name}
+                    {item.name === 'Playlist' && playlistCount > 0 && (
+                      <span className={`ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                        isActive(item.href) ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {playlistCount}
+                      </span>
+                    )}
                   </Link>
                 );
               })}
@@ -122,20 +127,20 @@ const Layout: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-12">
+      <footer className="bg-gradient-to-r from-gray-900 to-gray-800 border-t border-gray-700 mt-12">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-500">
+          <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
+            <div className="text-sm text-gray-400">
               © 2024 Political Transcript Search Platform
             </div>
-            <div className="flex space-x-6 text-sm text-gray-500">
-              <a href="#" className="hover:text-gray-900 transition-colors">
+            <div className="flex space-x-6 text-sm text-gray-400">
+              <a href="#" className="hover:text-white transition-colors duration-200">
                 About
               </a>
-              <a href="#" className="hover:text-gray-900 transition-colors">
+              <a href="#" className="hover:text-white transition-colors duration-200">
                 API Docs
               </a>
-              <a href="#" className="hover:text-gray-900 transition-colors">
+              <a href="#" className="hover:text-white transition-colors duration-200">
                 Support
               </a>
             </div>

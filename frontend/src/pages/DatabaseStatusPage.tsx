@@ -194,9 +194,16 @@ const DatabaseStatusPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-center py-20">
-            <RefreshCw className="h-8 w-8 animate-spin text-primary-600" />
-            <span className="ml-3 text-lg">Loading database status...</span>
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
+              <div className="flex items-center justify-center mb-4">
+                <div className="bg-blue-100 p-4 rounded-full">
+                  <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
+                </div>
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 text-center mb-2">Loading Database Status</h2>
+              <p className="text-gray-600 text-center">Please wait while we fetch the latest information...</p>
+            </div>
           </div>
         </div>
       </div>
@@ -207,38 +214,52 @@ const DatabaseStatusPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-              <Database className="h-8 w-8 mr-3 text-primary-600" />
-              Database Status
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Monitor import progress and database statistics
-            </p>
-          </div>
-          <div className="flex items-center space-x-4">
-            {lastUpdated && (
-              <span className="text-sm text-gray-500">
-                Last updated: {lastUpdated.toLocaleTimeString()}
-              </span>
-            )}
-            <button
-              onClick={fetchData}
-              disabled={loading}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              {loading ? 'Loading...' : 'Refresh'}
-            </button>
+        <div className="mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center">
+                <div className="bg-blue-100 p-2 sm:p-3 rounded-xl mr-3 sm:mr-4">
+                  <Database className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
+                </div>
+                <div>
+                  <span>Database Status</span>
+                  {lastUpdated && (
+                    <div className="text-xs sm:text-sm text-gray-500 font-normal mt-1 sm:hidden">
+                      Updated: {lastUpdated.toLocaleTimeString()}
+                    </div>
+                  )}
+                </div>
+              </h1>
+              <p className="text-gray-600 mt-2 text-sm sm:text-base">
+                Monitor import progress and database statistics
+              </p>
+            </div>
+            <div className="flex items-center justify-between sm:justify-end gap-4">
+              {lastUpdated && (
+                <span className="hidden sm:block text-sm text-gray-500">
+                  Last updated: {lastUpdated.toLocaleTimeString()}
+                </span>
+              )}
+              <button
+                onClick={fetchData}
+                disabled={loading}
+                className="inline-flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-colors duration-200 shadow-sm"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                {loading ? 'Loading...' : 'Refresh'}
+              </button>
+            </div>
           </div>
         </div>
 
         {error && (
-          <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4">
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm">
             <div className="flex">
-              <AlertTriangle className="h-5 w-5 text-red-400" />
-              <div className="ml-3">
+              <div className="bg-red-100 p-2 rounded-lg mr-3 flex-shrink-0">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-red-800 mb-1">Error</h3>
                 <p className="text-sm text-red-700">{error}</p>
               </div>
             </div>
@@ -246,10 +267,13 @@ const DatabaseStatusPage: React.FC = () => {
         )}
 
         {actionMessage && (
-          <div className="mb-6 bg-blue-50 border-l-4 border-blue-400 p-4">
+          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4 shadow-sm">
             <div className="flex">
-              <CheckCircle className="h-5 w-5 text-blue-400" />
-              <div className="ml-3">
+              <div className="bg-blue-100 p-2 rounded-lg mr-3 flex-shrink-0">
+                <CheckCircle className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-blue-800 mb-1">Success</h3>
                 <p className="text-sm text-blue-700">{actionMessage}</p>
               </div>
             </div>
@@ -257,26 +281,34 @@ const DatabaseStatusPage: React.FC = () => {
         )}
 
         {/* Database Controls */}
-        <div className="bg-white shadow rounded-lg mb-8">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900 flex items-center">
-              <FileText className="h-5 w-5 mr-2" />
+        <div className="bg-white shadow-lg rounded-xl mb-8 border border-gray-100">
+          <div className="px-4 sm:px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-xl border-b border-gray-100">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center">
+              <div className="bg-blue-100 p-2 rounded-lg mr-3">
+                <FileText className="h-5 w-5 text-blue-600" />
+              </div>
               Database Controls
             </h2>
+            <p className="text-sm text-gray-600 mt-1">Manage HTML imports and embedding generation</p>
           </div>
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 sm:p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* HTML Import Controls */}
-              <div className="space-y-3">
-                <h3 className="font-medium text-gray-900 flex items-center">
-                  <Upload className="h-4 w-4 mr-2" />
-                  HTML Import
-                </h3>
-                <div className="space-y-2">
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 sm:p-5 rounded-xl border border-green-100">
+                <div className="flex items-center mb-4">
+                  <div className="bg-green-100 p-2 rounded-lg mr-3">
+                    <Upload className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">HTML Import</h3>
+                    <p className="text-xs text-gray-600">Process transcript files</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
                   <button
                     onClick={() => handleStartImport(false)}
                     disabled={actionLoading === 'import' || importStatus?.status === 'running'}
-                    className="w-full inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
                   >
                     {actionLoading === 'import' ? (
                       <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -288,7 +320,7 @@ const DatabaseStatusPage: React.FC = () => {
                   <button
                     onClick={() => handleStartImport(true)}
                     disabled={actionLoading === 'import' || importStatus?.status === 'running'}
-                    className="w-full inline-flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Force Reimport
@@ -297,7 +329,7 @@ const DatabaseStatusPage: React.FC = () => {
                     <button
                       onClick={handleCancelImport}
                       disabled={actionLoading === 'cancel'}
-                      className="w-full inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
                     >
                       {actionLoading === 'cancel' ? (
                         <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -311,16 +343,21 @@ const DatabaseStatusPage: React.FC = () => {
               </div>
 
               {/* Embedding Controls */}
-              <div className="space-y-3">
-                <h3 className="font-medium text-gray-900 flex items-center">
-                  <Brain className="h-4 w-4 mr-2" />
-                  Embeddings
-                </h3>
-                <div className="space-y-2">
+              <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-4 sm:p-5 rounded-xl border border-purple-100">
+                <div className="flex items-center mb-4">
+                  <div className="bg-purple-100 p-2 rounded-lg mr-3">
+                    <Brain className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Embeddings</h3>
+                    <p className="text-xs text-gray-600">Semantic search vectors</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
                   <button
                     onClick={() => handleStartEmbeddings(false)}
                     disabled={actionLoading === 'embeddings' || (embeddingStatus?.completion_percentage ?? 0) >= 100}
-                    className="w-full inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
                   >
                     {actionLoading === 'embeddings' ? (
                       <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -332,7 +369,7 @@ const DatabaseStatusPage: React.FC = () => {
                   <button
                     onClick={() => handleStartEmbeddings(true)}
                     disabled={actionLoading === 'embeddings'}
-                    className="w-full inline-flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Regenerate All
@@ -341,32 +378,37 @@ const DatabaseStatusPage: React.FC = () => {
               </div>
 
               {/* Status Summary */}
-              <div className="space-y-3">
-                <h3 className="font-medium text-gray-900 flex items-center">
-                  <BarChart3 className="h-4 w-4 mr-2" />
-                  Quick Stats
-                </h3>
-                <div className="space-y-2 text-sm">
+              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-4 sm:p-5 rounded-xl border border-blue-100">
+                <div className="flex items-center mb-4">
+                  <div className="bg-blue-100 p-2 rounded-lg mr-3">
+                    <BarChart3 className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Quick Stats</h3>
+                    <p className="text-xs text-gray-600">Database overview</p>
+                  </div>
+                </div>
+                <div className="space-y-3 text-sm">
                   {databaseStats && (
                     <>
-                      <div className="flex justify-between">
-                        <span>Videos:</span>
-                        <span className="font-medium">{databaseStats.total_videos.toLocaleString()}</span>
+                      <div className="flex justify-between items-center p-2 bg-white rounded-lg border border-blue-100">
+                        <span className="text-gray-600">Videos</span>
+                        <span className="font-semibold text-blue-600">{databaseStats.total_videos.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Segments:</span>
-                        <span className="font-medium">{databaseStats.total_segments.toLocaleString()}</span>
+                      <div className="flex justify-between items-center p-2 bg-white rounded-lg border border-blue-100">
+                        <span className="text-gray-600">Segments</span>
+                        <span className="font-semibold text-blue-600">{databaseStats.total_segments.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Speakers:</span>
-                        <span className="font-medium">{databaseStats.total_speakers.toLocaleString()}</span>
+                      <div className="flex justify-between items-center p-2 bg-white rounded-lg border border-blue-100">
+                        <span className="text-gray-600">Speakers</span>
+                        <span className="font-semibold text-blue-600">{databaseStats.total_speakers.toLocaleString()}</span>
                       </div>
                     </>
                   )}
                   {embeddingStatus && (
-                    <div className="flex justify-between">
-                      <span>Embeddings:</span>
-                      <span className="font-medium">{embeddingStatus.completion_percentage.toFixed(1)}%</span>
+                    <div className="flex justify-between items-center p-2 bg-white rounded-lg border border-purple-100">
+                      <span className="text-gray-600">Embeddings</span>
+                      <span className="font-semibold text-purple-600">{embeddingStatus.completion_percentage.toFixed(1)}%</span>
                     </div>
                   )}
                 </div>

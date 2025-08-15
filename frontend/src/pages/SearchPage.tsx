@@ -327,14 +327,16 @@ const SearchPage: React.FC = () => {
     const sentimentLabel = getSentimentLabel(segment.sentiment_loughran_score);
 
     return (
-      <div key={segment.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+      <div key={segment.id} className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-6 hover:shadow-xl hover:border-blue-300/50 transition-all duration-300 transform hover:-translate-y-1">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             {/* Header */}
-            <div className="flex items-center space-x-4 mb-3">
+            <div className="flex flex-wrap items-center gap-3 mb-4">
               <div className="flex items-center space-x-2">
-                <User className="h-4 w-4 text-gray-400" />
-                <span className="font-medium text-gray-900">{segment.speaker_name}</span>
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <User className="h-4 w-4 text-white" />
+                </div>
+                <span className="font-semibold text-gray-900">{segment.speaker_name}</span>
               </div>
               
               {segment.video && (
@@ -601,29 +603,29 @@ const SearchPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Search Header */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <form onSubmit={handleSearch} className="space-y-4">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-6 mb-8">
+          <form onSubmit={handleSearch} className="space-y-6">
             {/* Main Search Input */}
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400" />
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
               </div>
               <input
                 ref={searchInputRef}
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                className="block w-full pl-12 pr-32 py-4 border border-gray-300/50 rounded-xl text-base placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300"
                 placeholder="Search transcripts, speakers, topics..."
               />
-              <div className="absolute inset-y-0 right-0 flex items-center">
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2">
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="mr-2 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 transition-colors"
+                  className="inline-flex items-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
                   {isLoading ? (
                     <>
