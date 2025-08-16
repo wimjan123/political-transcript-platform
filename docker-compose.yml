@@ -123,6 +123,7 @@ services:
     environment:
       MEILI_ENV: production
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-change-me}
+      MEILI_EXPERIMENTAL_ENABLE_VECTOR_STORE: "true"
     volumes:
       - ./meili_data:/meili_data
     ports:
