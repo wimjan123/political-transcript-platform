@@ -16,6 +16,26 @@ from ..schemas import SearchFilters, SearchResponse, TranscriptSegmentResponse, 
 router = APIRouter()
 
 
+def _format_place_from_hit(hit: Dict[str, Any]) -> Optional[str]:
+    """Format place from Meilisearch hit, handling both dict and string formats."""
+    place = hit.get("place")
+    if not place:
+        return None
+    if isinstance(place, dict):
+        # Handle dict format from Meilisearch: {"city": "...", "state": "...", "country": "..."}
+        parts = []
+        if place.get("city"):
+            parts.append(place["city"])
+        if place.get("state"):
+            parts.append(place["state"])
+        if place.get("country"):
+            parts.append(place["country"])
+        return ", ".join(parts) if parts else None
+    else:
+        # Handle string format
+        return str(place)
+
+
 def _build_meili_filter(params: Dict[str, Any]) -> Optional[str]:
     """Map query params to a Meilisearch filter string.
 
@@ -177,7 +197,7 @@ def _map_hit_to_segment(hit: Dict[str, Any]) -> TranscriptSegmentResponse:
         vimeo_embed_url=hit.get("vimeo_embed_url"),
         format=hit.get("format"),
         candidate=hit.get("candidate"),
-        place=hit.get("place", {}).get("city") or hit.get("place"),
+        place=_format_place_from_hit(hit),
         record_type=hit.get("record_type"),
         total_words=hit.get("document", {}).get("word_count"),
         total_characters=None,

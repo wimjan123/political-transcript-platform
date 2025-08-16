@@ -330,8 +330,9 @@ async def meili_upsert(index: str, docs: List[Dict[str, Any]]) -> None:
     # Chunk to avoid huge payloads
     headers = _meili_headers()
     timeout = httpx.Timeout(settings.MEILI_TIMEOUT)
+    params = {"primaryKey": "id"}  # Specify primary key to avoid inference errors
     async with httpx.AsyncClient(timeout=timeout) as client:
-        r = await client.post(f"{settings.MEILI_HOST.rstrip('/')}{path}", headers=headers, json=docs)
+        r = await client.post(f"{settings.MEILI_HOST.rstrip('/')}{path}", headers=headers, json=docs, params=params)
         if r.status_code >= 400:
             raise RuntimeError(f"Meili upsert failed {r.status_code}: {r.text}")
 
