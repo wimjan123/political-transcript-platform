@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { playlist } from '../services/playlist';
 import { searchAPI, downloadFile, formatTimestamp, getSentimentColor, getSentimentLabel } from '../services/api';
+import useDebounce from '../hooks/useDebounce';
+import LanguageSelector, { SUPPORTED_LANGUAGES } from '../components/LanguageSelector';
 import type { SearchResponse, SearchParams, FilterState, TranscriptSegment } from '../types';
 
 const SearchPage: React.FC = () => {
@@ -63,10 +65,15 @@ const SearchPage: React.FC = () => {
   const [searchEngine, setSearchEngine] = useState<'postgres' | 'meili'>((searchParams.get('engine') as any) || 'postgres');
   const [meiliMode, setMeiliMode] = useState<'lexical' | 'hybrid' | 'semantic'>((searchParams.get('mode') as any) || 'lexical');
   const [meiliIndex, setMeiliIndex] = useState<'segments' | 'events'>((searchParams.get('index') as any) || 'segments');
+  const [selectedLanguage, setSelectedLanguage] = useState<string>(searchParams.get('language') || 'auto');
   
   // Selection + export state
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedSegmentIds, setSelectedSegmentIds] = useState<Set<number>>(new Set());
+
+  // Search-as-you-type with debouncing
+  const debouncedQuery = useDebounce(query, 300);
+  const [isTyping, setIsTyping] = useState(false);
 
   const vimeoTimeFragment = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
@@ -163,25 +170,57 @@ const SearchPage: React.FC = () => {
     }
   }, [searchParams]);
 
+  // Search-as-you-type: trigger search when debounced query changes
+  useEffect(() => {
+    if (debouncedQuery.trim() && !isTyping) {
+      setCurrentPage(1); // Reset to first page for new search
+      performSearch();
+    } else if (!debouncedQuery.trim()) {
+      setSearchResults(null); // Clear results when query is empty
+    }
+    setIsTyping(false);
+  }, [debouncedQuery]);
+
   const performSearch = async () => {
-    if (!query.trim()) return;
+    const searchQuery = debouncedQuery.trim() || query.trim();
+    if (!searchQuery) return;
 
     setIsLoading(true);
     setError(null);
 
     try {
+      // Map UI filter keys (camelCase) to API params (snake_case)
+      const mappedFilters: Record<string, any> = {};
+      const add = (k: string, v: any) => { if (v !== '' && v !== undefined) mappedFilters[k] = v; };
+      add('speaker', filters.speaker);
+      add('source', filters.source);
+      add('topic', filters.topic);
+      add('date_from', filters.dateFrom);
+      add('date_to', filters.dateTo);
+      add('sentiment', filters.sentiment);
+      add('min_readability', filters.minReadability);
+      add('max_readability', filters.maxReadability);
+      add('format', filters.format);
+      add('candidate', filters.candidate);
+      add('place', filters.place);
+      add('record_type', filters.recordType);
+      add('min_stresslens', filters.minStresslens);
+      add('max_stresslens', filters.maxStresslens);
+      add('stresslens_rank', filters.stresslensRank);
+      add('has_harassment', filters.hasHarassment ? true : undefined);
+      add('has_hate', filters.hasHate ? true : undefined);
+      add('has_violence', filters.hasViolence ? true : undefined);
+      add('has_sexual', filters.hasSexual ? true : undefined);
+      add('has_selfharm', filters.hasSelfharm ? true : undefined);
+
       const searchParameters: SearchParams = {
-        q: query,
+        q: searchQuery,
         page: currentPage,
         page_size: pageSize,
         search_type: filters.searchType,
         sort_by: filters.sortBy,
         sort_order: filters.sortOrder,
-        ...Object.fromEntries(
-          Object.entries(filters).filter(([key, value]) => 
-            value !== '' && !['searchType', 'sortBy', 'sortOrder'].includes(key)
-          )
-        )
+        ...mappedFilters,
       };
 
       let results: SearchResponse;
@@ -191,7 +230,28 @@ const SearchPage: React.FC = () => {
           mode: meiliMode,
           index: meiliIndex,
         };
-        results = await searchAPI.searchMeili(meiliParams);
+        
+        // Add locales parameter if a specific language is selected
+        if (selectedLanguage !== 'auto') {
+          const lang = SUPPORTED_LANGUAGES.find(l => l.code === selectedLanguage);
+          if (lang && lang.iso639) {
+            meiliParams.locales = lang.iso639;
+          }
+        }
+        
+        try {
+          results = await searchAPI.searchMeili(meiliParams);
+        } catch (err: any) {
+          // Graceful fallback: if Meilisearch semantic fails, try DB semantic endpoint
+          if (meiliMode === 'semantic') {
+            results = await searchAPI.semanticSearch({
+              ...searchParameters,
+              similarity_threshold: typeof filters.similarityThreshold === 'number' ? filters.similarityThreshold : 0.5,
+            });
+          } else {
+            throw err;
+          }
+        }
       } else if (filters.searchType === 'semantic') {
         results = await searchAPI.semanticSearch({
           ...searchParameters,
@@ -213,6 +273,9 @@ const SearchPage: React.FC = () => {
       if (searchEngine === 'meili') {
         newParams.set('mode', meiliMode);
         newParams.set('index', meiliIndex);
+      }
+      if (selectedLanguage !== 'auto') {
+        newParams.set('language', selectedLanguage);
       }
       setSearchParams(newParams);
 
@@ -617,7 +680,10 @@ const SearchPage: React.FC = () => {
                 ref={searchInputRef}
                 type="text"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setIsTyping(true);
+                }}
                 className="block w-full pl-12 pr-32 py-4 border border-gray-300/50 rounded-xl text-base placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300"
                 placeholder="Search transcripts, speakers, topics..."
               />
@@ -679,6 +745,20 @@ const SearchPage: React.FC = () => {
                   </div>
                 </>
               )}
+            </div>
+
+            {/* Language Selector */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <LanguageSelector
+                  selectedLanguage={selectedLanguage}
+                  onLanguageChange={setSelectedLanguage}
+                  showLabel={true}
+                />
+              </div>
+              <div className="text-xs text-gray-500 pt-7">
+                Language selection helps improve search accuracy when using Meilisearch semantic or hybrid modes.
+              </div>
             </div>
 
             {/* Filter Toggle */}

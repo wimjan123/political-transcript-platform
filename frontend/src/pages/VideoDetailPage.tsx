@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { 
   ArrowLeft, Video, Calendar, Clock, User, MessageSquare, TrendingUp, 
-  BarChart3, Search, Play, ExternalLink, Shield, AlertTriangle, Eye, Plus
+  BarChart3, Search, Play, ExternalLink, Shield, AlertTriangle, Eye, Plus, Sparkles
 } from 'lucide-react';
 import { playlist } from '../services/playlist';
 import { videosAPI, formatDate, formatTimestamp, getSentimentColor, getSentimentLabel, downloadFile } from '../services/api';
 import VimeoEmbed from '../components/VimeoEmbed';
 import VideoSummary from '../components/VideoSummary';
+import SimilarSegmentsModal from '../components/SimilarSegmentsModal';
 import type { Video as VideoType, TranscriptSegment, VideoStats } from '../types';
 
 const VideoDetailPage: React.FC = () => {
@@ -28,6 +29,8 @@ const VideoDetailPage: React.FC = () => {
   const [autoScrolled, setAutoScrolled] = useState(false);
   const [selectedSegmentIds, setSelectedSegmentIds] = useState<Set<number>>(new Set());
   const [selectionMode, setSelectionMode] = useState(false);
+  const [similarModalOpen, setSimilarModalOpen] = useState(false);
+  const [selectedSegmentForSimilar, setSelectedSegmentForSimilar] = useState<TranscriptSegment | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const vimeoTimeFragment = (seconds: number) => {
@@ -138,6 +141,11 @@ const VideoDetailPage: React.FC = () => {
   };
 
   const clearSelection = () => setSelectedSegmentIds(new Set());
+
+  const handleFindSimilarSegments = (segment: TranscriptSegment) => {
+    setSelectedSegmentForSimilar(segment);
+    setSimilarModalOpen(true);
+  };
 
   const highlightText = (text: string, query: string) => {
     if (!query.trim()) return text;
@@ -876,6 +884,14 @@ const VideoDetailPage: React.FC = () => {
                   >
                     <Plus className="h-5 w-5" />
                   </button>
+                  <button
+                    onClick={() => handleFindSimilarSegments(segment)}
+                    className="p-2 text-purple-600 hover:text-purple-700 transition-colors ml-1"
+                    title="Find similar segments"
+                    aria-label="Find similar segments"
+                  >
+                    <Sparkles className="h-5 w-5" />
+                  </button>
                 </div>
 
                 {/* Transcript Text */}
@@ -1096,6 +1112,16 @@ const VideoDetailPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Similar Segments Modal */}
+      {selectedSegmentForSimilar && (
+        <SimilarSegmentsModal
+          segmentId={selectedSegmentForSimilar.id}
+          segmentText={selectedSegmentForSimilar.transcript_text}
+          isOpen={similarModalOpen}
+          onClose={() => setSimilarModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

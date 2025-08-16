@@ -112,6 +112,7 @@ export const searchAPI = {
       page_size?: number;
       mode?: 'lexical' | 'hybrid' | 'semantic';
       index?: 'segments' | 'events';
+      locales?: string[];
     } & Record<string, any>
   ): Promise<SearchResponse> => {
     const response = await api.get('/api/search/meili', { params });
@@ -129,6 +130,18 @@ export const searchAPI = {
   // Get embedding status
   getEmbeddingStatus: async (): Promise<any> => {
     const response = await api.get('/api/search/embedding-status');
+    return response.data;
+  },
+
+  // Find similar segments
+  findSimilarSegments: async (
+    segmentId: number,
+    limit: number = 10,
+    index: 'segments' | 'events' = 'segments'
+  ): Promise<SearchResponse> => {
+    const response = await api.get(`/api/search/meili/similar_segments/${segmentId}`, {
+      params: { limit, index },
+    });
     return response.data;
   },
 };

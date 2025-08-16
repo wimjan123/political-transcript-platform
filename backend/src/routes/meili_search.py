@@ -148,6 +148,7 @@ async def _meili_search(
     page_size: int,
     mode: str,
     filter_str: Optional[str],
+    locales: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     url = f"{settings.MEILI_HOST.rstrip('/')}/indexes/{index}/search"
     offset = (page - 1) * page_size
@@ -159,6 +160,8 @@ async def _meili_search(
     }
     if filter_str:
         payload["filter"] = filter_str
+    if locales and len(locales) > 0:
+        payload["locales"] = locales
 
     if mode == "semantic":
         payload["hybrid"] = {"semanticRatio": 1}
@@ -280,6 +283,7 @@ async def meili_search(
     page_size: int = Query(25, ge=1, le=100),
     mode: str = Query("lexical", pattern="^(lexical|semantic|hybrid)$"),
     index: str = Query("segments", pattern="^(segments|events)$"),
+    locales: Optional[str] = Query(None, description="Comma-separated list of ISO-639 locale codes (e.g., 'eng,spa')"),
     # Common filters (keep names aligned with existing UI when possible)
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
@@ -322,10 +326,23 @@ async def meili_search(
     max_sentiment_vader: Optional[float] = None,
 ):
     try:
-        params = {k: v for k, v in locals().items() if k not in {"q", "page", "page_size", "mode", "index"}}
+        params = {k: v for k, v in locals().items() if k not in {"q", "page", "page_size", "mode", "index", "locales"}}
         filter_str = _build_meili_filter(params)
+        
+        # Parse locales parameter if provided
+        parsed_locales = None
+        if locales:
+            parsed_locales = [locale.strip() for locale in locales.split(",") if locale.strip()]
 
-        meili = await _meili_search(index=index, q=q, page=page, page_size=page_size, mode=mode, filter_str=filter_str)
+        meili = await _meili_search(
+            index=index, 
+            q=q, 
+            page=page, 
+            page_size=page_size, 
+            mode=mode, 
+            filter_str=filter_str,
+            locales=parsed_locales
+        )
 
         hits = meili.get("hits", [])
         total = int(meili.get("estimatedTotalHits") or meili.get("totalHits") or 0)
@@ -350,4 +367,82 @@ async def meili_search(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Meilisearch query failed: {str(e)}")
+
+
+@router.get("/similar_segments/{segment_id}", response_model=SearchResponse)
+async def find_similar_segments(
+    segment_id: int,
+    limit: int = Query(10, ge=1, le=50),
+    index: str = Query("segments", pattern="^(segments|events)$"),
+):
+    """Find segments similar to the given segment using Meilisearch's similar documents feature."""
+    try:
+        # First, get the document from Meilisearch to use as reference
+        doc_url = f"{settings.MEILI_HOST.rstrip('/')}/indexes/{index}/documents/{segment_id}"
+        headers = {"Authorization": f"Bearer {settings.MEILI_MASTER_KEY}"} if settings.MEILI_MASTER_KEY else {}
+        
+        timeout = httpx.Timeout(settings.MEILI_TIMEOUT)
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            # Get the source document
+            doc_response = await client.get(doc_url, headers=headers)
+            if doc_response.status_code == 404:
+                raise HTTPException(status_code=404, detail=f"Segment {segment_id} not found in Meilisearch")
+            elif doc_response.status_code >= 400:
+                raise HTTPException(status_code=502, detail=f"Meilisearch error getting document: {doc_response.text}")
+            
+            source_doc = doc_response.json()
+            
+            # Use Meilisearch's similar documents endpoint
+            similar_url = f"{settings.MEILI_HOST.rstrip('/')}/indexes/{index}/similar"
+            payload = {
+                "id": str(segment_id),
+                "limit": limit,
+                "retrieveVectors": False,
+                "showRankingScore": True,
+            }
+            
+            similar_response = await client.post(similar_url, headers=headers, json=payload)
+            if similar_response.status_code >= 400:
+                # Fallback to semantic search using the document's text
+                text_content = source_doc.get("text") or source_doc.get("transcript_text") or ""
+                if not text_content:
+                    raise HTTPException(status_code=400, detail="Source document has no text content for similarity search")
+                
+                # Use hybrid search as fallback
+                search_url = f"{settings.MEILI_HOST.rstrip('/')}/indexes/{index}/search"
+                fallback_payload = {
+                    "q": text_content[:500],  # Limit query length
+                    "limit": limit + 1,  # +1 to exclude the original
+                    "hybrid": {"semanticRatio": 0.8},
+                    "showRankingScore": True,
+                }
+                
+                search_response = await client.post(search_url, headers=headers, json=fallback_payload)
+                if search_response.status_code >= 400:
+                    raise HTTPException(status_code=502, detail=f"Meilisearch similar search failed: {search_response.text}")
+                
+                search_results = search_response.json()
+                # Filter out the original document
+                hits = [h for h in search_results.get("hits", []) if str(h.get("id")) != str(segment_id)][:limit]
+            else:
+                similar_results = similar_response.json()
+                hits = similar_results.get("hits", [])
+        
+        # Convert hits to TranscriptSegmentResponse format
+        results = [_map_hit_to_segment(hit) for hit in hits]
+        
+        return SearchResponse(
+            results=results,
+            total=len(results),
+            page=1,
+            page_size=limit,
+            total_pages=1,
+            query=f"Similar to segment {segment_id}",
+            filters=SearchFilters(),
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Similar segments search failed: {str(e)}")
 
