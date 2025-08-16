@@ -8,6 +8,7 @@ import VideosPage from './pages/VideosPage';
 import VideoDetailPage from './pages/VideoDetailPage';
 import DatabaseStatusPage from './pages/DatabaseStatusPage';
 import IngestPage from './pages/IngestPage';
+import MeilisearchAdminPage from './pages/MeilisearchAdminPage';
 import NotFoundPage from './pages/NotFoundPage';
 import PlaylistPage from './pages/PlaylistPage';
 
@@ -23,6 +24,7 @@ function App() {
           <Route path="videos/:videoId" element={<VideoDetailPage />} />
           <Route path="playlist" element={<PlaylistPage />} />
           <Route path="database-status" element={<DatabaseStatusPage />} />
+          <Route path="meilisearch-admin" element={<MeilisearchAdminPage />} />
           <Route path="ingest" element={<IngestPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
