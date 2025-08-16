@@ -3,12 +3,13 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { 
   Search, Filter, Download, ChevronDown, ChevronRight, 
   Calendar, User, Tag, TrendingUp, AlertCircle, Clock,
-  ExternalLink, Play, Plus
+  ExternalLink, Play, Plus, MessageSquare, Bot
 } from 'lucide-react';
 import { playlist } from '../services/playlist';
 import { searchAPI, downloadFile, formatTimestamp, getSentimentColor, getSentimentLabel } from '../services/api';
 import useDebounce from '../hooks/useDebounce';
 import LanguageSelector, { SUPPORTED_LANGUAGES } from '../components/LanguageSelector';
+import ChatSearchModal from '../components/ChatSearchModal';
 import type { SearchResponse, SearchParams, FilterState, TranscriptSegment } from '../types';
 
 const SearchPage: React.FC = () => {
@@ -74,6 +75,9 @@ const SearchPage: React.FC = () => {
   // Search-as-you-type with debouncing
   const debouncedQuery = useDebounce(query, 300);
   const [isTyping, setIsTyping] = useState(false);
+  
+  // Chat search modal
+  const [chatModalOpen, setChatModalOpen] = useState(false);
 
   const vimeoTimeFragment = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
@@ -684,10 +688,19 @@ const SearchPage: React.FC = () => {
                   setQuery(e.target.value);
                   setIsTyping(true);
                 }}
-                className="block w-full pl-12 pr-32 py-4 border border-gray-300/50 rounded-xl text-base placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300"
+                className="block w-full pl-12 pr-44 py-4 border border-gray-300/50 rounded-xl text-base placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300"
                 placeholder="Search transcripts, speakers, topics..."
               />
-              <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setChatModalOpen(true)}
+                  className="inline-flex items-center px-4 py-2.5 border border-purple-300 text-sm font-medium rounded-lg text-purple-700 bg-purple-50 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-200 shadow-sm hover:shadow-md"
+                  title="AI Chat Search"
+                >
+                  <Bot className="h-4 w-4 mr-1" />
+                  Chat
+                </button>
                 <button
                   type="submit"
                   disabled={isLoading}
@@ -1233,6 +1246,12 @@ const SearchPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Chat Search Modal */}
+      <ChatSearchModal
+        isOpen={chatModalOpen}
+        onClose={() => setChatModalOpen(false)}
+      />
     </div>
   );
 };
