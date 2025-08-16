@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, TrendingUp, Users, MessageSquare, Calendar, Filter } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, MessageSquare, Calendar, Filter, Bot } from 'lucide-react';
 import { 
   Chart as ChartJS, 
   CategoryScale, 
@@ -14,6 +14,7 @@ import {
 } from 'chart.js';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
 import { analyticsAPI } from '../services/api';
+import AnalyticsDashboard from '../components/AnalyticsDashboard';
 import type { AnalyticsStats, SentimentAnalytics, TopicAnalytics } from '../types';
 
 ChartJS.register(
@@ -29,6 +30,7 @@ ChartJS.register(
 );
 
 const AnalyticsPage: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'content' | 'conversational'>('content');
   const [stats, setStats] = useState<AnalyticsStats | null>(null);
   const [sentimentAnalytics, setSentimentAnalytics] = useState<SentimentAnalytics | null>(null);
   const [topicAnalytics, setTopicAnalytics] = useState<TopicAnalytics | null>(null);
@@ -221,8 +223,41 @@ const AnalyticsPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Date Filter */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+        {/* Tab Navigation */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
+          <div className="border-b border-gray-200">
+            <nav className="flex space-x-8" aria-label="Tabs">
+              <button
+                onClick={() => setActiveTab('content')}
+                className={`py-4 px-6 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'content'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <BarChart3 className="h-4 w-4 inline mr-2" />
+                Content Analytics
+              </button>
+              <button
+                onClick={() => setActiveTab('conversational')}
+                className={`py-4 px-6 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'conversational'
+                    ? 'border-purple-500 text-purple-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Bot className="h-4 w-4 inline mr-2" />
+                Conversational Search Analytics
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'content' && (
+          <>
+            {/* Date Filter */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-medium text-gray-900">Date Range Filter</h2>
           </div>
@@ -504,25 +539,32 @@ const AnalyticsPage: React.FC = () => {
           )}
         </div>
 
-        {/* Date Range Info */}
-        {stats && stats.date_range && (
-          <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-center">
-              <Calendar className="h-5 w-5 text-blue-400 mr-3" />
-              <div className="text-blue-700">
-                <p className="text-sm">
-                  Data spans from{' '}
-                  <span className="font-medium">
-                    {stats.date_range.min_date || 'N/A'}
-                  </span>{' '}
-                  to{' '}
-                  <span className="font-medium">
-                    {stats.date_range.max_date || 'N/A'}
-                  </span>
-                </p>
+            {/* Date Range Info */}
+            {stats && stats.date_range && (
+              <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <Calendar className="h-5 w-5 text-blue-400 mr-3" />
+                  <div className="text-blue-700">
+                    <p className="text-sm">
+                      Data spans from{' '}
+                      <span className="font-medium">
+                        {stats.date_range.min_date || 'N/A'}
+                      </span>{' '}
+                      to{' '}
+                      <span className="font-medium">
+                        {stats.date_range.max_date || 'N/A'}
+                      </span>
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            )}
+          </>
+        )}
+
+        {/* Conversational Analytics Tab */}
+        {activeTab === 'conversational' && (
+          <AnalyticsDashboard />
         )}
       </div>
     </div>

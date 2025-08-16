@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2, Search, Sparkles, MessageSquare, Clock, TrendingUp } from 'lucide-react';
 import { searchAPI, formatTimestamp, getSentimentColor, getSentimentLabel } from '../services/api';
+import { airtableService } from '../services/airtable';
 import type { SearchResponse, TranscriptSegment } from '../types';
 
 interface ConversationMessage {
@@ -30,6 +31,7 @@ const ConversationalSearch: React.FC<ConversationalSearchProps> = ({ onClose, cl
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const sessionId = useRef<string>(airtableService.generateSessionId());
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -199,8 +201,11 @@ const ConversationalSearch: React.FC<ConversationalSearchProps> = ({ onClose, cl
     setInputValue('');
     setIsLoading(true);
 
+    const startTime = Date.now();
+
     try {
       const { searchResults, searchQuery } = await performConversationalSearch(userMessage.content);
+      const responseTime = Date.now() - startTime;
       const responseContent = generateResponse(searchResults, searchQuery, userMessage.content);
       
       const assistantMessage: ConversationMessage = {
@@ -213,7 +218,24 @@ const ConversationalSearch: React.FC<ConversationalSearchProps> = ({ onClose, cl
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+
+      // Log to Airtable (async, non-blocking)
+      const { searchQuery: extractedQuery, filters, mode } = extractSearchParams(userMessage.content);
+      airtableService.logConversationalQuery({
+        userQuery: userMessage.content,
+        extractedSearchQuery: extractedQuery,
+        searchMode: mode,
+        filters,
+        resultCount: searchResults.total,
+        responseTime,
+        sessionId: sessionId.current,
+        language: 'auto', // Could be enhanced to detect language
+      }).catch(error => {
+        console.warn('Failed to log query to Airtable:', error);
+      });
+
     } catch (error: any) {
+      const responseTime = Date.now() - startTime;
       const errorMessage: ConversationMessage = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
@@ -222,6 +244,20 @@ const ConversationalSearch: React.FC<ConversationalSearchProps> = ({ onClose, cl
       };
 
       setMessages(prev => [...prev, errorMessage]);
+
+      // Log error queries too for analytics
+      airtableService.logConversationalQuery({
+        userQuery: userMessage.content,
+        extractedSearchQuery: '',
+        searchMode: 'hybrid',
+        filters: {},
+        resultCount: 0,
+        responseTime,
+        sessionId: sessionId.current,
+        language: 'auto',
+      }).catch(logError => {
+        console.warn('Failed to log error query to Airtable:', logError);
+      });
     } finally {
       setIsLoading(false);
     }
