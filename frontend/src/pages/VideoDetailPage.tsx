@@ -7,6 +7,7 @@ import {
 import { playlist } from '../services/playlist';
 import { videosAPI, formatDate, formatTimestamp, getSentimentColor, getSentimentLabel, downloadFile } from '../services/api';
 import VimeoEmbed from '../components/VimeoEmbed';
+import VideoSummary from '../components/VideoSummary';
 import type { Video as VideoType, TranscriptSegment, VideoStats } from '../types';
 
 const VideoDetailPage: React.FC = () => {
@@ -646,6 +647,13 @@ const VideoDetailPage: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* AI Summary */}
+        {video && (
+          <div className="mb-8">
+            <VideoSummary videoId={parseInt(videoId!)} videoTitle={video.title} />
           </div>
         )}
 

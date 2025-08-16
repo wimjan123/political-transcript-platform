@@ -12,9 +12,13 @@ venv/
 # Node / Frontend
 frontend/node_modules/
 frontend/build/
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Meilisearch data
+meili_data/
 
 # Editors / OS
 .DS_Store

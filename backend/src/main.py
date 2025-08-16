@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 
 from .database import init_db
 from .routes import search, analytics, videos, upload, ingest, clips
-from .routes import meili_search, meilisearch_admin
+from .routes import meili_search, meilisearch_admin, summarization
 from .config import settings
 
 
@@ -50,6 +50,7 @@ app.include_router(videos.router, prefix="/api/videos", tags=["videos"])
 app.include_router(upload.router, prefix="/api/upload", tags=["upload"])
 app.include_router(ingest.router, prefix="/api/ingest", tags=["ingest"])
 app.include_router(clips.router, prefix="/api/videos", tags=["clips"])
+app.include_router(summarization.router, prefix="/api/summarization", tags=["summarization"])
 
 
 @app.get("/")

@@ -1,0 +1,329 @@
+"""
+Transcript summarization service using OpenAI
+"""
+import os
+import logging
+from typing import List, Optional, Dict, Any
+from datetime import datetime
+import asyncio
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func, and_, or_
+from sqlalchemy.orm import selectinload
+
+from ..models import Video, TranscriptSegment
+from ..config import settings
+
+# Try to import OpenAI, fallback if not available
+try:
+    from openai import AsyncOpenAI
+    HAS_OPENAI = True
+except ImportError:
+    AsyncOpenAI = None
+    HAS_OPENAI = False
+
+logger = logging.getLogger(__name__)
+
+class SummarizationService:
+    """Service for generating AI-powered summaries of political transcripts"""
+    
+    def __init__(self):
+        self.client = None
+        self.model = "gpt-4o-mini"  # Cost-effective model for summarization
+        self.max_tokens_per_summary = 500
+        self.max_input_tokens = 120000  # Leave room for prompt overhead
+        
+    def _get_client(self) -> AsyncOpenAI:
+        """Get or create OpenAI client"""
+        if not HAS_OPENAI:
+            raise RuntimeError("OpenAI package not available. Please install it to use summarization features.")
+        
+        if self.client is None:
+            api_key = os.getenv("OPENAI_API_KEY")
+            if not api_key:
+                raise RuntimeError("OPENAI_API_KEY environment variable not set")
+            self.client = AsyncOpenAI(api_key=api_key)
+        return self.client
+    
+    async def summarize_video_transcript(
+        self, 
+        db: AsyncSession, 
+        video_id: int,
+        bullet_points: int = 4
+    ) -> Dict[str, Any]:
+        """
+        Generate a bullet-point summary of a full video transcript
+        
+        Args:
+            db: Database session
+            video_id: ID of the video to summarize
+            bullet_points: Number of bullet points to generate (3-5)
+            
+        Returns:
+            Dictionary with summary data and metadata
+        """
+        bullet_points = max(3, min(5, bullet_points))  # Enforce 3-5 range
+        
+        # Get video and all transcript segments
+        video_query = select(Video).where(Video.id == video_id)
+        video_result = await db.execute(video_query)
+        video = video_result.scalar_one_or_none()
+        
+        if not video:
+            raise ValueError(f"Video with ID {video_id} not found")
+        
+        # Get all segments for this video
+        segments_query = (
+            select(TranscriptSegment)
+            .where(TranscriptSegment.video_id == video_id)
+            .order_by(TranscriptSegment.video_seconds.asc().nulls_last())
+        )
+        segments_result = await db.execute(segments_query)
+        segments = segments_result.scalars().all()
+        
+        if not segments:
+            raise ValueError(f"No transcript segments found for video {video_id}")
+        
+        # Combine all transcript text
+        full_transcript = self._combine_transcript_segments(segments)
+        
+        # Check if transcript is too long and truncate if needed
+        if len(full_transcript) > self.max_input_tokens * 4:  # Rough estimate: 4 chars per token
+            logger.warning(f"Transcript for video {video_id} is very long, truncating for summarization")
+            full_transcript = full_transcript[:self.max_input_tokens * 4]
+        
+        # Generate summary using OpenAI
+        try:
+            summary_text = await self._generate_ai_summary(full_transcript, bullet_points, video)
+        except Exception as e:
+            logger.error(f"Failed to generate AI summary for video {video_id}: {str(e)}")
+            # Fallback to extractive summary
+            summary_text = self._generate_extractive_summary(full_transcript, bullet_points)
+        
+        # Calculate metadata
+        total_segments = len(segments)
+        total_word_count = sum(seg.word_count or 0 for seg in segments)
+        total_char_count = len(full_transcript)
+        
+        # Get video duration
+        duration_seconds = None
+        if segments:
+            max_seconds = max((seg.video_seconds for seg in segments if seg.video_seconds), default=None)
+            if max_seconds:
+                duration_seconds = max_seconds
+        
+        return {
+            "video_id": video_id,
+            "video_title": video.title,
+            "summary": summary_text,
+            "bullet_points": bullet_points,
+            "metadata": {
+                "total_segments": total_segments,
+                "total_words": total_word_count,
+                "total_characters": total_char_count,
+                "duration_seconds": duration_seconds,
+                "summarization_method": "ai" if HAS_OPENAI else "extractive",
+                "model_used": self.model if HAS_OPENAI else "extractive",
+                "generated_at": datetime.utcnow().isoformat()
+            }
+        }
+    
+    def _combine_transcript_segments(self, segments: List[TranscriptSegment]) -> str:
+        """Combine transcript segments into a coherent text"""
+        combined_text = []
+        
+        for segment in segments:
+            text = segment.transcript_text or ""
+            speaker = segment.speaker_name or "Speaker"
+            
+            # Add speaker identification and text
+            if text.strip():
+                combined_text.append(f"{speaker}: {text.strip()}")
+        
+        return "\n\n".join(combined_text)
+    
+    async def _generate_ai_summary(self, transcript: str, bullet_points: int, video: Video) -> str:
+        """Generate AI-powered summary using OpenAI"""
+        client = self._get_client()
+        
+        # Create prompt for summarization
+        prompt = f"""Please analyze this political transcript and provide exactly {bullet_points} key bullet points that summarize the main topics, decisions, and significant statements.
+
+Video Title: {video.title}
+Date: {video.date}
+Format: {video.format}
+
+Guidelines:
+- Focus on substantive policy discussions, decisions, and key statements
+- Each bullet point should be 1-2 sentences
+- Prioritize concrete actions, policy positions, and significant revelations
+- Avoid redundancy between bullet points
+- Use clear, objective language
+
+Transcript:
+{transcript}
+
+Please provide exactly {bullet_points} bullet points in this format:
+• [First key point]
+• [Second key point]
+• [etc.]"""
+
+        try:
+            response = await client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {
+                        "role": "system", 
+                        "content": "You are an expert political analyst who specializes in summarizing transcripts of political speeches, debates, and hearings. You provide clear, concise, and objective summaries."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                max_tokens=self.max_tokens_per_summary,
+                temperature=0.3  # Lower temperature for more consistent summaries
+            )
+            
+            summary = response.choices[0].message.content.strip()
+            
+            # Clean up the summary if needed
+            if not summary.startswith("•"):
+                # Try to extract bullet points if format is different
+                lines = [line.strip() for line in summary.split('\n') if line.strip()]
+                bullet_lines = []
+                for line in lines:
+                    if any(line.startswith(prefix) for prefix in ["•", "-", "*", "1.", "2.", "3.", "4.", "5."]):
+                        # Clean and standardize bullet format
+                        clean_line = line.lstrip("•-*123456789. ").strip()
+                        if clean_line:
+                            bullet_lines.append(f"• {clean_line}")
+                
+                if bullet_lines:
+                    summary = "\n".join(bullet_lines[:bullet_points])
+            
+            return summary
+            
+        except Exception as e:
+            logger.error(f"OpenAI API error during summarization: {str(e)}")
+            raise
+    
+    def _generate_extractive_summary(self, transcript: str, bullet_points: int) -> str:
+        """Generate extractive summary as fallback when AI is not available"""
+        lines = [line.strip() for line in transcript.split('\n') if line.strip()]
+        
+        # Simple extractive approach: take key sentences from different parts of transcript
+        total_lines = len(lines)
+        if total_lines == 0:
+            return "• No transcript content available for summarization"
+        
+        # Divide transcript into sections and extract key lines
+        section_size = max(1, total_lines // bullet_points)
+        summary_points = []
+        
+        for i in range(bullet_points):
+            start_idx = i * section_size
+            end_idx = min(start_idx + section_size, total_lines)
+            
+            if start_idx < total_lines:
+                # Get the longest line in this section (often contains more content)
+                section_lines = lines[start_idx:end_idx]
+                if section_lines:
+                    longest_line = max(section_lines, key=len)
+                    # Clean up speaker tags and extract main content
+                    if ":" in longest_line:
+                        content = longest_line.split(":", 1)[1].strip()
+                    else:
+                        content = longest_line.strip()
+                    
+                    if content and len(content) > 20:  # Skip very short lines
+                        summary_points.append(f"• {content[:200]}...")  # Truncate long lines
+        
+        # Fill in with additional points if needed
+        while len(summary_points) < bullet_points and len(summary_points) < total_lines:
+            remaining_lines = [line for line in lines if not any(point[2:100] in line for point in summary_points)]
+            if remaining_lines:
+                line = max(remaining_lines, key=len)
+                if ":" in line:
+                    content = line.split(":", 1)[1].strip()
+                else:
+                    content = line.strip()
+                if content and len(content) > 20:
+                    summary_points.append(f"• {content[:200]}...")
+            else:
+                break
+        
+        if not summary_points:
+            return "• No substantial content found for summarization"
+        
+        return "\n".join(summary_points[:bullet_points])
+    
+    async def batch_summarize_videos(
+        self,
+        db: AsyncSession,
+        video_ids: List[int],
+        bullet_points: int = 4
+    ) -> List[Dict[str, Any]]:
+        """
+        Generate summaries for multiple videos in batch
+        
+        Args:
+            db: Database session
+            video_ids: List of video IDs to summarize
+            bullet_points: Number of bullet points per summary
+            
+        Returns:
+            List of summary results
+        """
+        results = []
+        
+        for video_id in video_ids:
+            try:
+                summary = await self.summarize_video_transcript(db, video_id, bullet_points)
+                results.append(summary)
+            except Exception as e:
+                logger.error(f"Failed to summarize video {video_id}: {str(e)}")
+                results.append({
+                    "video_id": video_id,
+                    "error": str(e),
+                    "summary": None
+                })
+        
+        return results
+    
+    async def get_video_summary_stats(self, db: AsyncSession) -> Dict[str, Any]:
+        """Get statistics about videos available for summarization"""
+        
+        # Count total videos
+        total_videos_query = select(func.count(Video.id))
+        total_result = await db.execute(total_videos_query)
+        total_videos = total_result.scalar_one()
+        
+        # Count videos with transcript segments
+        videos_with_segments_query = (
+            select(func.count(func.distinct(TranscriptSegment.video_id)))
+            .select_from(TranscriptSegment)
+        )
+        segments_result = await db.execute(videos_with_segments_query)
+        videos_with_segments = segments_result.scalar_one()
+        
+        # Get average segment count per video using subquery
+        subquery = (
+            select(func.count(TranscriptSegment.id).label('seg_count'))
+            .group_by(TranscriptSegment.video_id)
+        ).subquery()
+        
+        avg_segments_query = select(func.avg(subquery.c.seg_count))
+        avg_result = await db.execute(avg_segments_query)
+        avg_segments = avg_result.scalar_one() or 0
+        
+        return {
+            "total_videos": total_videos,
+            "videos_with_transcripts": videos_with_segments,
+            "average_segments_per_video": round(float(avg_segments), 1),
+            "summarization_available": HAS_OPENAI,
+            "model_used": self.model if HAS_OPENAI else "extractive"
+        }
+
+
+# Global summarization service instance
+summarization_service = SummarizationService()
