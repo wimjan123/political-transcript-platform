@@ -257,7 +257,7 @@ async def delete_cached_summary(
 
 @router.get("/search")
 async def search_summaries(
-    q: str = Query(..., description="Search query for summaries"),
+    q: str = Query(default="", description="Search query for summaries (empty for all summaries)"),
     page: int = Query(default=1, ge=1, description="Page number"),
     page_size: int = Query(default=25, ge=1, le=100, description="Page size"),
     db: AsyncSession = Depends(get_db)
@@ -276,35 +276,53 @@ async def search_summaries(
         # Calculate offset
         offset = (page - 1) * page_size
         
-        # Build search query
-        search_query = (
-            select(VideoSummary)
-            .join(Video, VideoSummary.video_id == Video.id)
-            .where(
-                or_(
-                    VideoSummary.summary_text.ilike(f"%{q}%"),
-                    Video.title.ilike(f"%{q}%"),
-                    Video.description.ilike(f"%{q}%") if Video.description.is_not(None) else False
+        # Build search query - if no query provided, return all summaries
+        if q.strip():
+            # Search with filters
+            search_query = (
+                select(VideoSummary)
+                .join(Video, VideoSummary.video_id == Video.id)
+                .where(
+                    or_(
+                        VideoSummary.summary_text.ilike(f"%{q}%"),
+                        Video.title.ilike(f"%{q}%"),
+                        Video.description.ilike(f"%{q}%") if Video.description.is_not(None) else False
+                    )
+                )
+                .options(selectinload(VideoSummary.video))
+                .order_by(VideoSummary.generated_at.desc())
+                .offset(offset)
+                .limit(page_size)
+            )
+            
+            # Get total count with filters
+            count_query = (
+                select(func.count(VideoSummary.id))
+                .join(Video, VideoSummary.video_id == Video.id)
+                .where(
+                    or_(
+                        VideoSummary.summary_text.ilike(f"%{q}%"),
+                        Video.title.ilike(f"%{q}%"),
+                        Video.description.ilike(f"%{q}%") if Video.description.is_not(None) else False
+                    )
                 )
             )
-            .options(selectinload(VideoSummary.video))
-            .order_by(VideoSummary.generated_at.desc())
-            .offset(offset)
-            .limit(page_size)
-        )
-        
-        # Get total count
-        count_query = (
-            select(func.count(VideoSummary.id))
-            .join(Video, VideoSummary.video_id == Video.id)
-            .where(
-                or_(
-                    VideoSummary.summary_text.ilike(f"%{q}%"),
-                    Video.title.ilike(f"%{q}%"),
-                    Video.description.ilike(f"%{q}%") if Video.description.is_not(None) else False
-                )
+        else:
+            # Return all summaries
+            search_query = (
+                select(VideoSummary)
+                .join(Video, VideoSummary.video_id == Video.id)
+                .options(selectinload(VideoSummary.video))
+                .order_by(VideoSummary.generated_at.desc())
+                .offset(offset)
+                .limit(page_size)
             )
-        )
+            
+            # Get total count without filters
+            count_query = (
+                select(func.count(VideoSummary.id))
+                .join(Video, VideoSummary.video_id == Video.id)
+            )
         
         # Execute queries
         result = await db.execute(search_query)

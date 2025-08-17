@@ -574,9 +574,12 @@ export const summaryAPI = {
     total_pages: number;
     query: string;
   }> => {
-    const response = await api.get('/api/summarization/search', {
-      params: { q: query, page, page_size: pageSize }
-    });
+    const params: any = { page, page_size: pageSize };
+    if (query.trim()) {
+      params.q = query;
+    }
+    
+    const response = await api.get('/api/summarization/search', { params });
     return response.data;
   },
 

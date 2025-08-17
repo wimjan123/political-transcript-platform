@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Search, Calendar, Bot, FileText, ChevronLeft, ChevronRight, ExternalLink, Clock } from 'lucide-react';
+import { Search, Calendar, Bot, FileText, ChevronLeft, ChevronRight, ExternalLink, Clock, BarChart3, TrendingUp, Users } from 'lucide-react';
 import { summaryAPI } from '../services/api';
 import useDebounce from '../hooks/useDebounce';
 
@@ -30,20 +30,56 @@ const SummarySearchPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [results, setResults] = useState<SummarySearchResponse | null>(null);
+  const [summaryStats, setSummaryStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isStatsLoading, setIsStatsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'));
   const [pageSize, setPageSize] = useState(parseInt(searchParams.get('page_size') || '25'));
 
   const debouncedQuery = useDebounce(query, 300);
 
+  // Load summary stats on component mount
+  useEffect(() => {
+    loadSummaryStats();
+  }, []);
+
+  // Load overview or perform search based on query
   useEffect(() => {
     if (debouncedQuery.trim()) {
       performSearch();
     } else {
-      setResults(null);
+      loadOverview();
     }
   }, [debouncedQuery, currentPage, pageSize]);
+
+  const loadSummaryStats = async () => {
+    setIsStatsLoading(true);
+    try {
+      const stats = await summaryAPI.getStats();
+      setSummaryStats(stats);
+    } catch (error) {
+      console.error('Failed to load summary stats:', error);
+    } finally {
+      setIsStatsLoading(false);
+    }
+  };
+
+  const loadOverview = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Load all summaries with a placeholder search to get all results
+      const overviewResults = await summaryAPI.searchSummaries('', currentPage, pageSize);
+      setResults(overviewResults);
+    } catch (error: any) {
+      console.error('Failed to load overview:', error);
+      setError('Failed to load summaries overview. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const initialQuery = searchParams.get('q');
@@ -136,6 +172,55 @@ const SummarySearchPage: React.FC = () => {
           <p className="text-gray-600">Search through AI-generated video summaries</p>
         </div>
 
+        {/* Summary Stats Overview */}
+        {!query && summaryStats && (
+          <div className="mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <BarChart3 className="h-8 w-8 text-blue-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">Total Summaries</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {results?.total?.toLocaleString() || '0'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <TrendingUp className="h-8 w-8 text-green-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">Videos with Transcripts</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {summaryStats.videos_with_transcripts?.toLocaleString() || '0'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <Bot className="h-8 w-8 text-purple-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">Avg Segments/Video</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {summaryStats.average_segments_per_video?.toFixed(1) || '0'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Search Form */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-6 mb-8">
           <form onSubmit={handleSearch} className="space-y-4">
@@ -197,14 +282,30 @@ const SummarySearchPage: React.FC = () => {
             {/* Results Header */}
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-lg font-medium text-gray-900">Search Results</h2>
+                <h2 className="text-lg font-medium text-gray-900">
+                  {results.query ? 'Search Results' : 'All Summaries'}
+                </h2>
                 <p className="text-sm text-gray-500">
-                  {results.total.toLocaleString()} summaries found for "{results.query}"
-                  {results.total > 0 && (
-                    <span>
-                      {' '}• Showing {((results.page - 1) * results.page_size) + 1}-
-                      {Math.min(results.page * results.page_size, results.total)}
-                    </span>
+                  {results.query ? (
+                    <>
+                      {results.total.toLocaleString()} summaries found for "{results.query}"
+                      {results.total > 0 && (
+                        <span>
+                          {' '}• Showing {((results.page - 1) * results.page_size) + 1}-
+                          {Math.min(results.page * results.page_size, results.total)}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {results.total.toLocaleString()} total summaries
+                      {results.total > 0 && (
+                        <span>
+                          {' '}• Showing {((results.page - 1) * results.page_size) + 1}-
+                          {Math.min(results.page * results.page_size, results.total)}
+                        </span>
+                      )}
+                    </>
                   )}
                 </p>
               </div>
@@ -294,20 +395,24 @@ const SummarySearchPage: React.FC = () => {
         {results && results.results.length === 0 && (
           <div className="text-center py-12">
             <Search className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No summaries found</h3>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">
+              {results.query ? 'No summaries found' : 'No summaries available'}
+            </h3>
             <p className="mt-1 text-sm text-gray-500">
-              Try adjusting your search terms or check if summaries have been generated for videos
+              {results.query
+                ? 'Try adjusting your search terms or check if summaries have been generated for videos'
+                : 'No video summaries have been generated yet. Visit the Videos page to create summaries.'
+              }
             </p>
           </div>
         )}
 
-        {/* Initial State */}
-        {!results && !isLoading && !query && (
+        {/* Loading State */}
+        {!results && isLoading && (
           <div className="text-center py-12">
-            <Search className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Search video summaries</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Enter a search query above to find relevant AI-generated summaries
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">
+              {query ? 'Searching summaries...' : 'Loading summaries...'}
             </p>
           </div>
         )}
