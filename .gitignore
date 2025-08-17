@@ -20,6 +20,15 @@ yarn-error.log*
 # Meilisearch data
 meili_data/
 
+# Meilisearch lock files (if data accidentally tracked)
+meili_data/data.ms/**/lock.mdb
+
+# Playwright artifacts
+playwright-report/
+test-results/
+frontend/playwright-report/
+frontend/test-results/
+
 # Editors / OS
 .DS_Store
 .idea/
