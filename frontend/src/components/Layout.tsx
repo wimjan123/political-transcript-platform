@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Search, BarChart3, Video, Database, Upload, Menu, X, ListMusic, Settings, Bot, ChevronDown, Shield } from 'lucide-react';
+import { Search, BarChart3, Video, Database, Upload, Menu, X, ListMusic, Settings, Bot, ChevronDown, Shield, FileText } from 'lucide-react';
 import { playlist, usePlaylistCount } from '../services/playlist';
 
 const Layout: React.FC = () => {
@@ -11,6 +11,7 @@ const Layout: React.FC = () => {
 
   const navigation = [
     { name: 'Search', href: '/search', icon: Search },
+    { name: 'Summaries', href: '/summaries', icon: FileText },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
     { name: 'Videos', href: '/videos', icon: Video },
     { name: 'Ingest', href: '/ingest', icon: Upload },

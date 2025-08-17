@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Video, Calendar, Clock, User, Search, Filter, Eye, Play, ExternalLink } from 'lucide-react';
-import { videosAPI, formatDate } from '../services/api';
+import { Video, Calendar, Clock, User, Search, Filter, Eye, Play, ExternalLink, Bot, CheckSquare, Square, Loader2 } from 'lucide-react';
+import { videosAPI, summaryAPI, formatDate } from '../services/api';
 import type { Video as VideoType } from '../types';
 import VimeoEmbed from '../components/VimeoEmbed';
 
@@ -23,6 +23,12 @@ const VideosPage: React.FC = () => {
   });
   
   const [showFilters, setShowFilters] = useState(false);
+  
+  // Batch summarization state
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedVideoIds, setSelectedVideoIds] = useState<Set<number>>(new Set());
+  const [isBatchSummarizing, setIsBatchSummarizing] = useState(false);
+  const [batchSummaryResults, setBatchSummaryResults] = useState<any>(null);
 
   useEffect(() => {
     loadVideos();
@@ -107,6 +113,62 @@ const VideosPage: React.FC = () => {
     return colors[source] || 'bg-gray-100 text-gray-800';
   };
 
+  // Selection functions
+  const toggleVideoSelection = (videoId: number) => {
+    setSelectedVideoIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(videoId)) {
+        newSet.delete(videoId);
+      } else {
+        newSet.add(videoId);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAllVisible = () => {
+    setSelectedVideoIds(prev => {
+      const newSet = new Set(prev);
+      videos.forEach(video => newSet.add(video.id));
+      return newSet;
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedVideoIds(new Set());
+  };
+
+  const handleBatchSummarize = async () => {
+    if (selectedVideoIds.size === 0) return;
+    
+    const videoIds = Array.from(selectedVideoIds);
+    if (videoIds.length > 10) {
+      alert('Please select no more than 10 videos for batch summarization.');
+      return;
+    }
+
+    setIsBatchSummarizing(true);
+    setBatchSummaryResults(null);
+
+    try {
+      const results = await summaryAPI.batchSummarize(videoIds, 4);
+      setBatchSummaryResults(results);
+      
+      if (results.successful_count > 0) {
+        // Auto-clear selection after successful batch operation
+        setTimeout(() => {
+          clearSelection();
+          setSelectionMode(false);
+        }, 3000);
+      }
+    } catch (error: any) {
+      console.error('Batch summarization failed:', error);
+      alert('Failed to generate batch summaries. Please try again.');
+    } finally {
+      setIsBatchSummarizing(false);
+    }
+  };
+
   if (isLoading && videos.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -142,6 +204,60 @@ const VideosPage: React.FC = () => {
             </button>
 
             <div className="flex items-center space-x-4">
+              {!selectionMode ? (
+                <button
+                  onClick={() => setSelectionMode(true)}
+                  className="inline-flex items-center px-3 py-2 border border-purple-300 text-sm font-medium rounded-md text-purple-700 bg-purple-50 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
+                >
+                  <Bot className="h-4 w-4 mr-2" />
+                  Batch Summarize
+                </button>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">
+                    {selectedVideoIds.size} selected
+                  </span>
+                  <button
+                    onClick={selectAllVisible}
+                    className="text-sm text-blue-600 hover:text-blue-700"
+                  >
+                    Select All
+                  </button>
+                  <button
+                    onClick={clearSelection}
+                    className="text-sm text-gray-600 hover:text-gray-700"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    onClick={handleBatchSummarize}
+                    disabled={selectedVideoIds.size === 0 || isBatchSummarizing}
+                    className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 transition-colors"
+                  >
+                    {isBatchSummarizing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Summarizing...
+                      </>
+                    ) : (
+                      <>
+                        <Bot className="h-4 w-4 mr-2" />
+                        Summarize ({selectedVideoIds.size}/10)
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectionMode(false);
+                      clearSelection();
+                    }}
+                    className="text-sm text-gray-600 hover:text-gray-700"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+              
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(parseInt(e.target.value))}
@@ -265,6 +381,68 @@ const VideosPage: React.FC = () => {
           </div>
         )}
 
+        {/* Batch Summary Results */}
+        {batchSummaryResults && (
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-6 mb-8">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Batch Summarization Results</h3>
+              <div className="flex items-center space-x-4 text-sm">
+                <span className="text-green-600">
+                  ✅ {batchSummaryResults.successful_count} successful
+                </span>
+                {batchSummaryResults.failed_count > 0 && (
+                  <span className="text-red-600">
+                    ❌ {batchSummaryResults.failed_count} failed
+                  </span>
+                )}
+                <span className="text-gray-500">
+                  Total: {batchSummaryResults.total_requested}
+                </span>
+              </div>
+            </div>
+
+            {batchSummaryResults.successful.length > 0 && (
+              <div className="mb-4">
+                <h4 className="font-medium text-gray-900 mb-2">Successful Summaries:</h4>
+                <div className="space-y-2">
+                  {batchSummaryResults.successful.map((summary: any) => (
+                    <div key={summary.video_id} className="text-sm bg-green-50 rounded p-2">
+                      <Link
+                        to={`/videos/${summary.video_id}`}
+                        className="font-medium text-green-700 hover:text-green-800"
+                      >
+                        {summary.video_title}
+                      </Link>
+                      <span className="text-gray-600 ml-2">- {summary.bullet_points} bullet points</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {batchSummaryResults.failed.length > 0 && (
+              <div className="mb-4">
+                <h4 className="font-medium text-gray-900 mb-2">Failed Summaries:</h4>
+                <div className="space-y-2">
+                  {batchSummaryResults.failed.map((failure: any) => (
+                    <div key={failure.video_id} className="text-sm bg-red-50 rounded p-2">
+                      <span className="font-medium text-red-700">Video ID {failure.video_id}</span>
+                      <span className="text-gray-600 ml-2">- {failure.error}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={() => setBatchSummaryResults(null)}
+              className="text-sm text-gray-500 hover:text-gray-700"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {/* Videos Grid */}
         {videos.length > 0 ? (
           <div className="space-y-6">
@@ -274,6 +452,22 @@ const VideosPage: React.FC = () => {
                 className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-6 hover:shadow-2xl hover:border-blue-300/50 transition-all duration-300 transform hover:-translate-y-1"
               >
                 <div className="flex flex-col lg:flex-row items-start gap-6">
+                  {/* Selection Checkbox */}
+                  {selectionMode && (
+                    <div className="flex-shrink-0">
+                      <button
+                        onClick={() => toggleVideoSelection(video.id)}
+                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        {selectedVideoIds.has(video.id) ? (
+                          <CheckSquare className="h-5 w-5 text-blue-600" />
+                        ) : (
+                          <Square className="h-5 w-5 text-gray-400" />
+                        )}
+                      </button>
+                    </div>
+                  )}
+
                   {/* Video Thumbnail */}
                   <div className="flex-shrink-0 w-full lg:w-48">
                     <div className="rounded-xl overflow-hidden shadow-lg">

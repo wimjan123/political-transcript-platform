@@ -255,6 +255,139 @@ async def delete_cached_summary(
         raise HTTPException(status_code=500, detail=f"Failed to delete cached summary: {str(e)}")
 
 
+@router.get("/search")
+async def search_summaries(
+    q: str = Query(..., description="Search query for summaries"),
+    page: int = Query(default=1, ge=1, description="Page number"),
+    page_size: int = Query(default=25, ge=1, le=100, description="Page size"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Search through cached video summaries
+    
+    - **q**: Search query to match against summary text and video titles
+    - **page**: Page number (starts from 1)
+    - **page_size**: Number of results per page
+    """
+    try:
+        from sqlalchemy import select, func, or_
+        from ..models import VideoSummary, Video
+        
+        # Calculate offset
+        offset = (page - 1) * page_size
+        
+        # Build search query
+        search_query = (
+            select(VideoSummary)
+            .join(Video, VideoSummary.video_id == Video.id)
+            .where(
+                or_(
+                    VideoSummary.summary_text.ilike(f"%{q}%"),
+                    Video.title.ilike(f"%{q}%"),
+                    Video.description.ilike(f"%{q}%") if Video.description.is_not(None) else False
+                )
+            )
+            .options(selectinload(VideoSummary.video))
+            .order_by(VideoSummary.generated_at.desc())
+            .offset(offset)
+            .limit(page_size)
+        )
+        
+        # Get total count
+        count_query = (
+            select(func.count(VideoSummary.id))
+            .join(Video, VideoSummary.video_id == Video.id)
+            .where(
+                or_(
+                    VideoSummary.summary_text.ilike(f"%{q}%"),
+                    Video.title.ilike(f"%{q}%"),
+                    Video.description.ilike(f"%{q}%") if Video.description.is_not(None) else False
+                )
+            )
+        )
+        
+        # Execute queries
+        result = await db.execute(search_query)
+        summaries = result.scalars().all()
+        
+        count_result = await db.execute(count_query)
+        total = count_result.scalar_one()
+        
+        # Calculate pagination info
+        total_pages = (total + page_size - 1) // page_size
+        
+        # Format results
+        results = []
+        for summary in summaries:
+            results.append({
+                "id": summary.id,
+                "video_id": summary.video_id,
+                "video_title": summary.video.title,
+                "video_date": summary.video.date.isoformat() if summary.video.date else None,
+                "summary_text": summary.summary_text,
+                "bullet_points": summary.bullet_points,
+                "provider": summary.provider,
+                "model": summary.model,
+                "generated_at": summary.generated_at.isoformat(),
+                "metadata": summary.summary_metadata
+            })
+        
+        return {
+            "results": results,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages,
+            "query": q
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to search summaries: {str(e)}")
+
+
+@router.post("/batch-summarize")
+async def batch_summarize_videos(
+    request: BatchSummaryRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Generate summaries for multiple videos in batch
+    
+    - **video_ids**: List of video IDs to summarize (max 10)
+    - **bullet_points**: Number of bullet points per summary (3-5)
+    """
+    try:
+        results = await summarization_service.batch_summarize_videos(
+            db=db,
+            video_ids=request.video_ids,
+            bullet_points=request.bullet_points
+        )
+        
+        # Filter out error results and return only successful summaries
+        successful_results = []
+        failed_results = []
+        
+        for result in results:
+            if "error" not in result and result.get("summary"):
+                successful_results.append(SummaryResponse(**result))
+            else:
+                failed_results.append({
+                    "video_id": result.get("video_id"),
+                    "error": result.get("error", "Unknown error")
+                })
+        
+        return {
+            "successful": successful_results,
+            "failed": failed_results,
+            "total_requested": len(request.video_ids),
+            "successful_count": len(successful_results),
+            "failed_count": len(failed_results)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate batch summaries: {str(e)}")
+
+
 @router.get("/models/info")
 async def get_summarization_model_info():
     """

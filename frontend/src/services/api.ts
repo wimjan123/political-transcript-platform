@@ -550,6 +550,54 @@ export const summaryAPI = {
     return response.data;
   },
 
+  // Search summaries
+  searchSummaries: async (
+    query: string,
+    page: number = 1,
+    pageSize: number = 25
+  ): Promise<{
+    results: Array<{
+      id: number;
+      video_id: number;
+      video_title: string;
+      video_date: string | null;
+      summary_text: string;
+      bullet_points: number;
+      provider: string;
+      model: string;
+      generated_at: string;
+      metadata: any;
+    }>;
+    total: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+    query: string;
+  }> => {
+    const response = await api.get('/api/summarization/search', {
+      params: { q: query, page, page_size: pageSize }
+    });
+    return response.data;
+  },
+
+  // Batch summarize videos
+  batchSummarize: async (
+    videoIds: number[],
+    bulletPoints: number = 4
+  ): Promise<{
+    successful: SummaryResponse[];
+    failed: Array<{ video_id: number; error: string }>;
+    total_requested: number;
+    successful_count: number;
+    failed_count: number;
+  }> => {
+    const response = await api.post('/api/summarization/batch-summarize', {
+      video_ids: videoIds,
+      bullet_points: bulletPoints
+    });
+    return response.data;
+  },
+
   // Get summarization stats
   getStats: async (): Promise<SummaryStats> => {
     const response = await api.get('/api/summarization/stats');

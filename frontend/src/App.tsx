@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import SearchPage from './pages/SearchPage';
+import SummarySearchPage from './pages/SummarySearchPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import VideosPage from './pages/VideosPage';
 import VideoDetailPage from './pages/VideoDetailPage';
@@ -20,6 +21,7 @@ function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<HomePage />} />
           <Route path="search" element={<SearchPage />} />
+          <Route path="summaries" element={<SummarySearchPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="videos" element={<VideosPage />} />
           <Route path="videos/:videoId" element={<VideoDetailPage />} />
