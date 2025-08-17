@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Bot, Key, Settings, Eye, EyeOff, Save, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
+import { Bot, Key, Settings, Eye, EyeOff, Save, AlertCircle, CheckCircle, Sparkles, ExternalLink, Info } from 'lucide-react';
 import { summaryAPI } from '../services/api';
 import TranscriptSummarizer from '../components/TranscriptSummarizer';
-import type { AISettings } from '../types';
+import { DEFAULT_MODELS, getModelsByProvider, PROVIDER_INFO } from '../config/models';
+import type { AISettings, AIProvider } from '../types';
 
 const AISettingsPage: React.FC = () => {
   const [settings, setSettings] = useState<AISettings>({
+    provider: 'openai',
     apiKey: '',
+    model: DEFAULT_MODELS.openai,
     defaultSummaryLength: 'medium',
     defaultSummaryFormat: 'bullet_points',
     defaultCustomPrompt: 'Provide a clear, objective summary of the key points discussed in this political transcript. Focus on policy positions, major statements, and significant topics covered.',
@@ -65,6 +68,20 @@ const AISettingsPage: React.FC = () => {
   const handleSettingChange = (key: keyof AISettings, value: string) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
+
+  const handleProviderChange = (provider: AIProvider) => {
+    const defaultModel = DEFAULT_MODELS[provider];
+    setSettings(prev => ({
+      ...prev,
+      provider,
+      model: defaultModel,
+      // Clear API key when switching providers to avoid confusion
+      apiKey: ''
+    }));
+  };
+
+  const availableModels = getModelsByProvider(settings.provider);
+  const currentProviderInfo = PROVIDER_INFO[settings.provider];
 
   const getSummaryLengthDescription = (length: string) => {
     switch (length) {
@@ -129,13 +146,84 @@ const AISettingsPage: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
           <h2 className="text-lg font-medium text-gray-900 mb-6 flex items-center">
             <Key className="h-5 w-5 mr-2" />
-            API Configuration
+            AI Provider Configuration
           </h2>
+
+          {/* Provider Selection */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              AI Provider
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {(Object.entries(PROVIDER_INFO) as [AIProvider, typeof PROVIDER_INFO[AIProvider]][]).map(([provider, info]) => (
+                <div
+                  key={provider}
+                  className={`relative border rounded-lg p-4 cursor-pointer transition-all ${
+                    settings.provider === provider
+                      ? 'border-purple-500 bg-purple-50 ring-2 ring-purple-500'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  onClick={() => handleProviderChange(provider)}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center">
+                        <input
+                          type="radio"
+                          name="provider"
+                          value={provider}
+                          checked={settings.provider === provider}
+                          onChange={() => handleProviderChange(provider)}
+                          className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300"
+                        />
+                        <h3 className="ml-3 text-sm font-medium text-gray-900">{info.name}</h3>
+                        <a
+                          href={info.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-2 text-gray-400 hover:text-gray-600"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                      <p className="mt-1 text-xs text-gray-500">{info.description}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Model Selection */}
+          <div className="mb-6">
+            <label htmlFor="model" className="block text-sm font-medium text-gray-700 mb-2">
+              Model Selection
+            </label>
+            <select
+              id="model"
+              value={settings.model}
+              onChange={(e) => handleSettingChange('model', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+            >
+              {availableModels.map((model) => (
+                <option key={model.id} value={model.id}>
+                  {model.name}
+                  {model.contextLength && ` (${(model.contextLength / 1000).toFixed(0)}k context)`}
+                </option>
+              ))}
+            </select>
+            {availableModels.find(m => m.id === settings.model)?.description && (
+              <p className="mt-1 text-xs text-gray-500">
+                {availableModels.find(m => m.id === settings.model)?.description}
+              </p>
+            )}
+          </div>
 
           {/* API Key Input */}
           <div className="mb-6">
             <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 mb-2">
-              LLM API Key
+              {currentProviderInfo.name} API Key
             </label>
             <div className="relative">
               <input
@@ -143,7 +231,7 @@ const AISettingsPage: React.FC = () => {
                 id="apiKey"
                 value={settings.apiKey}
                 onChange={(e) => handleSettingChange('apiKey', e.target.value)}
-                placeholder="Enter your OpenAI or compatible API key"
+                placeholder={`Enter your ${currentProviderInfo.name} API key`}
                 className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               />
               <button
@@ -154,9 +242,25 @@ const AISettingsPage: React.FC = () => {
                 {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
-            <p className="mt-1 text-xs text-gray-500">
-              Your API key is stored locally in your browser and never sent to our servers
-            </p>
+            <div className="mt-2 space-y-1">
+              <p className="text-xs text-gray-500">
+                Your API key is stored locally in your browser and never sent to our servers
+              </p>
+              {settings.provider === 'openrouter' && (
+                <div className="flex items-start space-x-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                  <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-xs text-blue-700">
+                    <p className="font-medium mb-1">OpenRouter Setup:</p>
+                    <ol className="list-decimal list-inside space-y-1">
+                      <li>Sign up at <a href="https://openrouter.ai" target="_blank" rel="noopener noreferrer" className="underline">openrouter.ai</a></li>
+                      <li>Go to Keys tab and create a new API key</li>
+                      <li>Add credits to your account to use paid models</li>
+                      <li>Set usage limits to control spending</li>
+                    </ol>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Default Summary Length */}

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Bot, Loader2, AlertCircle, CheckCircle, FileText, Settings } from 'lucide-react';
+import { Bot, Loader2, AlertCircle, CheckCircle, FileText, Settings, Sparkles } from 'lucide-react';
 import { summaryAPI } from '../services/api';
-import type { AISettings, SummaryResponse } from '../types';
+import { getModelById } from '../config/models';
+import type { AISettings, SummaryResponse, AIProvider } from '../types';
 
 interface TranscriptSummarizerProps {
   videoId: number;
@@ -22,6 +23,15 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
   const [segmentCount, setSegmentCount] = useState<number>(0);
   
   // Local settings that can override defaults
+  const [provider, setProvider] = useState<AIProvider>(
+    defaultSettings?.provider || 'openai'
+  );
+  const [apiKey, setApiKey] = useState<string>(
+    defaultSettings?.apiKey || ''
+  );
+  const [model, setModel] = useState<string>(
+    defaultSettings?.model || 'gpt-4o-mini'
+  );
   const [summaryLength, setSummaryLength] = useState<'short' | 'medium' | 'long'>(
     defaultSettings?.defaultSummaryLength || 'medium'
   );
@@ -40,6 +50,9 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
       if (savedSettings) {
         try {
           const parsed = JSON.parse(savedSettings);
+          setProvider(parsed.provider || 'openai');
+          setApiKey(parsed.apiKey || '');
+          setModel(parsed.model || 'gpt-4o-mini');
           setSummaryLength(parsed.defaultSummaryLength || 'medium');
           setSummaryFormat(parsed.defaultSummaryFormat || 'bullet_points');
           setCustomPrompt(parsed.defaultCustomPrompt || customPrompt);
@@ -81,13 +94,26 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
   const generateSummary = async () => {
     if (!canSummarize) return;
 
+    // Validate required settings
+    if (!apiKey.trim()) {
+      setError('Please configure your API key in AI Settings first.');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setSummary(null);
 
     try {
       const bulletPoints = getBulletPointsCount(summaryLength);
-      const result = await summaryAPI.generateSummary(videoId, bulletPoints, customPrompt);
+      const result = await summaryAPI.generateSummary(
+        videoId, 
+        bulletPoints, 
+        customPrompt,
+        provider,
+        model,
+        apiKey
+      );
       setSummary(result);
     } catch (error: any) {
       console.error('Failed to generate summary:', error);
@@ -96,6 +122,9 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
       setIsLoading(false);
     }
   };
+
+  const selectedModel = getModelById(model);
+  const hasValidConfig = apiKey.trim().length > 0;
 
   if (canSummarize === null) {
     return (
@@ -121,14 +150,36 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Video Info */}
+      {/* Video Info & Model Info */}
       {!compact && (
-        <div className="bg-gray-50 rounded-lg p-4">
+        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
           <div className="flex items-center space-x-2 text-sm text-gray-600">
             <FileText className="h-4 w-4" />
             <span className="font-medium">{videoTitle}</span>
             <span>•</span>
             <span>{segmentCount} segments</span>
+          </div>
+          
+          {/* Model Configuration Display */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 text-sm">
+              <Sparkles className="h-4 w-4 text-purple-600" />
+              <span className="text-gray-600">Using:</span>
+              <span className="font-medium text-gray-900">
+                {selectedModel?.name || model}
+              </span>
+              <span className="text-gray-500">via {provider === 'openai' ? 'OpenAI' : 'OpenRouter'}</span>
+            </div>
+            <div className={`flex items-center space-x-1 text-xs px-2 py-1 rounded-full ${
+              hasValidConfig 
+                ? 'bg-green-100 text-green-700' 
+                : 'bg-red-100 text-red-700'
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${
+                hasValidConfig ? 'bg-green-500' : 'bg-red-500'
+              }`} />
+              <span>{hasValidConfig ? 'Configured' : 'Missing API Key'}</span>
+            </div>
           </div>
         </div>
       )}
@@ -223,8 +274,10 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
       {/* Generate Button */}
       <button
         onClick={generateSummary}
-        disabled={isLoading}
-        className="w-full btn btn-primary flex items-center justify-center"
+        disabled={isLoading || !hasValidConfig}
+        className={`w-full btn flex items-center justify-center ${
+          hasValidConfig ? 'btn-primary' : 'btn-outline opacity-50 cursor-not-allowed'
+        }`}
       >
         {isLoading ? (
           <>
@@ -234,7 +287,7 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
         ) : (
           <>
             <Bot className="h-4 w-4 mr-2" />
-            Generate Summary
+            {hasValidConfig ? 'Generate Summary' : 'Configure API Key First'}
           </>
         )}
       </button>
@@ -268,12 +321,18 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
 
           {/* Summary Metadata */}
           <div className="mt-4 text-xs text-green-700 space-y-1">
-            <div>Bullet Points: {summary.bullet_points}</div>
-            {summary.metadata && Object.keys(summary.metadata).length > 0 && (
-              <div>
-                Model: {summary.metadata.model || 'Unknown'}
-                {summary.metadata.tokens_used && ` • Tokens: ${summary.metadata.tokens_used}`}
-              </div>
+            <div className="flex items-center justify-between">
+              <span>Bullet Points: {summary.bullet_points}</span>
+              <span>Provider: {provider === 'openai' ? 'OpenAI' : 'OpenRouter'}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Model: {selectedModel?.name || model}</span>
+              {summary.metadata?.tokens_used && (
+                <span>Tokens: {summary.metadata.tokens_used}</span>
+              )}
+            </div>
+            {summary.metadata?.generation_time && (
+              <div>Generation Time: {summary.metadata.generation_time}s</div>
             )}
           </div>
         </div>

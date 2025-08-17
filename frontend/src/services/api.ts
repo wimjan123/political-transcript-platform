@@ -15,7 +15,9 @@ import type {
   TranscriptSegment,
   ImportStatus,
   SummaryResponse,
-  SummaryStats
+  SummaryStats,
+  SummaryRequest,
+  AIProvider
 } from '@/types';
 
 // Determine API base URL
@@ -505,12 +507,21 @@ export const summaryAPI = {
   generateSummary: async (
     videoId: number,
     bulletPoints: number = 4,
-    customPrompt?: string
+    customPrompt?: string,
+    provider?: AIProvider,
+    model?: string,
+    apiKey?: string
   ): Promise<SummaryResponse> => {
-    const response = await api.post(`/api/summarization/video/${videoId}/summary`, {
+    const payload: any = {
       bullet_points: bulletPoints,
-      custom_prompt: customPrompt,
-    });
+    };
+    
+    if (customPrompt) payload.custom_prompt = customPrompt;
+    if (provider) payload.provider = provider;
+    if (model) payload.model = model;
+    if (apiKey) payload.api_key = apiKey;
+
+    const response = await api.post(`/api/summarization/video/${videoId}/summary`, payload);
     return response.data;
   },
 

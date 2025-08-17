@@ -554,11 +554,16 @@ export interface ChartOptions {
 }
 
 // AI Summarization Types
+export type AIProvider = 'openai' | 'openrouter';
+
 export interface SummaryRequest {
   video_id: number;
   summary_length?: 'short' | 'medium' | 'long';
   summary_format?: 'bullet_points' | 'paragraph';
   custom_prompt?: string;
+  provider?: AIProvider;
+  model?: string;
+  api_key?: string;
 }
 
 export interface SummaryResponse {
@@ -578,8 +583,18 @@ export interface SummaryStats {
 }
 
 export interface AISettings {
+  provider: AIProvider;
   apiKey: string;
+  model: string;
   defaultSummaryLength: 'short' | 'medium' | 'long';
   defaultSummaryFormat: 'bullet_points' | 'paragraph';
   defaultCustomPrompt: string;
+}
+
+export interface ModelOption {
+  id: string;
+  name: string;
+  provider: AIProvider;
+  contextLength?: number;
+  description?: string;
 }
