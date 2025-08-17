@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Search, BarChart3, Video, Database, Upload, Menu, X, ListMusic, Settings } from 'lucide-react';
+import { Search, BarChart3, Video, Database, Upload, Menu, X, ListMusic, Settings, Bot } from 'lucide-react';
 import { playlist, usePlaylistCount } from '../services/playlist';
 
 const Layout: React.FC = () => {
@@ -11,6 +11,7 @@ const Layout: React.FC = () => {
     { name: 'Search', href: '/search', icon: Search },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
     { name: 'Videos', href: '/videos', icon: Video },
+    { name: 'AI Settings', href: '/ai-settings', icon: Bot },
     { name: 'Ingest', href: '/ingest', icon: Upload },
     { name: 'Database', href: '/database-status', icon: Database },
     { name: 'Meilisearch', href: '/meilisearch-admin', icon: Settings },

@@ -8,6 +8,7 @@ import { playlist } from '../services/playlist';
 import { videosAPI, formatDate, formatTimestamp, getSentimentColor, getSentimentLabel, downloadFile } from '../services/api';
 import VimeoEmbed from '../components/VimeoEmbed';
 import VideoSummary from '../components/VideoSummary';
+import TranscriptSummarizer from '../components/TranscriptSummarizer';
 import SimilarSegmentsModal from '../components/SimilarSegmentsModal';
 import type { Video as VideoType, TranscriptSegment, VideoStats } from '../types';
 
@@ -31,6 +32,7 @@ const VideoDetailPage: React.FC = () => {
   const [selectionMode, setSelectionMode] = useState(false);
   const [similarModalOpen, setSimilarModalOpen] = useState(false);
   const [selectedSegmentForSimilar, setSelectedSegmentForSimilar] = useState<TranscriptSegment | null>(null);
+  const [showSummarizer, setShowSummarizer] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const vimeoTimeFragment = (seconds: number) => {
@@ -532,6 +534,14 @@ const VideoDetailPage: React.FC = () => {
                   Search This Video
                 </Link>
 
+                <button
+                  onClick={() => setShowSummarizer(!showSummarizer)}
+                  className="btn btn-outline"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  {showSummarizer ? 'Hide Summarizer' : 'Summarize Transcript'}
+                </button>
+
                 {(() => {
                   const vimeoWatchUrl = video.vimeo_video_id
                     ? `https://vimeo.com/${video.vimeo_video_id}`
@@ -662,6 +672,17 @@ const VideoDetailPage: React.FC = () => {
         {video && (
           <div className="mb-8">
             <VideoSummary videoId={parseInt(videoId!)} videoTitle={video.title} />
+          </div>
+        )}
+
+        {/* AI Transcript Summarizer */}
+        {showSummarizer && video && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+            <h2 className="text-lg font-medium text-gray-900 mb-6 flex items-center">
+              <Sparkles className="h-5 w-5 mr-2" />
+              AI Transcript Summarization
+            </h2>
+            <TranscriptSummarizer videoId={parseInt(videoId!)} />
           </div>
         )}
 

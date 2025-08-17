@@ -1,0 +1,60 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test-backend:
+    runs-on: self-hosted
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    - name: Install dependencies
+      run: pip install -r backend/requirements.txt
+    - name: Run backend tests
+      run: pytest backend/tests/
+
+  test-frontend:
+    runs-on: self-hosted
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Node.js 18
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+    - name: Install dependencies
+      run: npm --prefix frontend ci
+    - name: Run component tests
+      run: npm --prefix frontend test -- --watchAll=false
+
+  run-e2e-tests:
+    runs-on: self-hosted
+    needs: [test-backend, test-frontend]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Node.js 18
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+    - name: Install frontend dependencies
+      run: npm --prefix frontend ci
+    - name: Install Playwright Browsers
+      run: npx --prefix frontend playwright install --with-deps
+    - name: Start services using Docker Compose
+      run: docker-compose up -d
+    - name: Wait for services to be healthy
+      run: |
+        echo "Waiting 45 seconds for services to initialize..."
+        sleep 45
+    - name: Run E2E tests
+      run: npm --prefix frontend run test:e2e
+    - name: Stop services
+      if: always()
+      run: docker-compose down
+

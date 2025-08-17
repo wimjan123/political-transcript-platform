@@ -13,7 +13,9 @@ import type {
   Video,
   VideoStats,
   TranscriptSegment,
-  ImportStatus
+  ImportStatus,
+  SummaryResponse,
+  SummaryStats
 } from '@/types';
 
 // Determine API base URL
@@ -493,6 +495,53 @@ export const ingestAPI = {
   // Clear processing status
   clearProcessingStatus: async (videoId: string): Promise<any> => {
     const response = await api.delete(`/api/ingest/status/${videoId}`);
+    return response.data;
+  },
+};
+
+// AI Summarization API
+export const summaryAPI = {
+  // Generate video summary
+  generateSummary: async (
+    videoId: number,
+    bulletPoints: number = 4,
+    customPrompt?: string
+  ): Promise<SummaryResponse> => {
+    const response = await api.post(`/api/summarization/video/${videoId}/summary`, {
+      bullet_points: bulletPoints,
+      custom_prompt: customPrompt,
+    });
+    return response.data;
+  },
+
+  // Get summarization stats
+  getStats: async (): Promise<SummaryStats> => {
+    const response = await api.get('/api/summarization/stats');
+    return response.data;
+  },
+
+  // Check if video can be summarized
+  canSummarize: async (videoId: number): Promise<{
+    video_id: number;
+    video_title: string;
+    can_summarize: boolean;
+    segment_count: number;
+    summarization_available: boolean;
+  }> => {
+    const response = await api.get(`/api/summarization/video/${videoId}/can-summarize`);
+    return response.data;
+  },
+
+  // Get model info
+  getModelInfo: async (): Promise<{
+    openai_available: boolean;
+    primary_model: string | null;
+    fallback_method: string;
+    max_tokens_per_summary: number;
+    supported_bullet_points: { min: number; max: number };
+    batch_limit: number;
+  }> => {
+    const response = await api.get('/api/summarization/models/info');
     return response.data;
   },
 };

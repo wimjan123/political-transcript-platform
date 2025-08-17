@@ -552,3 +552,34 @@ export interface ChartOptions {
     intersect?: boolean;
   };
 }
+
+// AI Summarization Types
+export interface SummaryRequest {
+  video_id: number;
+  summary_length?: 'short' | 'medium' | 'long';
+  summary_format?: 'bullet_points' | 'paragraph';
+  custom_prompt?: string;
+}
+
+export interface SummaryResponse {
+  video_id: number;
+  video_title: string;
+  summary: string;
+  bullet_points: number;
+  metadata: Record<string, any>;
+}
+
+export interface SummaryStats {
+  total_videos: number;
+  videos_with_transcripts: number;
+  average_segments_per_video: number;
+  summarization_available: boolean;
+  model_used: string;
+}
+
+export interface AISettings {
+  apiKey: string;
+  defaultSummaryLength: 'short' | 'medium' | 'long';
+  defaultSummaryFormat: 'bullet_points' | 'paragraph';
+  defaultCustomPrompt: string;
+}
