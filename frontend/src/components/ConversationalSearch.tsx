@@ -129,7 +129,7 @@ const ConversationalSearch: React.FC<ConversationalSearchProps> = ({ onClose, cl
       page: 1,
       page_size: 10,
       mode,
-      index: 'segments',
+      index: 'segments' as const,
       ...filters,
     };
 
@@ -167,7 +167,7 @@ const ConversationalSearch: React.FC<ConversationalSearchProps> = ({ onClose, cl
       return `I couldn't find any segments matching "${userQuery}". Try rephrasing your query or using different keywords.`;
     }
 
-    const speakers = [...new Set(results.map(r => r.speaker_name).filter(Boolean))];
+    const speakers = Array.from(new Set(results.map(r => r.speaker_name).filter(Boolean)));
     const speakerText = speakers.length > 0 ? ` from ${speakers.slice(0, 3).join(', ')}${speakers.length > 3 ? ' and others' : ''}` : '';
     
     let response = `I found ${total} segment${total === 1 ? '' : 's'} matching "${searchQuery}"${speakerText}. `;

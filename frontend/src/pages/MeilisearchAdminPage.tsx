@@ -135,7 +135,7 @@ const MeilisearchAdminPage: React.FC = () => {
   };
 
   const deleteIndex = async (indexUid: string) => {
-    if (!confirm(`Are you sure you want to delete the index "${indexUid}"?`)) {
+    if (!window.confirm(`Are you sure you want to delete the index "${indexUid}"?`)) {
       return;
     }
     
