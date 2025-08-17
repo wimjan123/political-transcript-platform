@@ -8,6 +8,8 @@ import type {
   TopicAnalytics,
   ReadabilityAnalytics,
   ContentModerationAnalytics,
+  DashboardAnalytics,
+  DashboardFilters,
   Video,
   VideoStats,
   TranscriptSegment,
@@ -148,6 +150,23 @@ export const searchAPI = {
 
 // Analytics API
 export const analyticsAPI = {
+  // Get unified dashboard analytics
+  getDashboardAnalytics: async (filters: Partial<DashboardFilters>): Promise<DashboardAnalytics> => {
+    const params: Record<string, any> = {};
+    
+    if (filters.dateFrom) params.date_from = filters.dateFrom;
+    if (filters.dateTo) params.date_to = filters.dateTo;
+    if (filters.speakers && filters.speakers.length > 0) {
+      params.speakers = filters.speakers.join(',');
+    }
+    if (filters.topics && filters.topics.length > 0) {
+      params.topics = filters.topics.join(',');
+    }
+    
+    const response = await api.get('/api/analytics/dashboard', { params });
+    return response.data;
+  },
+
   // Get overall stats
   getStats: async (dateFrom?: string, dateTo?: string): Promise<AnalyticsStats> => {
     const response = await api.get('/api/analytics/stats', {

@@ -269,6 +269,48 @@ export interface TopicAnalytics {
   }>;
 }
 
+// New Dashboard Analytics Types
+export interface DashboardAnalytics {
+  kpi_stats: AnalyticsStats;
+  sentiment_over_time: Array<{
+    date: string;
+    sentiment: number;
+    count: number;
+  }>;
+  topic_distribution: Array<{
+    topic: string;
+    count: number;
+    percentage?: number;
+  }>;
+  speaker_activity: Array<{
+    speaker: string;
+    segments: number;
+    words: number;
+  }>;
+  sentiment_by_speaker: Array<{
+    speaker: string;
+    sentiment: number;
+    segments: number;
+  }>;
+  content_moderation_summary: Array<{
+    category: string;
+    avg_score?: number;
+    count?: number;
+  }>;
+  readability_metrics: {
+    avg_grade_level: number;
+    avg_reading_ease: number;
+    avg_fog_index: number;
+  };
+}
+
+export interface DashboardFilters {
+  dateFrom: string;
+  dateTo: string;
+  speakers: string[];
+  topics: string[];
+}
+
 export interface ReadabilityAnalytics {
   by_speaker: Array<{
     speaker: string;
