@@ -1,27 +1,51 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Search, BarChart3, Video, Database, Upload, Menu, X, ListMusic, Settings, Bot } from 'lucide-react';
+import { Search, BarChart3, Video, Database, Upload, Menu, X, ListMusic, Settings, Bot, ChevronDown, Shield } from 'lucide-react';
 import { playlist, usePlaylistCount } from '../services/playlist';
 
 const Layout: React.FC = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [isAdminDropdownOpen, setIsAdminDropdownOpen] = React.useState(false);
+  const adminDropdownRef = React.useRef<HTMLDivElement>(null);
 
   const navigation = [
     { name: 'Search', href: '/search', icon: Search },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
     { name: 'Videos', href: '/videos', icon: Video },
-    { name: 'AI Settings', href: '/ai-settings', icon: Bot },
     { name: 'Ingest', href: '/ingest', icon: Upload },
-    { name: 'Database', href: '/database-status', icon: Database },
-    { name: 'Meilisearch', href: '/meilisearch-admin', icon: Settings },
     { name: 'Playlist', href: '/playlist', icon: ListMusic },
   ];
+
+  const adminItems = [
+    { name: 'AI Settings', href: '/ai-settings', icon: Bot },
+    { name: 'Database', href: '/database-status', icon: Database },
+    { name: 'Meilisearch', href: '/meilisearch-admin', icon: Settings },
+  ];
+
   const playlistCount = usePlaylistCount();
 
   const isActive = (path: string) => {
     return location.pathname.startsWith(path);
   };
+
+  const isAdminActive = () => {
+    return adminItems.some(item => isActive(item.href));
+  };
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (adminDropdownRef.current && !adminDropdownRef.current.contains(event.target as Node)) {
+        setIsAdminDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100">
@@ -69,6 +93,48 @@ const Layout: React.FC = () => {
                     </Link>
                   );
                 })}
+                
+                {/* Admin Dropdown */}
+                <div className="relative" ref={adminDropdownRef}>
+                  <button
+                    onClick={() => setIsAdminDropdownOpen(!isAdminDropdownOpen)}
+                    className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      isAdminActive()
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 hover:shadow-sm'
+                    }`}
+                  >
+                    <Shield className="h-4 w-4 mr-2" />
+                    Admin
+                    <ChevronDown className={`h-4 w-4 ml-1 transition-transform duration-200 ${
+                      isAdminDropdownOpen ? 'rotate-180' : ''
+                    }`} />
+                  </button>
+                  
+                  {/* Dropdown Menu */}
+                  {isAdminDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200/50 py-1 z-50">
+                      {adminItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <Link
+                            key={item.name}
+                            to={item.href}
+                            onClick={() => setIsAdminDropdownOpen(false)}
+                            className={`flex items-center px-4 py-2 text-sm transition-colors duration-200 ${
+                              isActive(item.href)
+                                ? 'bg-blue-50 text-blue-700'
+                                : 'text-gray-700 hover:bg-gray-50'
+                            }`}
+                          >
+                            <Icon className="h-4 w-4 mr-3" />
+                            {item.name}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -115,6 +181,34 @@ const Layout: React.FC = () => {
                         {playlistCount}
                       </span>
                     )}
+                  </Link>
+                );
+              })}
+              
+              {/* Admin Section Header */}
+              <div className="pt-2 pb-1">
+                <div className="flex items-center px-3 py-2">
+                  <Shield className="h-4 w-4 mr-2 text-gray-500" />
+                  <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">Admin</span>
+                </div>
+              </div>
+              
+              {/* Admin Items */}
+              {adminItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`flex items-center px-6 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      isActive(item.href)
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 hover:shadow-sm'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 mr-3" />
+                    {item.name}
                   </Link>
                 );
               })}

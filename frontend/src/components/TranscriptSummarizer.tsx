@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bot, Loader2, AlertCircle, CheckCircle, FileText, Settings, Sparkles } from 'lucide-react';
+import { Bot, Loader2, AlertCircle, CheckCircle, FileText, Settings, Sparkles, RefreshCw, Clock } from 'lucide-react';
 import { summaryAPI } from '../services/api';
 import { getModelById } from '../config/models';
 import type { AISettings, SummaryResponse, AIProvider } from '../types';
@@ -67,10 +67,11 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
     }
   }, [defaultSettings]);
 
-  // Check if video can be summarized
+  // Check if video can be summarized and load cached summary
   useEffect(() => {
     if (videoId) {
       checkCanSummarize();
+      loadCachedSummary();
     }
   }, [videoId]);
 
@@ -83,6 +84,28 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
     } catch (error) {
       console.error('Failed to check summarization capability:', error);
       setCanSummarize(false);
+    }
+  };
+
+  const loadCachedSummary = async () => {
+    try {
+      const cachedSummary = await summaryAPI.getCachedSummary(videoId);
+      if (cachedSummary) {
+        setSummary(cachedSummary);
+      }
+    } catch (error) {
+      // No cached summary exists or error loading it - this is normal
+      console.log('No cached summary found for video', videoId);
+    }
+  };
+
+  const deleteCachedSummary = async () => {
+    try {
+      await summaryAPI.deleteCachedSummary(videoId);
+      setSummary(null);
+    } catch (error) {
+      console.error('Failed to delete cached summary:', error);
+      setError('Failed to clear cached summary');
     }
   };
 
@@ -332,14 +355,41 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
 
       {/* Summary Display */}
       {summary && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-          <div className="flex items-center mb-4">
-            <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-            <h3 className="text-lg font-medium text-green-900">Summary Generated</h3>
+        <div className={`rounded-lg p-6 ${
+          summary.metadata?.cached 
+            ? 'bg-blue-50 border border-blue-200' 
+            : 'bg-green-50 border border-green-200'
+        }`}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              {summary.metadata?.cached ? (
+                <Clock className="h-5 w-5 text-blue-600 mr-2" />
+              ) : (
+                <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+              )}
+              <h3 className={`text-lg font-medium ${
+                summary.metadata?.cached ? 'text-blue-900' : 'text-green-900'
+              }`}>
+                {summary.metadata?.cached ? 'Cached Summary' : 'Summary Generated'}
+              </h3>
+            </div>
+            
+            {summary.metadata?.cached && (
+              <button
+                onClick={deleteCachedSummary}
+                className="inline-flex items-center px-3 py-1 text-xs text-blue-700 bg-blue-100 border border-blue-300 rounded-md hover:bg-blue-200 transition-colors"
+                title="Clear cached summary and generate a new one"
+              >
+                <RefreshCw className="h-3 w-3 mr-1" />
+                Refresh
+              </button>
+            )}
           </div>
           
           <div className="prose prose-sm max-w-none">
-            <div className="bg-white rounded-lg p-4 border border-green-200">
+            <div className={`bg-white rounded-lg p-4 border ${
+              summary.metadata?.cached ? 'border-blue-200' : 'border-green-200'
+            }`}>
               <h4 className="text-sm font-medium text-gray-900 mb-3">{summary.video_title}</h4>
               <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">
                 {summary.summary}
@@ -348,19 +398,31 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
           </div>
 
           {/* Summary Metadata */}
-          <div className="mt-4 text-xs text-green-700 space-y-1">
+          <div className={`mt-4 text-xs space-y-1 ${
+            summary.metadata?.cached ? 'text-blue-700' : 'text-green-700'
+          }`}>
             <div className="flex items-center justify-between">
               <span>Bullet Points: {summary.bullet_points}</span>
-              <span>Provider: {provider === 'openai' ? 'OpenAI' : 'OpenRouter'}</span>
+              <span>Provider: {summary.metadata?.provider_used || provider === 'openai' ? 'OpenAI' : 'OpenRouter'}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span>Model: {effectiveModelName}</span>
+              <span>Model: {summary.metadata?.model_used || effectiveModelName}</span>
               {summary.metadata?.tokens_used && (
                 <span>Tokens: {summary.metadata.tokens_used}</span>
               )}
             </div>
-            {model === 'custom' && (
-              <div className="text-xs text-green-600">
+            {summary.metadata?.cached && summary.metadata?.generated_at && (
+              <div className="flex items-center justify-between">
+                <span>Generated: {new Date(summary.metadata.generated_at).toLocaleString()}</span>
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
+                  Cached
+                </span>
+              </div>
+            )}
+            {!summary.metadata?.cached && model === 'custom' && (
+              <div className={`text-xs ${
+                summary.metadata?.cached ? 'text-blue-600' : 'text-green-600'
+              }`}>
                 Model ID: {effectiveModel}
               </div>
             )}

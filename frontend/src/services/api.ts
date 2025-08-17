@@ -503,7 +503,26 @@ export const ingestAPI = {
 
 // AI Summarization API
 export const summaryAPI = {
-  // Generate video summary
+  // Get cached summary for a video
+  getCachedSummary: async (videoId: number): Promise<SummaryResponse | null> => {
+    try {
+      const response = await api.get(`/api/summarization/video/${videoId}/cached-summary`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null; // No cached summary exists
+      }
+      throw error;
+    }
+  },
+
+  // Delete cached summary to force regeneration
+  deleteCachedSummary: async (videoId: number): Promise<{ message: string }> => {
+    const response = await api.delete(`/api/summarization/video/${videoId}/cached-summary`);
+    return response.data;
+  },
+
+  // Generate video summary (will check cache first)
   generateSummary: async (
     videoId: number,
     bulletPoints: number = 4,

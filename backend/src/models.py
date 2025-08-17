@@ -192,6 +192,37 @@ class SegmentTopic(Base):
         return f"<SegmentTopic(segment_id={self.segment_id}, topic_id={self.topic_id}, score={self.score})>"
 
 
+class VideoSummary(Base):
+    """Cached AI-generated video summaries"""
+    __tablename__ = "video_summaries"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    video_id: Mapped[int] = mapped_column(Integer, ForeignKey("videos.id"), unique=True, index=True)
+    
+    # Summary content
+    summary_text: Mapped[str] = mapped_column(Text, nullable=False)
+    bullet_points: Mapped[int] = mapped_column(Integer, nullable=False)
+    
+    # Generation parameters (for cache validation)
+    provider: Mapped[str] = mapped_column(String(50), nullable=False)  # openai, openrouter
+    model: Mapped[str] = mapped_column(String(100), nullable=False)  # model name/id used
+    custom_prompt: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # Generation metadata
+    summary_metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
+    
+    # Timestamps
+    generated_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
+    created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
+    updated_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    video: Mapped["Video"] = relationship("Video")
+    
+    def __repr__(self):
+        return f"<VideoSummary(id={self.id}, video_id={self.video_id}, provider='{self.provider}', model='{self.model}')>"
+
+
 # Create database indexes for better performance
 Index('idx_segment_video_speaker', TranscriptSegment.video_id, TranscriptSegment.speaker_id)
 Index('idx_segment_video_seconds', TranscriptSegment.video_id, TranscriptSegment.video_seconds)

@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.orm import selectinload
 
-from ..models import Video, TranscriptSegment
+from ..models import Video, TranscriptSegment, VideoSummary
 from ..config import settings
 
 # Try to import OpenAI, fallback if not available
@@ -81,6 +81,31 @@ class SummarizationService:
         """
         bullet_points = max(3, min(5, bullet_points))  # Enforce 3-5 range
         
+        # Check for cached summary first
+        effective_model = model or self.model
+        effective_provider = provider or "openai"
+        
+        # Try to find existing summary with matching parameters
+        cached_summary = await self._get_cached_summary(
+            db, video_id, bullet_points, effective_provider, effective_model, custom_prompt
+        )
+        
+        if cached_summary:
+            logger.info(f"Returning cached summary for video {video_id}")
+            return {
+                "video_id": cached_summary.video_id,
+                "video_title": cached_summary.video.title,
+                "summary": cached_summary.summary_text,
+                "bullet_points": cached_summary.bullet_points,
+                "metadata": {
+                    **(cached_summary.summary_metadata or {}),
+                    "cached": True,
+                    "generated_at": cached_summary.generated_at.isoformat(),
+                    "provider_used": cached_summary.provider,
+                    "model_used": cached_summary.model
+                }
+            }
+        
         # Get video and all transcript segments
         video_query = select(Video).where(Video.id == video_id)
         video_result = await db.execute(video_query)
@@ -134,21 +159,31 @@ class SummarizationService:
         # Determine effective model used
         effective_model = model or self.model if HAS_OPENAI else "extractive"
         
+        # Create metadata
+        metadata = {
+            "total_segments": total_segments,
+            "total_words": total_word_count,
+            "total_characters": total_char_count,
+            "duration_seconds": duration_seconds,
+            "summarization_method": "ai" if HAS_OPENAI else "extractive",
+            "model_used": effective_model,
+            "provider_used": provider or "openai" if HAS_OPENAI else "extractive",
+            "generated_at": datetime.utcnow().isoformat(),
+            "cached": False
+        }
+        
+        # Save the summary to cache
+        await self._save_summary_to_cache(
+            db, video_id, summary_text, bullet_points,
+            effective_provider, effective_model, custom_prompt, metadata
+        )
+        
         return {
             "video_id": video_id,
             "video_title": video.title,
             "summary": summary_text,
             "bullet_points": bullet_points,
-            "metadata": {
-                "total_segments": total_segments,
-                "total_words": total_word_count,
-                "total_characters": total_char_count,
-                "duration_seconds": duration_seconds,
-                "summarization_method": "ai" if HAS_OPENAI else "extractive",
-                "model_used": effective_model,
-                "provider_used": provider or "openai" if HAS_OPENAI else "extractive",
-                "generated_at": datetime.utcnow().isoformat()
-            }
+            "metadata": metadata
         }
     
     def _combine_transcript_segments(self, segments: List[TranscriptSegment]) -> str:
@@ -376,6 +411,74 @@ Please provide exactly {bullet_points} bullet points in this format:
             "summarization_available": HAS_OPENAI,
             "model_used": self.model if HAS_OPENAI else "extractive"
         }
+    
+    async def _get_cached_summary(
+        self,
+        db: AsyncSession,
+        video_id: int,
+        bullet_points: int,
+        provider: str,
+        model: str,
+        custom_prompt: Optional[str] = None
+    ) -> Optional[VideoSummary]:
+        """Check for existing cached summary with matching parameters"""
+        
+        query = (
+            select(VideoSummary)
+            .where(
+                and_(
+                    VideoSummary.video_id == video_id,
+                    VideoSummary.bullet_points == bullet_points,
+                    VideoSummary.provider == provider,
+                    VideoSummary.model == model,
+                    VideoSummary.custom_prompt == custom_prompt
+                )
+            )
+            .options(selectinload(VideoSummary.video))
+        )
+        
+        result = await db.execute(query)
+        return result.scalar_one_or_none()
+    
+    async def _save_summary_to_cache(
+        self,
+        db: AsyncSession,
+        video_id: int,
+        summary_text: str,
+        bullet_points: int,
+        provider: str,
+        model: str,
+        custom_prompt: Optional[str],
+        metadata: Dict[str, Any]
+    ) -> VideoSummary:
+        """Save generated summary to cache"""
+        
+        # First, delete any existing summary for this video (one summary per video for now)
+        existing_query = select(VideoSummary).where(VideoSummary.video_id == video_id)
+        existing_result = await db.execute(existing_query)
+        existing_summary = existing_result.scalar_one_or_none()
+        
+        if existing_summary:
+            await db.delete(existing_summary)
+        
+        # Create new summary record
+        video_summary = VideoSummary(
+            video_id=video_id,
+            summary_text=summary_text,
+            bullet_points=bullet_points,
+            provider=provider,
+            model=model,
+            custom_prompt=custom_prompt,
+            summary_metadata=metadata,
+            generated_at=datetime.utcnow()
+        )
+        
+        db.add(video_summary)
+        await db.commit()
+        await db.refresh(video_summary)
+        
+        logger.info(f"Saved summary to cache for video {video_id}")
+        return video_summary
 
 
 # Global summarization service instance

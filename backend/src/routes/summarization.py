@@ -5,6 +5,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from ..database import get_db
 from ..services.summarization_service import summarization_service
@@ -174,6 +175,84 @@ async def check_video_can_summarize(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to check video summarization: {str(e)}")
+
+
+@router.get("/video/{video_id}/cached-summary")
+async def get_cached_summary(
+    video_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get cached summary for a video if it exists
+    
+    - **video_id**: ID of the video to check for cached summary
+    """
+    try:
+        from sqlalchemy import select
+        from ..models import VideoSummary
+        
+        query = (
+            select(VideoSummary)
+            .where(VideoSummary.video_id == video_id)
+            .options(selectinload(VideoSummary.video))
+        )
+        
+        result = await db.execute(query)
+        cached_summary = result.scalar_one_or_none()
+        
+        if not cached_summary:
+            raise HTTPException(status_code=404, detail="No cached summary found for this video")
+        
+        return {
+            "video_id": cached_summary.video_id,
+            "video_title": cached_summary.video.title,
+            "summary": cached_summary.summary_text,
+            "bullet_points": cached_summary.bullet_points,
+            "metadata": {
+                **(cached_summary.summary_metadata or {}),
+                "cached": True,
+                "generated_at": cached_summary.generated_at.isoformat(),
+                "provider_used": cached_summary.provider,
+                "model_used": cached_summary.model
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get cached summary: {str(e)}")
+
+
+@router.delete("/video/{video_id}/cached-summary")
+async def delete_cached_summary(
+    video_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Delete cached summary for a video to force regeneration
+    
+    - **video_id**: ID of the video to clear cached summary for
+    """
+    try:
+        from sqlalchemy import select
+        from ..models import VideoSummary
+        
+        query = select(VideoSummary).where(VideoSummary.video_id == video_id)
+        result = await db.execute(query)
+        cached_summary = result.scalar_one_or_none()
+        
+        if not cached_summary:
+            raise HTTPException(status_code=404, detail="No cached summary found for this video")
+        
+        await db.delete(cached_summary)
+        await db.commit()
+        
+        return {"message": f"Cached summary deleted for video {video_id}"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete cached summary: {str(e)}")
 
 
 @router.get("/models/info")
