@@ -132,7 +132,7 @@ const SpeakerActivityChart: React.FC<SpeakerActivityChartProps> = ({
               type="category"
               dataKey="speaker" 
               tick={{ fontSize: 11 }}
-              tickFormatter={(value) => truncateLabel(value, 18)}
+              tickFormatter={(value: string) => truncateLabel(value, 18)}
               stroke="#6b7280"
               width={110}
             />

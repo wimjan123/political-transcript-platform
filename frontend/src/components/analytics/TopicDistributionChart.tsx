@@ -110,7 +110,7 @@ const TopicDistributionChart: React.FC<TopicDistributionChartProps> = ({
             <XAxis 
               dataKey="topic" 
               tick={{ fontSize: 11 }}
-              tickFormatter={(value) => truncateLabel(value, 12)}
+              tickFormatter={(value: string) => truncateLabel(value, 12)}
               stroke="#6b7280"
               angle={-45}
               textAnchor="end"
