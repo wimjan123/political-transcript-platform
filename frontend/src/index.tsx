@@ -5,6 +5,9 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
+// Setup Chart.js components
+import './utils/chartSetup';
+
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
