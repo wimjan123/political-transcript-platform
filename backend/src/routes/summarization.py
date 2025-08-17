@@ -58,6 +58,11 @@ async def create_video_summary(
     - **api_key**: API key for the provider
     """
     try:
+        # Debug logging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Summarization request: video_id={video_id}, provider={request.provider}, model={request.model}, has_api_key={bool(request.api_key)}")
+        
         result = await summarization_service.summarize_video_transcript(
             db=db,
             video_id=video_id,
@@ -67,12 +72,16 @@ async def create_video_summary(
             model=request.model,
             api_key=request.api_key
         )
+        logger.info(f"Summarization successful for video {video_id}")
         return SummaryResponse(**result)
     except ValueError as e:
+        logger.error(f"ValueError in summarization: {str(e)}")
         raise HTTPException(status_code=404, detail=str(e))
     except RuntimeError as e:
+        logger.error(f"RuntimeError in summarization: {str(e)}")
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
+        logger.error(f"Unexpected error in summarization: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to generate summary: {str(e)}")
 
 

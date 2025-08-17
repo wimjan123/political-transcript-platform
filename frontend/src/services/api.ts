@@ -521,7 +521,13 @@ export const summaryAPI = {
     if (model) payload.model = model;
     if (apiKey) payload.api_key = apiKey;
 
+    console.log('API Request:', {
+      url: `/api/summarization/video/${videoId}/summary`,
+      payload
+    });
+
     const response = await api.post(`/api/summarization/video/${videoId}/summary`, payload);
+    console.log('API Response:', response.data);
     return response.data;
   },
 

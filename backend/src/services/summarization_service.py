@@ -45,10 +45,13 @@ class SummarizationService:
         # Determine base URL based on provider
         if provider == "openrouter":
             base_url = "https://openrouter.ai/api/v1"
+            logger.info(f"Using OpenRouter with base URL: {base_url}")
         else:
             base_url = None  # Use OpenAI default
+            logger.info("Using OpenAI with default base URL")
         
         # Create new client with the provided parameters
+        logger.info(f"Creating client with provider: {provider}, has_key: {bool(effective_api_key)}")
         return AsyncOpenAI(api_key=effective_api_key, base_url=base_url)
     
     async def summarize_video_transcript(
@@ -216,6 +219,7 @@ Please provide exactly {bullet_points} bullet points in this format:
         try:
             # Use provided model or fall back to default
             effective_model = model or self.model
+            logger.info(f"Making API call with model: {effective_model}")
             
             response = await client.chat.completions.create(
                 model=effective_model,

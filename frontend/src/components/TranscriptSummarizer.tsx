@@ -119,6 +119,16 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
       // Use custom model if selected, otherwise use the selected model
       const effectiveModel = model === 'custom' ? customModel : model;
       
+      // Debug logging
+      console.log('Generating summary with params:', {
+        videoId,
+        bulletPoints,
+        customPrompt,
+        provider,
+        model: effectiveModel,
+        hasApiKey: !!apiKey
+      });
+      
       const result = await summaryAPI.generateSummary(
         videoId, 
         bulletPoints, 
@@ -127,10 +137,13 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
         effectiveModel,
         apiKey
       );
+      
+      console.log('Summary result:', result);
       setSummary(result);
     } catch (error: any) {
       console.error('Failed to generate summary:', error);
-      setError(error.response?.data?.detail || 'Failed to generate summary. Please try again.');
+      console.error('Error details:', error.response?.data);
+      setError(error.response?.data?.detail || error.message || 'Failed to generate summary. Please try again.');
     } finally {
       setIsLoading(false);
     }
