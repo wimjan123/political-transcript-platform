@@ -10,6 +10,7 @@ const AISettingsPage: React.FC = () => {
     provider: 'openai',
     apiKey: '',
     model: DEFAULT_MODELS.openai,
+    customModel: '',
     defaultSummaryLength: 'medium',
     defaultSummaryFormat: 'bullet_points',
     defaultCustomPrompt: 'Provide a clear, objective summary of the key points discussed in this political transcript. Focus on policy positions, major statements, and significant topics covered.',
@@ -217,6 +218,52 @@ const AISettingsPage: React.FC = () => {
               <p className="mt-1 text-xs text-gray-500">
                 {availableModels.find(m => m.id === settings.model)?.description}
               </p>
+            )}
+
+            {/* Custom Model Input for OpenRouter */}
+            {settings.provider === 'openrouter' && settings.model === 'custom' && (
+              <div className="mt-4 space-y-3">
+                <div>
+                  <label htmlFor="customModel" className="block text-sm font-medium text-gray-700 mb-2">
+                    Custom OpenRouter Model ID
+                  </label>
+                  <input
+                    type="text"
+                    id="customModel"
+                    value={settings.customModel}
+                    onChange={(e) => handleSettingChange('customModel', e.target.value)}
+                    placeholder="e.g., anthropic/claude-3-opus, meta-llama/llama-3.2-90b-instruct"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Enter the exact model ID as shown on OpenRouter. Examples: anthropic/claude-3-opus, meta-llama/llama-3.2-90b-instruct
+                  </p>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-2">
+                    <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm text-blue-700">
+                      <p className="font-medium mb-2">Finding OpenRouter Models:</p>
+                      <ol className="list-decimal list-inside space-y-1 mb-3">
+                        <li>Visit <a href="https://openrouter.ai/models" target="_blank" rel="noopener noreferrer" className="underline font-medium">openrouter.ai/models</a></li>
+                        <li>Browse available models and their pricing</li>
+                        <li>Copy the model ID (e.g., "anthropic/claude-3-opus")</li>
+                        <li>Paste it in the field above</li>
+                      </ol>
+                      <div className="bg-blue-100 rounded p-2 text-xs">
+                        <p className="font-medium mb-1">Popular Models:</p>
+                        <ul className="space-y-0.5">
+                          <li>• <code className="bg-white px-1 rounded">anthropic/claude-3-opus</code> - Most capable Claude model</li>
+                          <li>• <code className="bg-white px-1 rounded">meta-llama/llama-3.2-90b-instruct</code> - Latest Llama model</li>
+                          <li>• <code className="bg-white px-1 rounded">google/gemini-flash-1.5</code> - Fast Google model</li>
+                          <li>• <code className="bg-white px-1 rounded">x-ai/grok-beta</code> - xAI's Grok model</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 

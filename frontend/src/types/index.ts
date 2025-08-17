@@ -586,6 +586,7 @@ export interface AISettings {
   provider: AIProvider;
   apiKey: string;
   model: string;
+  customModel: string; // For manual OpenRouter model entry
   defaultSummaryLength: 'short' | 'medium' | 'long';
   defaultSummaryFormat: 'bullet_points' | 'paragraph';
   defaultCustomPrompt: string;

@@ -101,6 +101,14 @@ export const AVAILABLE_MODELS: ModelOption[] = [
     provider: 'openrouter',
     contextLength: 128000,
     description: 'Cohere\'s flagship model for complex tasks'
+  },
+
+  // Custom model option for OpenRouter
+  {
+    id: 'custom',
+    name: 'Custom Model (Manual Entry)',
+    provider: 'openrouter',
+    description: 'Enter any OpenRouter model ID manually'
   }
 ];
 

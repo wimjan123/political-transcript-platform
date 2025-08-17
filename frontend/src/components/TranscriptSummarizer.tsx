@@ -32,6 +32,9 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
   const [model, setModel] = useState<string>(
     defaultSettings?.model || 'gpt-4o-mini'
   );
+  const [customModel, setCustomModel] = useState<string>(
+    defaultSettings?.customModel || ''
+  );
   const [summaryLength, setSummaryLength] = useState<'short' | 'medium' | 'long'>(
     defaultSettings?.defaultSummaryLength || 'medium'
   );
@@ -53,6 +56,7 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
           setProvider(parsed.provider || 'openai');
           setApiKey(parsed.apiKey || '');
           setModel(parsed.model || 'gpt-4o-mini');
+          setCustomModel(parsed.customModel || '');
           setSummaryLength(parsed.defaultSummaryLength || 'medium');
           setSummaryFormat(parsed.defaultSummaryFormat || 'bullet_points');
           setCustomPrompt(parsed.defaultCustomPrompt || customPrompt);
@@ -100,18 +104,27 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
       return;
     }
 
+    // Validate custom model if selected
+    if (model === 'custom' && !customModel.trim()) {
+      setError('Please enter a custom model ID or select a predefined model.');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setSummary(null);
 
     try {
       const bulletPoints = getBulletPointsCount(summaryLength);
+      // Use custom model if selected, otherwise use the selected model
+      const effectiveModel = model === 'custom' ? customModel : model;
+      
       const result = await summaryAPI.generateSummary(
         videoId, 
         bulletPoints, 
         customPrompt,
         provider,
-        model,
+        effectiveModel,
         apiKey
       );
       setSummary(result);
@@ -124,7 +137,9 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
   };
 
   const selectedModel = getModelById(model);
-  const hasValidConfig = apiKey.trim().length > 0;
+  const effectiveModel = model === 'custom' ? customModel : model;
+  const effectiveModelName = model === 'custom' ? (customModel || 'Custom Model') : (selectedModel?.name || model);
+  const hasValidConfig = apiKey.trim().length > 0 && (model !== 'custom' || customModel.trim().length > 0);
 
   if (canSummarize === null) {
     return (
@@ -165,8 +180,8 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
             <div className="flex items-center space-x-2 text-sm">
               <Sparkles className="h-4 w-4 text-purple-600" />
               <span className="text-gray-600">Using:</span>
-              <span className="font-medium text-gray-900">
-                {selectedModel?.name || model}
+              <span className="font-medium text-gray-900" title={effectiveModel}>
+                {effectiveModelName}
               </span>
               <span className="text-gray-500">via {provider === 'openai' ? 'OpenAI' : 'OpenRouter'}</span>
             </div>
@@ -326,11 +341,16 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
               <span>Provider: {provider === 'openai' ? 'OpenAI' : 'OpenRouter'}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span>Model: {selectedModel?.name || model}</span>
+              <span>Model: {effectiveModelName}</span>
               {summary.metadata?.tokens_used && (
                 <span>Tokens: {summary.metadata.tokens_used}</span>
               )}
             </div>
+            {model === 'custom' && (
+              <div className="text-xs text-green-600">
+                Model ID: {effectiveModel}
+              </div>
+            )}
             {summary.metadata?.generation_time && (
               <div>Generation Time: {summary.metadata.generation_time}s</div>
             )}
