@@ -1,5 +1,5 @@
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Line } from 'react-chartjs-2';
 import { TrendingUp } from 'lucide-react';
 
 interface SentimentDataPoint {
@@ -27,31 +27,6 @@ const SentimentOverTimeChart: React.FC<SentimentOverTimeChartProps> = ({
     } catch {
       return dateStr;
     }
-  };
-
-  const formatSentiment = (value: number) => {
-    return value.toFixed(3);
-  };
-
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-          <p className="font-medium text-gray-900 mb-1">
-            Week of {formatDate(label)}
-          </p>
-          <p className="text-sm text-gray-600">
-            <span className="inline-block w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
-            Avg Sentiment: <span className="font-medium">{formatSentiment(data.sentiment)}</span>
-          </p>
-          <p className="text-sm text-gray-600">
-            Segments: <span className="font-medium">{data.count.toLocaleString()}</span>
-          </p>
-        </div>
-      );
-    }
-    return null;
   };
 
   if (isLoading) {
@@ -82,6 +57,68 @@ const SentimentOverTimeChart: React.FC<SentimentOverTimeChartProps> = ({
     );
   }
 
+  const chartData = {
+    labels: data.map(d => formatDate(d.date)),
+    datasets: [
+      {
+        label: 'Average Sentiment',
+        data: data.map(d => d.sentiment),
+        borderColor: '#2563eb',
+        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+        borderWidth: 2,
+        pointBackgroundColor: '#2563eb',
+        pointBorderColor: '#2563eb',
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        fill: true,
+        tension: 0.3,
+      }
+    ]
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        callbacks: {
+          afterLabel: function(context: any) {
+            const index = context.dataIndex;
+            return `Segments: ${data[index].count.toLocaleString()}`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          maxTicksLimit: 10,
+        }
+      },
+      y: {
+        beginAtZero: false,
+        grid: {
+          color: 'rgba(0, 0, 0, 0.1)',
+        },
+        ticks: {
+          callback: function(value: any) {
+            return value.toFixed(3);
+          }
+        }
+      },
+    },
+    interaction: {
+      intersect: false,
+      mode: 'index' as const,
+    },
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
       <div className="flex items-center justify-between mb-4">
@@ -95,32 +132,7 @@ const SentimentOverTimeChart: React.FC<SentimentOverTimeChartProps> = ({
       </div>
       
       <div className="h-80">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis 
-              dataKey="date" 
-              tick={{ fontSize: 12 }}
-              tickFormatter={formatDate}
-              stroke="#6b7280"
-            />
-            <YAxis 
-              tick={{ fontSize: 12 }}
-              tickFormatter={formatSentiment}
-              stroke="#6b7280"
-              domain={['dataMin', 'dataMax']}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Line 
-              type="monotone" 
-              dataKey="sentiment" 
-              stroke="#2563eb" 
-              strokeWidth={2}
-              dot={{ fill: "#2563eb", strokeWidth: 2, r: 4 }}
-              activeDot={{ r: 6, stroke: "#2563eb", strokeWidth: 2 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        <Line data={chartData} options={chartOptions} />
       </div>
       
       {/* Reference line explanation */}

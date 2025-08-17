@@ -12,10 +12,195 @@ from ..database import get_db
 from ..models import TranscriptSegment, Video, Speaker, Topic, SegmentTopic
 from ..schemas import (
     AnalyticsStatsResponse, SentimentAnalyticsResponse, TopicAnalyticsResponse,
-    ReadabilityAnalyticsResponse, ContentModerationAnalyticsResponse
+    ReadabilityAnalyticsResponse, ContentModerationAnalyticsResponse, DashboardAnalyticsResponse
 )
 
 router = APIRouter()
+
+
+@router.get("/dashboard", response_model=DashboardAnalyticsResponse)
+async def get_dashboard_analytics(
+    date_from: Optional[date] = Query(None, description="Filter from date"),
+    date_to: Optional[date] = Query(None, description="Filter to date"),
+    speakers: Optional[str] = Query(None, description="Comma-separated speaker names"),
+    topics: Optional[str] = Query(None, description="Comma-separated topic names"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get comprehensive dashboard analytics data in a single endpoint
+    """
+    try:
+        # Build base filter conditions
+        base_conditions = []
+        if date_from:
+            base_conditions.append(Video.date >= date_from)
+        if date_to:
+            base_conditions.append(Video.date <= date_to)
+        
+        speaker_list = speakers.split(",") if speakers else None
+        if speaker_list:
+            base_conditions.append(TranscriptSegment.speaker_name.in_(speaker_list))
+
+        # CTE for filtered segments
+        filtered_segments_cte = select(TranscriptSegment).select_from(
+            TranscriptSegment.join(Video) if base_conditions else TranscriptSegment
+        )
+        if base_conditions:
+            filtered_segments_cte = filtered_segments_cte.where(*base_conditions)
+        filtered_segments_cte = filtered_segments_cte.cte("filtered_segments")
+
+        # 1. KPI Stats
+        total_videos = await db.scalar(select(func.count(Video.id)))
+        total_segments = await db.scalar(select(func.count(TranscriptSegment.id)))
+        total_speakers = await db.scalar(select(func.count(Speaker.id)))
+        total_topics = await db.scalar(select(func.count(Topic.id)))
+        
+        result = await db.execute(select(func.min(Video.date), func.max(Video.date)))
+        min_date, max_date = result.first()
+        
+        top_speakers_query = select(
+            filtered_segments_cte.c.speaker_name,
+            func.count(filtered_segments_cte.c.id).label('segment_count'),
+            func.avg(filtered_segments_cte.c.sentiment_loughran_score).label('avg_sentiment')
+        ).group_by(filtered_segments_cte.c.speaker_name).order_by(func.count(filtered_segments_cte.c.id).desc()).limit(10)
+        
+        result = await db.execute(top_speakers_query)
+        top_speakers = [
+            {
+                "name": row.speaker_name,
+                "segment_count": row.segment_count,
+                "avg_sentiment": float(row.avg_sentiment) if row.avg_sentiment else 0
+            }
+            for row in result
+        ]
+
+        sentiment_query = select(
+            case(
+                (filtered_segments_cte.c.sentiment_loughran_score > 0, 'positive'),
+                (filtered_segments_cte.c.sentiment_loughran_score < 0, 'negative'),
+                else_='neutral'
+            ).label('sentiment'),
+            func.count().label('count')
+        ).group_by('sentiment')
+        
+        result = await db.execute(sentiment_query)
+        sentiment_distribution = {row.sentiment: row.count for row in result}
+
+        kpi_stats = AnalyticsStatsResponse(
+            total_videos=total_videos,
+            total_segments=total_segments,
+            total_speakers=total_speakers,
+            total_topics=total_topics,
+            date_range={"min_date": min_date, "max_date": max_date},
+            top_speakers=top_speakers,
+            top_topics=[],  # Will implement later
+            sentiment_distribution=sentiment_distribution
+        )
+
+        # 2. Sentiment Over Time (weekly aggregation)
+        sentiment_over_time_query = select(
+            func.date_trunc('week', Video.date).label('week'),
+            func.avg(filtered_segments_cte.c.sentiment_loughran_score).label('avg_sentiment'),
+            func.count().label('segment_count')
+        ).select_from(
+            filtered_segments_cte.join(Video, filtered_segments_cte.c.video_id == Video.id)
+        ).group_by('week').order_by('week')
+        
+        result = await db.execute(sentiment_over_time_query)
+        sentiment_over_time = [
+            {
+                "date": row.week.strftime('%Y-%m-%d') if row.week else None,
+                "sentiment": float(row.avg_sentiment) if row.avg_sentiment else 0,
+                "count": row.segment_count
+            }
+            for row in result
+        ]
+
+        # 3. Topic Distribution (simplified for now)
+        topic_distribution = []
+
+        # 4. Speaker Activity (top 15 by segment count)
+        speaker_activity_query = select(
+            filtered_segments_cte.c.speaker_name,
+            func.count().label('total_segments'),
+            func.sum(filtered_segments_cte.c.word_count).label('total_words')
+        ).group_by(filtered_segments_cte.c.speaker_name).order_by(func.count().desc()).limit(15)
+        
+        result = await db.execute(speaker_activity_query)
+        speaker_activity = [
+            {
+                "speaker": row.speaker_name,
+                "segments": row.total_segments,
+                "words": row.total_words or 0
+            }
+            for row in result
+        ]
+
+        # 5. Sentiment by Speaker (top 10)
+        sentiment_by_speaker_query = select(
+            filtered_segments_cte.c.speaker_name,
+            func.avg(filtered_segments_cte.c.sentiment_loughran_score).label('avg_sentiment'),
+            func.count().label('segment_count')
+        ).group_by(filtered_segments_cte.c.speaker_name).having(func.count() >= 5).order_by(func.count().desc()).limit(10)
+        
+        result = await db.execute(sentiment_by_speaker_query)
+        sentiment_by_speaker = [
+            {
+                "speaker": row.speaker_name,
+                "sentiment": float(row.avg_sentiment) if row.avg_sentiment else 0,
+                "segments": row.segment_count
+            }
+            for row in result
+        ]
+
+        # 6. Content Moderation Summary
+        moderation_summary_query = select(
+            func.avg(filtered_segments_cte.c.moderation_harassment).label('harassment'),
+            func.avg(filtered_segments_cte.c.moderation_hate).label('hate'),
+            func.avg(filtered_segments_cte.c.moderation_self_harm).label('self_harm'),
+            func.avg(filtered_segments_cte.c.moderation_sexual).label('sexual'),
+            func.avg(filtered_segments_cte.c.moderation_violence).label('violence'),
+            func.count(case((filtered_segments_cte.c.moderation_overall_score > 0.5, 1))).label('high_risk_count')
+        )
+        
+        result = await db.execute(moderation_summary_query)
+        mod_result = result.first()
+        content_moderation_summary = [
+            {"category": "harassment", "avg_score": float(mod_result.harassment) if mod_result.harassment else 0},
+            {"category": "hate", "avg_score": float(mod_result.hate) if mod_result.hate else 0},
+            {"category": "self_harm", "avg_score": float(mod_result.self_harm) if mod_result.self_harm else 0},
+            {"category": "sexual", "avg_score": float(mod_result.sexual) if mod_result.sexual else 0},
+            {"category": "violence", "avg_score": float(mod_result.violence) if mod_result.violence else 0},
+            {"category": "high_risk_segments", "count": mod_result.high_risk_count}
+        ]
+
+        # 7. Readability Metrics
+        readability_query = select(
+            func.avg(filtered_segments_cte.c.flesch_kincaid_grade).label('avg_fk_grade'),
+            func.avg(filtered_segments_cte.c.flesch_reading_ease).label('avg_reading_ease'),
+            func.avg(filtered_segments_cte.c.gunning_fog_index).label('avg_fog_index')
+        )
+        
+        result = await db.execute(readability_query)
+        read_result = result.first()
+        readability_metrics = {
+            "avg_grade_level": float(read_result.avg_fk_grade) if read_result.avg_fk_grade else 0,
+            "avg_reading_ease": float(read_result.avg_reading_ease) if read_result.avg_reading_ease else 0,
+            "avg_fog_index": float(read_result.avg_fog_index) if read_result.avg_fog_index else 0
+        }
+
+        return DashboardAnalyticsResponse(
+            kpi_stats=kpi_stats,
+            sentiment_over_time=sentiment_over_time,
+            topic_distribution=topic_distribution,
+            speaker_activity=speaker_activity,
+            sentiment_by_speaker=sentiment_by_speaker,
+            content_moderation_summary=content_moderation_summary,
+            readability_metrics=readability_metrics
+        )
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Dashboard analytics error: {str(e)}")
 
 
 @router.get("/stats", response_model=AnalyticsStatsResponse)

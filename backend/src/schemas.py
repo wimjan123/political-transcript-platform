@@ -220,6 +220,17 @@ class ContentModerationAnalyticsResponse(BaseModel):
     trends: List[Dict[str, Any]]
 
 
+class DashboardAnalyticsResponse(BaseModel):
+    """Unified dashboard analytics response schema"""
+    kpi_stats: AnalyticsStatsResponse
+    sentiment_over_time: List[Dict[str, Any]]
+    topic_distribution: List[Dict[str, Any]]
+    speaker_activity: List[Dict[str, Any]]
+    sentiment_by_speaker: List[Dict[str, Any]]
+    content_moderation_summary: List[Dict[str, Any]]
+    readability_metrics: Dict[str, Any]
+
+
 class VideoCreateRequest(BaseModel):
     """Video creation request schema"""
     title: str

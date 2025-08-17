@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Bar } from 'react-chartjs-2';
 import { Users } from 'lucide-react';
 
 interface SpeakerActivityDataPoint {
@@ -36,41 +36,6 @@ const SpeakerActivityChart: React.FC<SpeakerActivityChartProps> = ({
     return num.toString();
   };
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg max-w-xs">
-          <p className="font-medium text-gray-900 mb-2">
-            {label}
-          </p>
-          <div className="space-y-1">
-            <p className="text-sm text-gray-600">
-              <span className="inline-block w-3 h-3 bg-indigo-500 rounded-full mr-2"></span>
-              Segments: <span className="font-medium">{data.segments.toLocaleString()}</span>
-            </p>
-            <p className="text-sm text-gray-600">
-              <span className="inline-block w-3 h-3 bg-purple-500 rounded-full mr-2"></span>
-              Words: <span className="font-medium">{data.words.toLocaleString()}</span>
-            </p>
-            <p className="text-sm text-gray-500">
-              Avg words/segment: <span className="font-medium">
-                {data.segments > 0 ? Math.round(data.words / data.segments) : 0}
-              </span>
-            </p>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const handleBarClick = (data: any) => {
-    if (onSpeakerClick && data.speaker) {
-      onSpeakerClick(data.speaker);
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -102,6 +67,79 @@ const SpeakerActivityChart: React.FC<SpeakerActivityChartProps> = ({
   // Sort data by the selected metric
   const sortedData = [...data].sort((a, b) => b[metric] - a[metric]);
 
+  const chartData = {
+    labels: sortedData.map(d => truncateLabel(d.speaker, 18)),
+    datasets: [
+      {
+        label: metric === 'segments' ? 'Segments' : 'Words',
+        data: sortedData.map(d => d[metric]),
+        backgroundColor: metric === 'segments' ? '#6366f1' : '#8b5cf6',
+        borderColor: metric === 'segments' ? '#4f46e5' : '#7c3aed',
+        borderWidth: 1,
+        borderRadius: 4,
+        borderSkipped: false,
+      }
+    ]
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y' as const,
+    onClick: (event: any, activeElements: any) => {
+      if (onSpeakerClick && activeElements.length > 0) {
+        const index = activeElements[0].index;
+        const speaker = sortedData[index].speaker;
+        onSpeakerClick(speaker);
+      }
+    },
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        callbacks: {
+          title: function(context: any) {
+            const index = context[0].dataIndex;
+            return sortedData[index].speaker;
+          },
+          label: function(context: any) {
+            const index = context.dataIndex;
+            const item = sortedData[index];
+            return [
+              `Segments: ${item.segments.toLocaleString()}`,
+              `Words: ${item.words.toLocaleString()}`,
+              `Avg words/segment: ${item.segments > 0 ? Math.round(item.words / item.segments) : 0}`
+            ];
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        beginAtZero: true,
+        grid: {
+          color: 'rgba(0, 0, 0, 0.1)',
+        },
+        ticks: {
+          callback: function(value: any) {
+            return formatNumber(Number(value));
+          }
+        }
+      },
+      y: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          font: {
+            size: 11,
+          }
+        }
+      },
+    },
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
       <div className="flex items-center justify-between mb-4">
@@ -115,37 +153,7 @@ const SpeakerActivityChart: React.FC<SpeakerActivityChartProps> = ({
       </div>
       
       <div className="h-80">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart 
-            data={sortedData} 
-            layout="horizontal"
-            margin={{ top: 5, right: 30, left: 120, bottom: 5 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis 
-              type="number"
-              tick={{ fontSize: 12 }}
-              tickFormatter={formatNumber}
-              stroke="#6b7280"
-            />
-            <YAxis 
-              type="category"
-              dataKey="speaker" 
-              tick={{ fontSize: 11 }}
-              tickFormatter={(value: string) => truncateLabel(value, 18)}
-              stroke="#6b7280"
-              width={110}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Bar 
-              dataKey={metric}
-              fill={metric === 'segments' ? "#6366f1" : "#8b5cf6"}
-              radius={[0, 2, 2, 0]}
-              onClick={handleBarClick}
-              className={onSpeakerClick ? "cursor-pointer hover:opacity-80" : ""}
-            />
-          </BarChart>
-        </ResponsiveContainer>
+        <Bar data={chartData} options={chartOptions} />
       </div>
       
       {/* Summary stats */}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Bar } from 'react-chartjs-2';
 import { Hash } from 'lucide-react';
 
 interface TopicDataPoint {
@@ -22,35 +22,6 @@ const TopicDistributionChart: React.FC<TopicDistributionChartProps> = ({
   const truncateLabel = (str: string, maxLength: number = 15) => {
     if (str.length <= maxLength) return str;
     return str.substring(0, maxLength) + '...';
-  };
-
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-          <p className="font-medium text-gray-900 mb-1">
-            {label}
-          </p>
-          <p className="text-sm text-gray-600">
-            <span className="inline-block w-3 h-3 bg-emerald-500 rounded-full mr-2"></span>
-            Count: <span className="font-medium">{data.count.toLocaleString()}</span>
-          </p>
-          {data.percentage && (
-            <p className="text-sm text-gray-600">
-              Percentage: <span className="font-medium">{data.percentage.toFixed(1)}%</span>
-            </p>
-          )}
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const handleBarClick = (data: any) => {
-    if (onTopicClick && data.topic) {
-      onTopicClick(data.topic);
-    }
   };
 
   if (isLoading) {
@@ -88,6 +59,76 @@ const TopicDistributionChart: React.FC<TopicDistributionChartProps> = ({
     percentage: item.percentage || (item.count / total) * 100
   }));
 
+  const chartData = {
+    labels: dataWithPercentages.map(d => truncateLabel(d.topic, 12)),
+    datasets: [
+      {
+        label: 'Topic Count',
+        data: dataWithPercentages.map(d => d.count),
+        backgroundColor: '#10b981',
+        borderColor: '#059669',
+        borderWidth: 1,
+        borderRadius: 4,
+        borderSkipped: false,
+      }
+    ]
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    onClick: (event: any, activeElements: any) => {
+      if (onTopicClick && activeElements.length > 0) {
+        const index = activeElements[0].index;
+        const topic = dataWithPercentages[index].topic;
+        onTopicClick(topic);
+      }
+    },
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        callbacks: {
+          title: function(context: any) {
+            const index = context[0].dataIndex;
+            return dataWithPercentages[index].topic;
+          },
+          label: function(context: any) {
+            const index = context.dataIndex;
+            const item = dataWithPercentages[index];
+            return [
+              `Count: ${item.count.toLocaleString()}`,
+              `Percentage: ${item.percentage.toFixed(1)}%`
+            ];
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          maxRotation: 45,
+          minRotation: 45,
+        }
+      },
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: 'rgba(0, 0, 0, 0.1)',
+        },
+        ticks: {
+          callback: function(value: any) {
+            return value.toLocaleString();
+          }
+        }
+      },
+    },
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
       <div className="flex items-center justify-between mb-4">
@@ -101,35 +142,7 @@ const TopicDistributionChart: React.FC<TopicDistributionChartProps> = ({
       </div>
       
       <div className="h-80">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart 
-            data={dataWithPercentages} 
-            margin={{ top: 5, right: 30, left: 20, bottom: 60 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis 
-              dataKey="topic" 
-              tick={{ fontSize: 11 }}
-              tickFormatter={(value: string) => truncateLabel(value, 12)}
-              stroke="#6b7280"
-              angle={-45}
-              textAnchor="end"
-              height={60}
-            />
-            <YAxis 
-              tick={{ fontSize: 12 }}
-              stroke="#6b7280"
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Bar 
-              dataKey="count" 
-              fill="#10b981"
-              radius={[2, 2, 0, 0]}
-              onClick={handleBarClick}
-              className={onTopicClick ? "cursor-pointer hover:opacity-80" : ""}
-            />
-          </BarChart>
-        </ResponsiveContainer>
+        <Bar data={chartData} options={chartOptions} />
       </div>
       
       {/* Summary stats */}
