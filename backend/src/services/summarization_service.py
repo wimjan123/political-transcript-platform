@@ -32,23 +32,34 @@ class SummarizationService:
         self.max_tokens_per_summary = 500
         self.max_input_tokens = 120000  # Leave room for prompt overhead
         
-    def _get_client(self) -> AsyncOpenAI:
+    def _get_client(self, api_key: Optional[str] = None, provider: Optional[str] = None) -> AsyncOpenAI:
         """Get or create OpenAI client"""
         if not HAS_OPENAI:
             raise RuntimeError("OpenAI package not available. Please install it to use summarization features.")
         
-        if self.client is None:
-            api_key = os.getenv("OPENAI_API_KEY")
-            if not api_key:
-                raise RuntimeError("OPENAI_API_KEY environment variable not set")
-            self.client = AsyncOpenAI(api_key=api_key)
-        return self.client
+        # Use provided API key or fall back to environment variable
+        effective_api_key = api_key or os.getenv("OPENAI_API_KEY")
+        if not effective_api_key:
+            raise RuntimeError("API key not provided and OPENAI_API_KEY environment variable not set")
+        
+        # Determine base URL based on provider
+        if provider == "openrouter":
+            base_url = "https://openrouter.ai/api/v1"
+        else:
+            base_url = None  # Use OpenAI default
+        
+        # Create new client with the provided parameters
+        return AsyncOpenAI(api_key=effective_api_key, base_url=base_url)
     
     async def summarize_video_transcript(
         self, 
         db: AsyncSession, 
         video_id: int,
-        bullet_points: int = 4
+        bullet_points: int = 4,
+        custom_prompt: Optional[str] = None,
+        provider: Optional[str] = None,
+        model: Optional[str] = None,
+        api_key: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Generate a bullet-point summary of a full video transcript
@@ -57,6 +68,10 @@ class SummarizationService:
             db: Database session
             video_id: ID of the video to summarize
             bullet_points: Number of bullet points to generate (3-5)
+            custom_prompt: Optional custom prompt for summarization
+            provider: AI provider (openai or openrouter)
+            model: Model name/ID to use
+            api_key: API key for the provider
             
         Returns:
             Dictionary with summary data and metadata
@@ -93,7 +108,9 @@ class SummarizationService:
         
         # Generate summary using OpenAI
         try:
-            summary_text = await self._generate_ai_summary(full_transcript, bullet_points, video)
+            summary_text = await self._generate_ai_summary(
+                full_transcript, bullet_points, video, custom_prompt, provider, model, api_key
+            )
         except Exception as e:
             logger.error(f"Failed to generate AI summary for video {video_id}: {str(e)}")
             # Fallback to extractive summary
@@ -111,6 +128,9 @@ class SummarizationService:
             if max_seconds:
                 duration_seconds = max_seconds
         
+        # Determine effective model used
+        effective_model = model or self.model if HAS_OPENAI else "extractive"
+        
         return {
             "video_id": video_id,
             "video_title": video.title,
@@ -122,7 +142,8 @@ class SummarizationService:
                 "total_characters": total_char_count,
                 "duration_seconds": duration_seconds,
                 "summarization_method": "ai" if HAS_OPENAI else "extractive",
-                "model_used": self.model if HAS_OPENAI else "extractive",
+                "model_used": effective_model,
+                "provider_used": provider or "openai" if HAS_OPENAI else "extractive",
                 "generated_at": datetime.utcnow().isoformat()
             }
         }
@@ -141,12 +162,37 @@ class SummarizationService:
         
         return "\n\n".join(combined_text)
     
-    async def _generate_ai_summary(self, transcript: str, bullet_points: int, video: Video) -> str:
-        """Generate AI-powered summary using OpenAI"""
-        client = self._get_client()
+    async def _generate_ai_summary(
+        self, 
+        transcript: str, 
+        bullet_points: int, 
+        video: Video,
+        custom_prompt: Optional[str] = None,
+        provider: Optional[str] = None,
+        model: Optional[str] = None,
+        api_key: Optional[str] = None
+    ) -> str:
+        """Generate AI-powered summary using OpenAI or OpenRouter"""
+        client = self._get_client(api_key, provider)
         
-        # Create prompt for summarization
-        prompt = f"""Please analyze this political transcript and provide exactly {bullet_points} key bullet points that summarize the main topics, decisions, and significant statements.
+        # Use custom prompt if provided, otherwise use default
+        if custom_prompt:
+            prompt = f"""{custom_prompt}
+
+Video Title: {video.title}
+Date: {video.date}
+Format: {video.format}
+
+Transcript:
+{transcript}
+
+Please provide exactly {bullet_points} bullet points in this format:
+• [First key point]
+• [Second key point]
+• [etc.]"""
+        else:
+            # Create default prompt for summarization
+            prompt = f"""Please analyze this political transcript and provide exactly {bullet_points} key bullet points that summarize the main topics, decisions, and significant statements.
 
 Video Title: {video.title}
 Date: {video.date}
@@ -168,8 +214,11 @@ Please provide exactly {bullet_points} bullet points in this format:
 • [etc.]"""
 
         try:
+            # Use provided model or fall back to default
+            effective_model = model or self.model
+            
             response = await client.chat.completions.create(
-                model=self.model,
+                model=effective_model,
                 messages=[
                     {
                         "role": "system", 

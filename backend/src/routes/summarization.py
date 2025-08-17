@@ -13,8 +13,11 @@ router = APIRouter()
 
 
 class SummaryRequest(BaseModel):
-    video_id: int
     bullet_points: int = Field(default=4, ge=3, le=5, description="Number of bullet points (3-5)")
+    custom_prompt: Optional[str] = Field(default=None, description="Custom prompt for summarization")
+    provider: Optional[str] = Field(default=None, description="AI provider (openai or openrouter)")
+    model: Optional[str] = Field(default=None, description="Model name/ID")
+    api_key: Optional[str] = Field(default=None, description="API key for the provider")
 
 
 class BatchSummaryRequest(BaseModel):
@@ -41,7 +44,7 @@ class SummaryStatsResponse(BaseModel):
 @router.post("/video/{video_id}/summary", response_model=SummaryResponse)
 async def create_video_summary(
     video_id: int,
-    bullet_points: int = Query(default=4, ge=3, le=5, description="Number of bullet points (3-5)"),
+    request: SummaryRequest,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -49,12 +52,20 @@ async def create_video_summary(
     
     - **video_id**: ID of the video to summarize
     - **bullet_points**: Number of bullet points to generate (3-5)
+    - **custom_prompt**: Optional custom prompt for summarization
+    - **provider**: AI provider (openai or openrouter)
+    - **model**: Model name/ID to use
+    - **api_key**: API key for the provider
     """
     try:
         result = await summarization_service.summarize_video_transcript(
             db=db,
             video_id=video_id,
-            bullet_points=bullet_points
+            bullet_points=request.bullet_points,
+            custom_prompt=request.custom_prompt,
+            provider=request.provider,
+            model=request.model,
+            api_key=request.api_key
         )
         return SummaryResponse(**result)
     except ValueError as e:
