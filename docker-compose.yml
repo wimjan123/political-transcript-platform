@@ -47,6 +47,8 @@ services:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
+      meilisearch:
+        condition: service_healthy
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -118,21 +120,24 @@ services:
       retries: 5
 
   meilisearch:
-    image: getmeili/meilisearch:v1.9
+    image: getmeili/meilisearch:latest
     container_name: political_transcripts_meilisearch
     environment:
-      MEILI_ENV: production
+      MEILI_ENV: "production"
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-change-me}
+      MEILI_HTTP_ADDR: "0.0.0.0:7700"
       MEILI_EXPERIMENTAL_ENABLE_VECTOR_STORE: "true"
-    volumes:
-      - ./meili_data:/meili_data
+      MEILI_EXPERIMENTAL_ENABLE_METRICS: "true"
     ports:
       - "7700:7700"
+    volumes:
+      - meili_data:/meili_data
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:7700/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+      test: ["CMD", "wget", "-qO-", "http://localhost:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
 
 volumes:
   postgres_data:

@@ -47,8 +47,18 @@ class Settings(BaseSettings):
     # Meilisearch settings
     MEILI_HOST: str = "http://localhost:7700"
     MEILI_MASTER_KEY: str = ""
+    MEILI_PUBLIC_SEARCH_KEY: str = ""
     MEILI_EMBEDDER_ID: str | None = None
+    MEILI_EMBEDDER_PROVIDER: str = "openai"
     MEILI_TIMEOUT: int = 30
+    
+    # AI Configuration
+    OPENAI_API_KEY: str = ""
+    CONVERSATIONAL_LLM_API_KEY: str = ""
+    
+    # Airtable Configuration
+    AIRTABLE_API_KEY: str = ""
+    AIRTABLE_BASE_ID: str = ""
     
     @property
     def database_url(self) -> str:

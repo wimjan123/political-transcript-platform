@@ -1,4 +1,4 @@
-.PHONY: setup dev start-db start-api start-web deploy import-data clean help
+.PHONY: setup dev start-db start-api start-web deploy import-data clean help start-meili meili-init meili-reindex
 
 # Colors for output
 GREEN=\033[0;32m
@@ -105,10 +105,19 @@ meili-down: ## Stop Meilisearch service
 	@echo "$(YELLOW)Stopping Meilisearch...$(NC)"
 	@docker compose stop meilisearch
 
-meili-init: ## Create Meili indexes and apply settings
-	@echo "$(GREEN)Initializing Meilisearch indexes...$(NC)"
+start-meili: ## Start Meilisearch service
+	@echo "$(GREEN)Starting Meilisearch service...$(NC)"
+	@docker compose up -d meilisearch
+
+meili-init: ## Initialize Meilisearch indexes and settings
+	@echo "$(GREEN)Initializing Meilisearch indexes and settings...$(NC)"
 	@docker compose run --rm -e MEILI_HOST=http://political_transcripts_meilisearch:7700 -e MEILI_MASTER_KEY=$(MEILI_MASTER_KEY) api \
-		python scripts/meili_sync.py --init
+		python scripts/meili_init.py
+
+meili-reindex: ## Full reindexing of segments from PostgreSQL to Meilisearch
+	@echo "$(GREEN)Reindexing all segments to Meilisearch...$(NC)"
+	@docker compose run --rm -e MEILI_HOST=http://political_transcripts_meilisearch:7700 -e MEILI_MASTER_KEY=$(MEILI_MASTER_KEY) api \
+		python scripts/meili_reindex.py
 
 meili-sync: ## Incremental sync from Postgres into Meilisearch
 	@echo "$(GREEN)Syncing data to Meilisearch...$(NC)"
