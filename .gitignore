@@ -34,6 +34,31 @@ frontend/test-results/
 .idea/
 .vscode/
 
-# Env (keep tracked .env if already committed)
+# Environment variables
+.env
 .env.local
+.env.development
+.env.production
+.env.test
+frontend/.env
 frontend/.env.local
+frontend/.env.development
+frontend/.env.production
+frontend/.env.test
+backend/.env
+backend/.env.local
+
+# Security files
+*.pem
+*.key
+!*.key.example
+*.crt
+*.csr
+
+# Backup files
+*.bak
+*.backup
+
+# Temporary files
+*.tmp
+*.temp
