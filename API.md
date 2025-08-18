@@ -129,6 +129,7 @@ Search across video transcripts with advanced filtering and pagination.
 | `date_from` | string | No | Start date (YYYY-MM-DD) |
 | `date_to` | string | No | End date (YYYY-MM-DD) |
 | `source` | string | No | Filter by news source |
+| `dataset` | string | No | Dataset filter (`trump`, `tweede_kamer`), omit or use `all` for no filter |
 | `sort_by` | string | No | Sort field (`relevance`, `date`, `speaker`) |
 | `sort_order` | string | No | Sort direction (`asc`, `desc`) |
 
@@ -225,6 +226,7 @@ Search using Meilisearch with lexical, hybrid, or semantic modes.
 | `index` | string | No | Index to search (`segments`, `events`) |
 | `page` | integer | No | Page number |
 | `page_size` | integer | No | Results per page |
+| `dataset` | string | No | Dataset filter (`trump`, `tweede_kamer`) |
 
 ### Search Suggestions
 
@@ -1001,6 +1003,7 @@ Check the status of the current import process.
 #### Example Response
 ```json
 {
+  "job_type": "html",
   "status": "running",
   "progress": {
     "total_files": 150,
@@ -1019,6 +1022,27 @@ Check the status of the current import process.
   ]
 }
 ```
+
+### Start Tweede Kamer VLOS XML Import (v0.2)
+
+**POST** `/api/upload/import-vlos-xml`
+
+Start the Tweede Kamer VLOS XML import process (defaults to `XML_DATA_DIR`).
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `source_dir` | string | No | Source directory path (overrides `XML_DATA_DIR`) |
+| `force_reimport` | boolean | No | Force reimport existing files |
+
+#### Example Request
+```bash
+curl -X POST "http://localhost:8000/api/upload/import-vlos-xml" \
+  -G -d "force_reimport=false"
+```
+
+Import status and WebSocket updates include `job_type: "vlos_xml"` while running.
 
 ### Cancel Import
 

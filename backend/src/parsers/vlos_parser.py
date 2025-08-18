@@ -49,17 +49,30 @@ class VLOSXMLParser:
     """Lightweight XML parser that tolerates schema variance."""
 
     def parse_file(self, file_path: str) -> Dict[str, Any]:
-        tree = ET.parse(file_path)
-        root = tree.getroot()
+        # Read and sanitize XML content (remove scraper comment, stray BOMs)
+        raw = Path(file_path).read_bytes()
+        try:
+            text = raw.decode("utf-8")
+        except Exception:
+            # Fall back to latin-1 then convert
+            text = raw.decode("latin-1")
+        # Drop leading scraper metadata comment if present
+        text = re.sub(r"^\s*<!--\s*scraper-metadata:base64:[\s\S]*?-->\s*", "", text)
+        # Remove any BOM characters and common double-encoded BOM glyphs
+        text = text.replace("\ufeff", "")
+        text = re.sub(r"^(?:\s*(?:\ufeff|\u00EF\u00BB\u00BF))+", "", text)
+        # Parse XML
+        root = ET.fromstring(text)
 
         filename = Path(file_path).name
 
-        title = self._find_text(root, ["sessionTitle", "title", "VergaderingTitel", "vergadering_titel"]) or filename
-        date_value = self._find_text(root, ["date", "Datum", "vergadering_datum"]) or root.attrib.get("date")
+        title = self._find_text(root, ["titel", "sessionTitle", "title", "VergaderingTitel", "vergadering_titel"]) or filename
+        date_value = self._find_text(root, ["datum", "date", "Datum", "vergadering_datum"]) or root.attrib.get("date")
         session_date: Optional[date] = None
         if date_value:
             for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%Y%m%d", "%d/%m/%Y"):
                 try:
+                    # accept datetime strings
                     session_date = datetime.strptime(date_value[:10], fmt).date()
                     break
                 except Exception:
@@ -80,49 +93,88 @@ class VLOSXMLParser:
         }
 
         segments: List[Dict[str, Any]] = []
-        # Try common element names for utterances
-        utterance_tags = ["utterance", "speech", "Uitspraak", "Uitsprak", "interruption", "interruptie"]
-        utterance_elements: List[ET.Element] = []
-        for tag in utterance_tags:
-            utterance_elements.extend(root.findall(f".//{tag}"))
+        # Namespace-insensitive traversal helpers
+        def local(el: ET.Element) -> str:
+            t = el.tag
+            return t.split('}')[-1] if '}' in t else t
 
-        # If no hits, fall back to any elements with a speaker child and text
-        if not utterance_elements:
-            for el in root.iter():
-                if el.find("speaker") is not None and (el.text or "" ).strip():
-                    utterance_elements.append(el)
+        # Extract session start/end times if available
+        start_time = self._find_text(root, ["aanvangstijd", "start_time"]) or None
+        end_time = self._find_text(root, ["sluiting", "eindtijd", "end_time"]) or None
+        # Find all text blocks under any <tekst> elements
+        current_speaker: Optional[str] = None
+        idx = 0
+        for tekst in root.iter():
+            if local(tekst) != "tekst":
+                continue
+            # Look for timing info within ancestor activiteithoofd
+            ancestor = tekst
+            mark_start = None
+            mark_end = None
+            # climb up a couple of levels
+            parent = ancestor
+            for _ in range(3):
+                parent = getattr(parent, 'getparent', lambda: None)() if hasattr(parent, 'getparent') else None
+                if parent is None:
+                    break
+                ms = None
+                me = None
+                for ch in list(parent):
+                    if local(ch) == "markeertijdbegin":
+                        ms = ch.text
+                    if local(ch) == "markeertijdeind":
+                        me = ch.text
+                mark_start = mark_start or ms
+                mark_end = mark_end or me
 
-        for idx, u in enumerate(utterance_elements):
-            kind = (u.attrib.get("kind") or u.tag or "speech").lower()
-            start = _parse_time_to_seconds(u.attrib.get("start") or (u.findtext("start") or None))
-            end = _parse_time_to_seconds(u.attrib.get("end") or (u.findtext("end") or None))
-            duration = end - start if (start is not None and end is not None and end >= start) else None
-            text = (u.findtext("text") or u.text or "").strip()
-            text_plain = _strip_preamble(text)
-
-            speaker_el = u.find("speaker")
-            display_name = (speaker_el.findtext("display_name") if speaker_el is not None else None) or (
-                speaker_el.findtext("name") if speaker_el is not None else None
-            ) or (speaker_el.text.strip() if (speaker_el is not None and speaker_el.text) else None) or ""
-            first_name = speaker_el.findtext("first_name") if speaker_el is not None else None
-            last_name = speaker_el.findtext("last_name") if speaker_el is not None else None
-            party = speaker_el.findtext("party") if speaker_el is not None else None
-            role_type = speaker_el.findtext("role_type") if speaker_el is not None else None
-
-            speaker_name = display_name or ""
-            segment: Dict[str, Any] = {
-                "segment_id": f"{filename}-{idx+1}",
-                "speaker_name": speaker_name,
-                "transcript_text": text_plain or text,
-                "video_seconds": start,
-                "timestamp_start": None,
-                "timestamp_end": None,
-                "duration_seconds": duration,
-                "word_count": len((text_plain or text).split()),
-                "char_count": len(text_plain or text),
-            }
-
-            segments.append(segment)
+            for alinea in tekst:
+                if local(alinea) != "alinea":
+                    continue
+                for item in alinea:
+                    if local(item) != "alineaitem":
+                        continue
+                    # If this line is emphasized with a colon, treat as speaker line
+                    raw_text_parts: List[str] = []
+                    def _gather_text(e: ET.Element):
+                        if e.text:
+                            raw_text_parts.append(e.text)
+                        for c in list(e):
+                            _gather_text(c)
+                            if c.tail:
+                                raw_text_parts.append(c.tail)
+                    _gather_text(item)
+                    raw_text = ("".join(raw_text_parts)).strip()
+                    if not raw_text:
+                        continue
+                    # see if it contains speaker preamble like "Voorzitter: Name" or "De heer X:" etc
+                    if ":" in raw_text and len(raw_text) <= 120:
+                        # Heuristic: treat short colon-lines as speaker headers
+                        maybe_name = raw_text.split(":", 1)[0]
+                        # normalize
+                        current_speaker = maybe_name.strip()
+                        continue
+                    idx += 1
+                    text_plain = _strip_preamble(raw_text)
+                    start_sec = None
+                    end_sec = None
+                    if mark_start:
+                        try:
+                            # markeertijdbegin is ISO datetime; convert to seconds offset not trivial without video ref
+                            start_sec = None
+                        except Exception:
+                            start_sec = None
+                    segment: Dict[str, Any] = {
+                        "segment_id": f"{filename}-{idx}",
+                        "speaker_name": (current_speaker or "Onbekend"),
+                        "transcript_text": text_plain,
+                        "video_seconds": start_sec,
+                        "timestamp_start": None,
+                        "timestamp_end": None,
+                        "duration_seconds": None,
+                        "word_count": len(text_plain.split()),
+                        "char_count": len(text_plain),
+                    }
+                    segments.append(segment)
 
         return {
             "video_metadata": video_metadata,
@@ -131,9 +183,10 @@ class VLOSXMLParser:
         }
 
     def _find_text(self, root: ET.Element, tags: List[str]) -> Optional[str]:
-        for t in tags:
-            el = root.find(f".//{t}")
-            if el is not None and (el.text or "").strip():
+        def _local(el: ET.Element) -> str:
+            return el.tag.split('}')[-1] if '}' in el.tag else el.tag
+        for el in root.iter():
+            name = _local(el)
+            if name in tags and (el.text or "").strip():
                 return el.text.strip()
         return None
-

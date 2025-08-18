@@ -307,6 +307,7 @@ const SearchPage: React.FC = () => {
     setFilters({
       speaker: '',
       source: '',
+      dataset: 'all',
       topic: '',
       dateFrom: '',
       dateTo: '',

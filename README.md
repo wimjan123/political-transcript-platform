@@ -35,6 +35,11 @@ This platform enables users to:
 - **Real-time Processing**: Async import and processing workflows
 - **Deep Linking**: Time-based video navigation with segment highlighting
 
+### New in v0.2
+- Tweede Kamer VLOS XML importer with progress/cancel controls
+- Dataset tagging and filtering (Trump vs Tweede Kamer)
+- Import status includes `job_type` and WebSocket live updates
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -156,6 +161,7 @@ POSTGRES_DB=political_transcripts
 # API Configuration
 BACKEND_CORS_ORIGINS=["http://localhost:3000"]
 HTML_DATA_DIR=/root/polibase/out/html
+XML_DATA_DIR=/root/tweedekamer_scrape/tweede-kamer-scraper/output/xml/
 
 # AI Services (Optional)
 OPENAI_API_KEY=your_openai_api_key_here
@@ -172,6 +178,7 @@ REACT_APP_API_URL=http://localhost:8000
 ### Key Configuration Options
 
 - **`HTML_DATA_DIR`**: Directory containing HTML transcript files for import
+- **`XML_DATA_DIR`**: Directory containing Tweede Kamer VLOS XML files for import
 - **`DATABASE_URL`**: PostgreSQL connection string
 - **`OPENAI_API_KEY`**: Required for AI summarization features
 - **`MEILISEARCH_URL`**: Meilisearch instance for semantic search
@@ -190,6 +197,7 @@ make start-web      # Start frontend only
 ### Data Management
 ```bash
 make import-data    # Import HTML transcripts
+curl -X POST "http://localhost:8000/api/upload/import-vlos-xml"  # Start Tweede Kamer XML import
 make backup-db      # Create database backup
 make restore-db FILE=backup.sql  # Restore from backup
 make shell-db       # Access PostgreSQL shell
@@ -550,3 +558,19 @@ For support and questions:
 ---
 
 **Built with ❤️ for political transparency and accessibility**
+
+### VLOS XML Import (Tweede Kamer)
+
+1. Files discovered from `XML_DATA_DIR` (`*.xml`)
+2. Parser sanitizes leading scraper comments/BOM and extracts tekst/alinea content
+3. Heuristic speaker header detection (lines like "Voorzitter: …")
+4. Records stored with `dataset='tweede_kamer'`, `source_type='xml'`
+5. Same progress reporting and cancellation as HTML import
+
+Endpoints:
+- Start: `POST /api/upload/import-vlos-xml`
+- Status: `GET /api/upload/import-status` (includes `job_type`)
+- Live: WebSocket `/ws/import-status`
+
+Searching by dataset:
+- Add `dataset=trump|tweede_kamer` to `/api/search/` or `/api/search/meili`
