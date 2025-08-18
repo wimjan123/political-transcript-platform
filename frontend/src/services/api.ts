@@ -393,6 +393,14 @@ export const uploadAPI = {
     });
     return response.data;
   },
+
+  // Clear a specific dataset (e.g., 'tweede_kamer')
+  clearDataset: async (dataset: string, confirm: boolean = true): Promise<{ message: string }> => {
+    const response = await api.delete('/api/upload/clear-dataset', {
+      params: { dataset, confirm },
+    });
+    return response.data;
+  },
 };
 
 // Health check

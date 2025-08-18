@@ -347,3 +347,60 @@ async def clear_all_data(
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=500, detail=f"Error clearing data: {str(e)}")
+
+
+@router.delete("/clear-dataset")
+async def clear_dataset_data(
+    dataset: str = Query(..., description="Dataset to clear (e.g., 'tweede_kamer')"),
+    confirm: bool = Query(False, description="Confirmation flag"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Delete all data associated with a specific dataset.
+
+    Targets videos with the given dataset (and source_type='xml' for 'tweede_kamer'),
+    then removes dependent transcript_segments and segment_topics in a safe order.
+    """
+    if not confirm:
+        raise HTTPException(
+            status_code=400,
+            detail="This operation requires confirmation. Add ?confirm=true to the request."
+        )
+    try:
+        from sqlalchemy import text
+        extra_source_filter = " AND v.source_type = 'xml'" if dataset == 'tweede_kamer' else ""
+
+        # Delete segment_topics first
+        await db.execute(text(
+            f"""
+            DELETE FROM segment_topics st
+            USING transcript_segments s, videos v
+            WHERE st.segment_id = s.id
+              AND s.video_id = v.id
+              AND v.dataset = :dataset{extra_source_filter}
+            """
+        ), {"dataset": dataset})
+
+        # Delete transcript_segments
+        await db.execute(text(
+            f"""
+            DELETE FROM transcript_segments s
+            USING videos v
+            WHERE s.video_id = v.id
+              AND v.dataset = :dataset{extra_source_filter}
+            """
+        ), {"dataset": dataset})
+
+        # Delete videos
+        await db.execute(text(
+            f"""
+            DELETE FROM videos v
+            WHERE v.dataset = :dataset{extra_source_filter}
+            """
+        ), {"dataset": dataset})
+
+        await db.commit()
+        return {"message": f"Cleared dataset '{dataset}' successfully"}
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error clearing dataset '{dataset}': {str(e)}")

@@ -184,6 +184,22 @@ const DatabaseStatusPage: React.FC = () => {
     }
   };
 
+  const handleClearTweedeKamer = async () => {
+    try {
+      if (!window.confirm('Delete all Tweede Kamer (VLOS XML) imports? This cannot be undone.')) return;
+      setActionLoading('clear-tk');
+      setActionMessage(null);
+      const result = await uploadAPI.clearDataset('tweede_kamer', true);
+      setActionMessage(result.message || 'Tweede Kamer dataset cleared');
+      setTimeout(() => fetchData(), 1000);
+    } catch (err) {
+      console.error('Failed to clear Tweede Kamer dataset:', err);
+      setActionMessage(`Failed to clear Tweede Kamer dataset: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -366,6 +382,45 @@ const DatabaseStatusPage: React.FC = () => {
                       Cancel Import
                     </button>
                   )}
+                </div>
+              </div>
+
+              {/* Tweede Kamer Controls */}
+              <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-4 sm:p-5 rounded-xl border border-indigo-100 dark:from-indigo-900/20 dark:to-blue-900/20 dark:border-indigo-900/30">
+                <div className="flex items-center mb-4">
+                  <div className="bg-indigo-100 p-2 rounded-lg mr-3">
+                    <FileText className="h-5 w-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">Tweede Kamer (VLOS XML)</h3>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Manage Dutch Parliament imports</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => handleStartVlosImport(false)}
+                    disabled={actionLoading === 'vlos' || importStatus?.status === 'running'}
+                    className="w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
+                  >
+                    {actionLoading === 'vlos' ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Play className="h-4 w-4 mr-2" />
+                    )}
+                    Start Import
+                  </button>
+                  <button
+                    onClick={handleClearTweedeKamer}
+                    disabled={actionLoading === 'clear-tk'}
+                    className="w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
+                  >
+                    {actionLoading === 'clear-tk' ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Square className="h-4 w-4 mr-2" />
+                    )}
+                    Delete Tweede Kamer Imports
+                  </button>
                 </div>
               </div>
 
