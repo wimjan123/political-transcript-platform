@@ -283,7 +283,7 @@ def _map_hit_to_segment(hit: Dict[str, Any]) -> TranscriptSegmentResponse:
 async def meili_search(
     q: str = Query(...),
     page: int = Query(1, ge=1),
-    page_size: int = Query(25, ge=1, le=100),
+    page_size: int = Query(25, ge=1),
     mode: str = Query("lexical", pattern="^(lexical|semantic|hybrid)$"),
     index: str = Query("segments", pattern="^(segments|events)$"),
     locales: Optional[str] = Query(None, description="Comma-separated list of ISO-639 locale codes (e.g., 'eng,spa')"),
