@@ -350,6 +350,7 @@ async def export_search_results(
     date_from: Optional[date] = Query(None),
     date_to: Optional[date] = Query(None),
     sentiment: Optional[str] = Query(None),
+    dataset: Optional[str] = Query(None, description="Dataset filter: all|trump|tweede_kamer"),
     
     # Event metadata filters
     event_format: Optional[str] = Query(None),
@@ -381,7 +382,7 @@ async def export_search_results(
         search_response = await search_transcripts(
             q=q, page=1, page_size=limit,
             speaker=speaker, source=source, topic=topic,
-            date_from=date_from, date_to=date_to, sentiment=sentiment,
+            date_from=date_from, date_to=date_to, sentiment=sentiment, dataset=dataset,
             format=event_format, candidate=candidate, place=place, record_type=record_type,
             min_stresslens=min_stresslens, max_stresslens=max_stresslens, stresslens_rank=stresslens_rank,
             has_harassment=has_harassment, has_hate=has_hate, has_violence=has_violence,

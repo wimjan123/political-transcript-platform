@@ -53,6 +53,7 @@ def build_filters(
     candidate: Optional[str] = None,
     record_type: Optional[str] = None,
     format: Optional[str] = None,
+    dataset: Optional[str] = None,
     **kwargs
 ) -> List[str]:
     """Build Meilisearch filter expressions"""
@@ -85,6 +86,9 @@ def build_filters(
     if date_to:
         filters.append(f"date <= '{date_to.isoformat()}'")
     
+    if dataset and dataset.lower() != "all":
+        filters.append(f"dataset = '{dataset}'")
+    
     return filters
 
 
@@ -103,7 +107,8 @@ async def instant_search(
     source: Optional[str] = Query(None, description="Filter by source"),
     candidate: Optional[str] = Query(None, description="Filter by candidate"),
     record_type: Optional[str] = Query(None, description="Filter by record type"),
-    format: Optional[str] = Query(None, description="Filter by format")
+    format: Optional[str] = Query(None, description="Filter by format"),
+    dataset: Optional[str] = Query(None, description="Dataset filter: all|trump|tweede_kamer")
 ):
     """
     Instant search with prefix matching for search-as-you-type functionality.
@@ -125,7 +130,7 @@ async def instant_search(
         filters = build_filters(
             speaker=speaker, topic=topic, language=language,
             date_from=date_from, date_to=date_to, source=source,
-            candidate=candidate, record_type=record_type, format=format
+            candidate=candidate, record_type=record_type, format=format, dataset=dataset
         )
         
         if filters:
@@ -272,6 +277,7 @@ async def hybrid_search(
     candidate: Optional[str] = Query(None, description="Filter by candidate"),
     record_type: Optional[str] = Query(None, description="Filter by record type"),
     format: Optional[str] = Query(None, description="Filter by format"),
+    dataset: Optional[str] = Query(None, description="Dataset filter: all|trump|tweede_kamer"),
     
     # Hybrid search specific parameters
     semantic_ratio: float = Query(0.5, ge=0.0, le=1.0, description="Ratio of semantic vs keyword search (0.0 = pure keyword, 1.0 = pure semantic)")
@@ -300,7 +306,7 @@ async def hybrid_search(
         filters = build_filters(
             speaker=speaker, topic=topic, language=language,
             date_from=date_from, date_to=date_to, source=source,
-            candidate=candidate, record_type=record_type, format=format
+            candidate=candidate, record_type=record_type, format=format, dataset=dataset
         )
         
         if filters:
