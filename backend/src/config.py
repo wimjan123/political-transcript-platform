@@ -76,3 +76,18 @@ class Settings(BaseSettings):
 
 # Create global settings instance
 settings = Settings()
+
+# Backward compatibility: support alternate env var names if provided
+# Many setups use MEILISEARCH_URL / MEILISEARCH_MASTER_KEY; map them if primary vars are empty
+override_meili_host = os.getenv("MEILISEARCH_URL")
+override_meili_key = os.getenv("MEILISEARCH_MASTER_KEY")
+if override_meili_host and (os.getenv("MEILI_HOST") is None or settings.MEILI_HOST == "http://localhost:7700"):
+    try:
+        settings.MEILI_HOST = override_meili_host
+    except Exception:
+        pass
+if override_meili_key and (os.getenv("MEILI_MASTER_KEY") is None or settings.MEILI_MASTER_KEY == ""):
+    try:
+        settings.MEILI_MASTER_KEY = override_meili_key
+    except Exception:
+        pass

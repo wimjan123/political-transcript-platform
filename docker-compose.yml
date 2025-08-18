@@ -98,7 +98,7 @@ services:
       - "3000:3000"
     depends_on:
       - api
-    command: sh -c "npm run build && npx serve -s build -l 3000"
+    command: npm start
     stdin_open: true
     tty: true
     external_links:

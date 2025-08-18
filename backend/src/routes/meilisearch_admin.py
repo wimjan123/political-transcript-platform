@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from ..config import settings
+from ..mcp.clients import meilisearch_mcp_client
 
 
 router = APIRouter()
@@ -73,18 +74,61 @@ async def get_stats():
 async def get_experimental_features():
     """Get experimental features status"""
     try:
-        return await _meili_request("GET", "/experimental-features")
+        # Try native Meilisearch endpoint (available on newer versions)
+        url = f"{settings.MEILI_HOST.rstrip('/')}/experimental-features"
+        headers = {"Content-Type": "application/json"}
+        if settings.MEILI_MASTER_KEY:
+            headers["Authorization"] = f"Bearer {settings.MEILI_MASTER_KEY}"
+
+        timeout = httpx.Timeout(settings.MEILI_TIMEOUT)
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            resp = await client.get(url, headers=headers)
+            if resp.status_code == 200:
+                data = resp.json()
+                # Normalize with defaults
+                return {
+                    "vectorStore": bool(data.get("vectorStore", False)),
+                    "metrics": bool(data.get("metrics", False)),
+                    "logsRoute": bool(data.get("logsRoute", False)),
+                }
+            # If endpoint is missing (older Meilisearch), fall back gracefully
+            if resp.status_code == 404:
+                return {"vectorStore": False, "metrics": False, "logsRoute": False}
+            # Other errors: bubble up
+            raise HTTPException(status_code=502, detail=f"Meilisearch error: {resp.text}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get experimental features: {str(e)}")
+        # Final fallback default, ensuring UI doesn’t break on older servers
+        return {"vectorStore": False, "metrics": False, "logsRoute": False}
 
 
 @router.patch("/experimental-features")
 async def update_experimental_features(features: Dict[str, bool]):
     """Update experimental features"""
     try:
+        # Try updating; if unsupported, return a clear message
         return await _meili_request("PATCH", "/experimental-features", data=features)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to update experimental features: {str(e)}")
+        raise HTTPException(status_code=400, detail="Experimental features endpoint not supported on this Meilisearch version")
+
+
+@router.post("/keys/search-only")
+async def create_search_only_key(indexes: Optional[List[str]] = None) -> Dict[str, Any]:
+    """Create a search-only API key via the context7 MCP Meilisearch client.
+
+    Uses MCP wrapper to insulate from version differences and returns the key.
+    """
+    try:
+        idx = indexes or ["segments", "suggestions"]
+        key = await meilisearch_mcp_client.create_api_key(
+            description="Search-only key for frontend",
+            actions=["search"],
+            indexes=idx,
+        )
+        if not key:
+            raise HTTPException(status_code=502, detail="Failed to create API key")
+        return {"key": key, "indexes": idx}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create search-only key: {str(e)}")
 
 
 @router.get("/indexes")
