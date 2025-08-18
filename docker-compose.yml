@@ -89,6 +89,8 @@ services:
       # Use relative URLs in dev; CRA proxy will route to the API container
       REACT_APP_API_URL: ${REACT_APP_API_URL:-}
       REACT_APP_TITLE: ${REACT_APP_TITLE:-Political Transcript Search}
+      DANGEROUSLY_DISABLE_HOST_CHECK: "true"
+      HOST: "0.0.0.0"
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -96,7 +98,7 @@ services:
       - "3000:3000"
     depends_on:
       - api
-    command: npm start
+    command: sh -c "npm run build && npx serve -s build -l 3000"
     stdin_open: true
     tty: true
     external_links:
