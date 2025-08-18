@@ -96,6 +96,7 @@ async def configure_segments_settings():
             "date",
             "video_id",
             "source",
+            "dataset",
             "candidate",
             "record_type",
             "format",

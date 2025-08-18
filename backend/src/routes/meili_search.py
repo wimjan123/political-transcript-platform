@@ -54,6 +54,7 @@ def _build_meili_filter(params: Dict[str, Any]) -> Optional[str]:
     for key in [
         "format",
         "source",
+        "dataset",
         "candidate",
         "record_type",
     ]:
@@ -292,6 +293,7 @@ async def meili_search(
     candidate: Optional[str] = None,
     place: Optional[str] = None,
     record_type: Optional[str] = None,
+    dataset: Optional[str] = None,
     topic: Optional[str] = None,
     min_topic_score: Optional[float] = None,
     # Moderation
@@ -359,6 +361,7 @@ async def meili_search(
             filters=SearchFilters(
                 date_from=date_from, date_to=date_to,
                 format=format, source=source, candidate=candidate, place=place, record_type=record_type,
+                dataset=dataset,
                 min_stresslens=min_stresslens, max_stresslens=max_stresslens, stresslens_rank=stresslens_rank,
                 has_harassment=has_harassment, has_hate=has_hate, has_violence=has_violence, has_sexual=has_sexual, has_selfharm=has_selfharm,
             ),
@@ -445,4 +448,3 @@ async def find_similar_segments(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Similar segments search failed: {str(e)}")
-

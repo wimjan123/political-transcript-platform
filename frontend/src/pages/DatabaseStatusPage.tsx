@@ -129,6 +129,21 @@ const DatabaseStatusPage: React.FC = () => {
     }
   };
 
+  const handleStartVlosImport = async (forceReimport: boolean = false) => {
+    try {
+      setActionLoading('vlos');
+      setActionMessage(null);
+      const result = await uploadAPI.startVlosXmlImport(undefined, forceReimport);
+      setActionMessage(`VLOS XML import started: ${result.message}`);
+      setTimeout(() => fetchData(), 1000);
+    } catch (err) {
+      console.error('Failed to start VLOS import:', err);
+      setActionMessage(`Failed to start VLOS import: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleCancelImport = async () => {
     try {
       setActionLoading('cancel');
@@ -318,6 +333,18 @@ const DatabaseStatusPage: React.FC = () => {
                     Start Import
                   </button>
                   <button
+                    onClick={() => handleStartVlosImport(false)}
+                    disabled={actionLoading === 'vlos' || importStatus?.status === 'running'}
+                    className="w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
+                  >
+                    {actionLoading === 'vlos' ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Play className="h-4 w-4 mr-2" />
+                    )}
+                    Start Tweede Kamer Import
+                  </button>
+                  <button
                     onClick={() => handleStartImport(true)}
                     disabled={actionLoading === 'import' || importStatus?.status === 'running'}
                     className="w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
@@ -425,6 +452,11 @@ const DatabaseStatusPage: React.FC = () => {
                 <h2 className="text-lg font-medium text-gray-900 flex items-center">
                   {getStatusIcon(importStatus.status)}
                   <span className="ml-2">Import Status</span>
+                  {importStatus.job_type && (
+                    <span className="ml-3 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                      {importStatus.job_type}
+                    </span>
+                  )}
                 </h2>
               </div>
               <div className="p-6">

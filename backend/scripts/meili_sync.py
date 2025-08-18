@@ -59,7 +59,7 @@ def ensure_indexes() -> None:
         events_settings = {
             "searchableAttributes": ["record_title", "candidate", "topics.topic"],
             "filterableAttributes": [
-                "date","format","source","candidate","place.city","place.state","place.country","record_type",
+                "date","format","source","dataset","candidate","place.city","place.state","place.country","record_type",
                 "topics.score",
                 "moderation.hate.flag","moderation.hate.score","moderation.harassment.flag","moderation.harassment.score",
                 "moderation.violence.flag","moderation.violence.score","moderation.sexual.flag","moderation.sexual.score",
@@ -262,7 +262,7 @@ def fetch_segments_batch(db: Session, updated_after: Optional[datetime], limit: 
                s.moderation_harassment, s.moderation_hate, s.moderation_violence, s.moderation_sexual, s.moderation_self_harm,
                s.stresslens_score, s.stresslens_rank,
                s.created_at, s.updated_at,
-               v.id AS video_id, v.title AS record_title, v.date, v.format, v.source, v.candidate, v.place, v.record_type
+               v.id AS video_id, v.title AS record_title, v.date, v.format, v.source, v.dataset, v.candidate, v.place, v.record_type
         FROM transcript_segments s
         JOIN videos v ON v.id = s.video_id
         {where_clause}
@@ -303,6 +303,7 @@ def fetch_segments_batch(db: Session, updated_after: Optional[datetime], limit: 
             "date": r["date"].date().isoformat() if r["date"] else None,
             "format": r["format"],
             "source": r["source"],
+            "dataset": r.get("dataset"),
             "candidate": r["candidate"],
             "place": {"city": place_city, "state": place_state, "country": place_country},
             "record_type": r["record_type"],

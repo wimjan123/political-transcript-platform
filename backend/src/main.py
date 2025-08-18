@@ -1,7 +1,7 @@
 """
 Political Transcript Search Platform - Main FastAPI Application
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import os
@@ -11,6 +11,7 @@ from .database import init_db
 from .routes import search, analytics, videos, upload, ingest, clips
 from .routes import meili_search, meilisearch_admin, meilisearch_search, summarization
 from .config import settings
+from .routes.upload import import_status
 
 
 @asynccontextmanager
@@ -77,6 +78,22 @@ async def not_found_handler(request, exc):
         status_code=404,
         content={"detail": "Endpoint not found"}
     )
+
+
+@app.websocket("/ws/import-status")
+async def import_status_ws(ws: WebSocket):
+    await ws.accept()
+    try:
+        # Send initial snapshot
+        await ws.send_json(import_status)
+        while True:
+            import asyncio
+            await asyncio.sleep(1)
+            await ws.send_json(import_status)
+            if import_status.get("status") in {"completed", "failed", "cancelled"}:
+                break
+    except WebSocketDisconnect:
+        return
 
 
 @app.exception_handler(500)

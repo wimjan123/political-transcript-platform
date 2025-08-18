@@ -20,6 +20,10 @@ export interface Video {
   place?: string;
   record_type?: string;
   
+  // Dataset tagging
+  dataset?: string;
+  source_type?: string;
+  
   created_at: string;
 }
 
@@ -113,6 +117,7 @@ export interface TranscriptSegment {
 export interface SearchFilters {
   speaker?: string;
   source?: string;
+  dataset?: string;
   topic?: string;
   date_from?: string;
   date_to?: string;
@@ -155,6 +160,7 @@ export interface SearchParams {
   page_size?: number;
   speaker?: string;
   source?: string;
+  dataset?: string;
   topic?: string;
   date_from?: string;
   date_to?: string;
@@ -377,6 +383,7 @@ export interface VideoStats {
 
 // Import Types
 export interface ImportStatus {
+  job_type?: string;
   status: string;
   progress: number;
   total_files: number;
@@ -466,6 +473,7 @@ export interface PaginationState {
 export interface FilterState {
   speaker: string;
   source: string;
+  dataset: string;
   topic: string;
   dateFrom: string;
   dateTo: string;

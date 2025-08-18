@@ -27,6 +27,10 @@ class Video(Base):
     video_url: Mapped[Optional[str]] = mapped_column(String(500))
     vimeo_video_id: Mapped[Optional[str]] = mapped_column(String(50))
     vimeo_embed_url: Mapped[Optional[str]] = mapped_column(String(500))
+
+    # Dataset tagging
+    dataset: Mapped[Optional[str]] = mapped_column(String(50), index=True)
+    source_type: Mapped[Optional[str]] = mapped_column(String(20), index=True)
     
     # Event metadata fields
     format: Mapped[Optional[str]] = mapped_column(String(100), index=True)

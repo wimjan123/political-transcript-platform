@@ -335,6 +335,17 @@ export const uploadAPI = {
     return response.data;
   },
 
+  // Start Tweede Kamer VLOS XML import
+  startVlosXmlImport: async (
+    sourceDir?: string,
+    forceReimport: boolean = false
+  ): Promise<{ message: string; status: string; source_directory: string }> => {
+    const response = await api.post('/api/upload/import-vlos-xml', null, {
+      params: { source_dir: sourceDir, force_reimport: forceReimport },
+    });
+    return response.data;
+  },
+
   // Get import status
   getImportStatus: async (): Promise<ImportStatus> => {
     const response = await api.get('/api/upload/import-status');

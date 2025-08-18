@@ -156,6 +156,8 @@ class ImportService:
                 else:
                     # Create new video
                     video_data = parsed_data["video_metadata"]
+                    # Ensure dataset/source_type tagging for HTML imports
+                    video_data = {**video_data, "dataset": "trump", "source_type": "html"}
                     video = Video(**video_data)
                     db.add(video)
                     await db.commit()

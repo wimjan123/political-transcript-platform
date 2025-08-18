@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     
     # Data settings
     HTML_DATA_DIR: str = "/root/polibase/out/html"
+    XML_DATA_DIR: str = "/root/tweedekamer_scrape/tweede-kamer-scraper/output/xml/"
     PROCESSED_DATA_DIR: str = "./data/processed"
     UPLOAD_DIR: str = "./data/uploads"
     

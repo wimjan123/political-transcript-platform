@@ -28,6 +28,7 @@ const SearchPage: React.FC = () => {
   const [filters, setFilters] = useState<FilterState>({
     speaker: searchParams.get('speaker') || '',
     source: searchParams.get('source') || '',
+    dataset: (searchParams.get('dataset') || 'all'),
     topic: searchParams.get('topic') || '',
     dateFrom: searchParams.get('date_from') || '',
     dateTo: searchParams.get('date_to') || '',
@@ -198,6 +199,7 @@ const SearchPage: React.FC = () => {
       const add = (k: string, v: any) => { if (v !== '' && v !== undefined) mappedFilters[k] = v; };
       add('speaker', filters.speaker);
       add('source', filters.source);
+      if (filters.dataset && filters.dataset !== 'all') add('dataset', filters.dataset);
       add('topic', filters.topic);
       add('date_from', filters.dateFrom);
       add('date_to', filters.dateTo);
@@ -495,6 +497,11 @@ const SearchPage: React.FC = () => {
               {typeof segment.moderation_overall_score === 'number' && segment.moderation_overall_score > 0 && (
                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
                   Mod: {(segment.moderation_overall_score * 100).toFixed(0)}%
+                </span>
+              )}
+              {segment.video?.dataset && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                  {segment.video.dataset === 'tweede_kamer' ? 'Tweede Kamer' : segment.video.dataset}
                 </span>
               )}
             </div>
@@ -862,6 +869,20 @@ const SearchPage: React.FC = () => {
                       className="input"
                       placeholder="Filter by source..."
                     />
+                  </div>
+
+                  {/* Dataset Filter */}
+                  <div>
+                    <label className="label">Dataset</label>
+                    <select
+                      value={filters.dataset}
+                      onChange={(e) => handleFilterChange('dataset', e.target.value)}
+                      className="input"
+                    >
+                      <option value="all">All</option>
+                      <option value="trump">Trump</option>
+                      <option value="tweede_kamer">Tweede Kamer</option>
+                    </select>
                   </div>
 
                   {/* Topic Filter */}

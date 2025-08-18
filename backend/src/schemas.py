@@ -24,6 +24,10 @@ class VideoResponse(BaseModel):
     vimeo_video_id: Optional[str]
     vimeo_embed_url: Optional[str]
     
+    # Dataset
+    dataset: Optional[str]
+    source_type: Optional[str]
+    
     # Event metadata fields
     format: Optional[str]
     candidate: Optional[str]
@@ -136,6 +140,7 @@ class SearchFilters(BaseModel):
     """Search filters schema"""
     speaker: Optional[str] = None
     source: Optional[str] = None
+    dataset: Optional[str] = None
     topic: Optional[str] = None
     date_from: Optional[date] = None
     date_to: Optional[date] = None
@@ -272,6 +277,7 @@ class TopicCreateRequest(BaseModel):
 
 class ImportStatusResponse(BaseModel):
     """Import status response schema"""
+    job_type: Optional[str] = None
     status: str
     progress: float
     total_files: int

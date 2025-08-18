@@ -1,7 +1,7 @@
 """
 Upload and import endpoints for the Political Transcript Search Platform
 """
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 import asyncio
@@ -10,6 +10,7 @@ from pathlib import Path
 
 from ..database import get_db
 from ..services.import_service import ImportService
+from ..services.vlos_importer import VLOSImportService
 from ..schemas import ImportStatusResponse
 from ..config import settings
 
@@ -17,6 +18,7 @@ router = APIRouter()
 
 # Global import status storage (in production, use Redis or database)
 import_status = {
+    "job_type": None,
     "status": "idle",
     "progress": 0.0,
     "total_files": 0,
@@ -51,6 +53,7 @@ async def start_html_import(
         
         # Reset status
         import_status.update({
+            "job_type": "html",
             "status": "starting",
             "progress": 0.0,
             "total_files": 0,
@@ -124,6 +127,74 @@ async def run_html_import(html_dir: str, force_reimport: bool = False):
         })
 
 
+@router.post("/import-vlos-xml")
+async def start_vlos_xml_import(
+    background_tasks: BackgroundTasks,
+    source_dir: Optional[str] = Query(None, description="Source directory (defaults to XML_DATA_DIR)"),
+    force_reimport: bool = Query(False, description="Force reimport of existing files"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Start importing Tweede Kamer VLOS XML files in the background"""
+    try:
+        if import_status["status"] == "running":
+            raise HTTPException(status_code=400, detail="Import is already running")
+
+        xml_dir = source_dir or settings.XML_DATA_DIR
+        if not os.path.exists(xml_dir):
+            raise HTTPException(status_code=400, detail=f"Source directory does not exist: {xml_dir}")
+
+        import_status.update({
+            "job_type": "vlos_xml",
+            "status": "starting",
+            "progress": 0.0,
+            "total_files": 0,
+            "processed_files": 0,
+            "failed_files": 0,
+            "current_file": None,
+            "errors": [],
+            "estimated_completion": None,
+        })
+
+        background_tasks.add_task(run_vlos_import, xml_dir, force_reimport)
+
+        return {"message": "VLOS XML import started", "status": "starting", "source_directory": xml_dir}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error starting VLOS XML import: {str(e)}")
+
+
+async def run_vlos_import(xml_dir: str, force_reimport: bool = False):
+    try:
+        import_status["status"] = "running"
+
+        service = VLOSImportService()
+
+        def progress_callback(current: int, total: int, current_file: str, errors: list):
+            import_status.update({
+                "progress": (current / total) * 100 if total > 0 else 0,
+                "total_files": total,
+                "processed_files": current,
+                "failed_files": len(errors),
+                "current_file": current_file,
+                "errors": errors[-10:],
+            })
+
+        result = await service.import_xml_directory(
+            xml_dir, force_reimport=force_reimport, progress_callback=progress_callback
+        )
+
+        import_status.update({
+            "status": "completed",
+            "progress": 100.0,
+            "current_file": None,
+            "processed_files": result["total_processed"],
+            "failed_files": result["total_failed"],
+        })
+    except Exception as e:
+        import_status.update({"status": "failed", "errors": import_status["errors"] + [str(e)]})
+
+
 @router.get("/import-status", response_model=ImportStatusResponse)
 async def get_import_status():
     """
@@ -142,6 +213,22 @@ async def cancel_import():
     
     import_status["status"] = "cancelled"
     return {"message": "Import process cancelled"}
+
+
+@router.websocket("/ws/import-status")
+async def import_status_ws(ws: WebSocket):
+    await ws.accept()
+    try:
+        # Send initial snapshot
+        await ws.send_json(import_status)
+        # Periodic updates
+        while True:
+            await asyncio.sleep(1)
+            await ws.send_json(import_status)
+            if import_status.get("status") in {"completed", "failed", "cancelled"}:
+                break
+    except WebSocketDisconnect:
+        return
 
 
 @router.post("/import-file")

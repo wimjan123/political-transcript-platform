@@ -30,6 +30,7 @@ async def search_transcripts(
     date_from: Optional[date] = Query(None, description="Filter from date (YYYY-MM-DD)"),
     date_to: Optional[date] = Query(None, description="Filter to date (YYYY-MM-DD)"),
     sentiment: Optional[str] = Query(None, description="Filter by sentiment (positive/negative/neutral)"),
+    dataset: Optional[str] = Query(None, description="Dataset filter: all|trump|tweede_kamer"),
     min_readability: Optional[float] = Query(None, description="Minimum readability score"),
     max_readability: Optional[float] = Query(None, description="Maximum readability score"),
     
@@ -92,6 +93,13 @@ async def search_transcripts(
             query = query.join(Video)
             joined_video = True
             conditions.append(Video.source.ilike(f"%{source}%"))
+        
+        # Dataset filter
+        if dataset and dataset.lower() != "all":
+            if not joined_video:
+                query = query.join(Video)
+                joined_video = True
+            conditions.append(Video.dataset == dataset)
         
         # Date filters
         if date_from or date_to:
@@ -230,6 +238,7 @@ async def search_transcripts(
                 min_stresslens=min_stresslens,
                 max_stresslens=max_stresslens,
                 stresslens_rank=stresslens_rank,
+                dataset=dataset,
                 has_harassment=has_harassment,
                 has_hate=has_hate,
                 has_violence=has_violence,
