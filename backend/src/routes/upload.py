@@ -5,8 +5,11 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query, W
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 import asyncio
+import logging
 import os
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 from ..database import get_db
 from ..services.import_service import ImportService
@@ -140,8 +143,40 @@ async def start_vlos_xml_import(
             raise HTTPException(status_code=400, detail="Import is already running")
 
         xml_dir = source_dir or settings.XML_DATA_DIR
+        
+        # Check primary directory first, then fallback to raw_xml directory
+        xml_files_in_primary = []
+        if os.path.exists(xml_dir):
+            try:
+                xml_files_in_primary = list(Path(xml_dir).glob("*.xml"))
+            except Exception as e:
+                logger.warning(f"Error checking primary directory {xml_dir}: {e}")
+        
+        if not os.path.exists(xml_dir) or len(xml_files_in_primary) == 0:
+            # Generate fallback path: /xml/ -> /raw_xml/ or /xml -> /raw_xml
+            fallback_dir = xml_dir.rstrip('/')
+            if fallback_dir.endswith('/xml'):
+                fallback_dir = fallback_dir[:-4] + '/raw_xml'
+            elif '/xml/' in fallback_dir:
+                fallback_dir = fallback_dir.replace('/xml/', '/raw_xml/')
+            
+            if os.path.exists(fallback_dir):
+                try:
+                    xml_files_in_fallback = list(Path(fallback_dir).glob("*.xml"))
+                    if len(xml_files_in_fallback) > 0:
+                        xml_dir = fallback_dir
+                        logger.info(f"Primary XML directory empty or missing, using fallback with {len(xml_files_in_fallback)} files: {xml_dir}")
+                    else:
+                        raise HTTPException(status_code=400, detail=f"No XML files found in {xml_dir} or fallback {fallback_dir}")
+                except Exception as e:
+                    logger.error(f"Error checking fallback directory {fallback_dir}: {e}")
+                    raise HTTPException(status_code=400, detail=f"Error accessing fallback directory: {e}")
+            else:
+                raise HTTPException(status_code=400, detail=f"XML source directory does not exist: {xml_dir} (also checked {fallback_dir})")
+        
+        # Final check that we can actually access the chosen directory
         if not os.path.exists(xml_dir):
-            raise HTTPException(status_code=400, detail=f"Source directory does not exist: {xml_dir}")
+            raise HTTPException(status_code=400, detail=f"Selected XML directory does not exist: {xml_dir}")
 
         import_status.update({
             "job_type": "vlos_xml",
