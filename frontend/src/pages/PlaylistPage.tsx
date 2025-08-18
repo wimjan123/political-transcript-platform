@@ -119,29 +119,31 @@ const PlaylistPage: React.FC = () => {
       if (current) clusters.push(current);
 
       for (const c of clusters) {
+        // Date line (only date)
+        const dateStr = meta.date ? `[${String(meta.date).slice(0, 10)}]` : '';
+        if (dateStr) lines.push(dateStr);
+
         // Combined range line
         const range = [
           `[${formatTimestamp(Math.floor(c.start))}]`,
           c.end > c.start ? `[${formatTimestamp(Math.floor(c.end))}]` : '',
         ].filter(Boolean).join(' ');
         if (range) lines.push(range);
+        lines.push('');
 
         // Each item's text/label on its own paragraph
-        for (const it of c.items) {
+        c.items.forEach((it, idx) => {
           const content = (it.text || it.label || '').toString().replace(/\s+/g, ' ').trim();
-          if (content) {
-            lines.push(content);
-            lines.push('');
-          }
-        }
+          if (content) lines.push(content);
+          if (idx < c.items.length - 1) lines.push('');
+        });
 
-        // Separator then single header and link
-        lines.push('--------------');
-        const dateStr = meta.date ? `[${String(meta.date).slice(0, 10)}]` : '';
-        const placeStr = meta.place ? `[${meta.place}]` : '';
-        const header = [dateStr, placeStr, `— ${meta.title}`].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
-        if (header) lines.push(header);
+        lines.push('');
+        // Title line (plain, no brackets/em dash)
+        const titleLine = meta.title || '';
+        if (titleLine) lines.push(titleLine);
 
+        // Single link with #t at cluster start
         if (meta.url) {
           let url = meta.url;
           if (url.includes('vimeo.com')) {
@@ -155,7 +157,9 @@ const PlaylistPage: React.FC = () => {
           lines.push(url);
         }
 
-        lines.push(''); // blank line between clusters
+        lines.push('');
+        lines.push('--------------');
+        lines.push('');
       }
     });
 
