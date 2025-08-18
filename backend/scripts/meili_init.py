@@ -140,7 +140,7 @@ async def configure_segments_settings():
             }
         },
         "pagination": {
-            "maxTotalHits": 10000
+            "maxTotalHits": 1000000
         },
         "synonyms": {
             # Add synonyms for multilingual support

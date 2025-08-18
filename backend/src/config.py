@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     
     # Search settings
-    MAX_SEARCH_RESULTS: int = 1000
+    MAX_SEARCH_RESULTS: int = 1000000
     DEFAULT_PAGE_SIZE: int = 25
     
     # Elasticsearch settings
