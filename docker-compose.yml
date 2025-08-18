@@ -52,7 +52,7 @@ services:
       - ./backend:/app
       - ./data:/data
       - /root/polibase/out/html:/data/html:ro
-      - ${XML_DATA_DIR:-/root/tweedekamer_scrape/tweede-kamer-scraper/output/xml/}:${XML_DATA_DIR:-/root/tweedekamer_scrape/tweede-kamer-scraper/output/xml/}:ro
+      - /root/tweedekamer_scrape/tweede-kamer-scraper/output/raw_xml:${XML_DATA_DIR:-/root/tweedekamer_scrape/tweede-kamer-scraper/output/xml/}:ro
     ports:
       - "8000:8000"
     depends_on:
