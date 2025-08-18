@@ -54,25 +54,113 @@ const PlaylistPage: React.FC = () => {
   };
 
   const exportLinks = () => {
-    const lines = items.map(it => {
-      const start = `[${formatTimestamp(Math.floor(it.startSeconds || 0))}]`;
-      const end = it.durationSeconds ? `[${formatTimestamp(Math.floor((it.startSeconds || 0) + (it.durationSeconds || 0)))}]` : '';
-      const header = [start, end].filter(Boolean).join(' ');
+    // New format: group contiguous items per video, output combined range and texts,
+    // then a single header with date/place/title and one link.
+    type GroupMeta = {
+      videoId: number;
+      title: string;
+      date?: string | null;
+      place?: string | null;
+      url: string; // base video url
+    };
+
+    const byVideo = new Map<number, { meta: GroupMeta; items: PlaylistItem[] }>();
+    items.forEach(it => {
       const urlBase = it.vimeoId ? `https://vimeo.com/${it.vimeoId}` : (it.vimeoEmbedUrl || it.videoUrl) || '';
-      const h = it.text || it.label || '';
-      let url = urlBase;
-      if (urlBase.includes('vimeo.com')) {
-        // vimeo fragment
-        const s = Math.max(0, Math.floor(it.startSeconds || 0));
-        const hh = Math.floor(s / 3600);
-        const mm = Math.floor((s % 3600) / 60);
-        const ss = s % 60;
-        const frag = `${hh>0?hh+'h':''}${mm>0?mm+'m':''}${ss}s`;
-        url = `${urlBase}#t=${frag}`;
+      const existing = byVideo.get(it.videoId);
+      if (!existing) {
+        byVideo.set(it.videoId, {
+          meta: {
+            videoId: it.videoId,
+            title: it.videoTitle,
+            date: it.date ?? null,
+            place: it.place ?? null,
+            url: urlBase,
+          },
+          items: [it],
+        });
+      } else {
+        existing.items.push(it);
       }
-      return `${header} ${h}\n${url}`.trim();
     });
-    const blob = new Blob([lines.join('\n\n') + '\n'], { type: 'text/plain;charset=utf-8' });
+
+    const lines: string[] = [];
+
+    Array.from(byVideo.values()).forEach(({ meta, items: videoItems }) => {
+      // Sort by start time
+      const sorted = [...videoItems].sort((a, b) => (a.startSeconds || 0) - (b.startSeconds || 0));
+      type Cluster = { start: number; end: number; items: PlaylistItem[] };
+      const clusters: Cluster[] = [];
+
+      const getEnd = (it: PlaylistItem): number => {
+        const s = Math.floor(it.startSeconds || 0);
+        const d = Math.max(0, Math.floor(it.durationSeconds || 0));
+        return d > 0 ? s + d : s;
+      };
+
+      const GAP_TOL = 1; // seconds allowed between segments to still consider contiguous
+
+      let current: Cluster | null = null;
+      for (const it of sorted) {
+        const s = Math.floor(it.startSeconds || 0);
+        const e = getEnd(it);
+        if (!current) {
+          current = { start: s, end: e, items: [it] };
+          continue;
+        }
+        if (s <= current.end + GAP_TOL) {
+          current.items.push(it);
+          if (e > current.end) current.end = e;
+        } else {
+          clusters.push(current);
+          current = { start: s, end: e, items: [it] };
+        }
+      }
+      if (current) clusters.push(current);
+
+      for (const c of clusters) {
+        // Combined range line
+        const range = [
+          `[${formatTimestamp(Math.floor(c.start))}]`,
+          c.end > c.start ? `[${formatTimestamp(Math.floor(c.end))}]` : '',
+        ].filter(Boolean).join(' ');
+        if (range) lines.push(range);
+
+        // Each item's text/label on its own paragraph
+        for (const it of c.items) {
+          const content = (it.text || it.label || '').toString().replace(/\s+/g, ' ').trim();
+          if (content) {
+            lines.push(content);
+            lines.push('');
+          }
+        }
+
+        // Separator then single header and link
+        lines.push('--------------');
+        const dateStr = meta.date ? `[${String(meta.date).slice(0, 10)}]` : '';
+        const placeStr = meta.place ? `[${meta.place}]` : '';
+        const header = [dateStr, placeStr, `— ${meta.title}`].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+        if (header) lines.push(header);
+
+        if (meta.url) {
+          let url = meta.url;
+          if (url.includes('vimeo.com')) {
+            const s = Math.max(0, Math.floor(c.start));
+            const hh = Math.floor(s / 3600);
+            const mm = Math.floor((s % 3600) / 60);
+            const ss = s % 60;
+            const frag = `${hh>0?hh+'h':''}${mm>0?mm+'m':''}${ss}s`;
+            url = `${url}#t=${frag}`;
+          }
+          lines.push(url);
+        }
+
+        lines.push(''); // blank line between clusters
+      }
+    });
+
+    const output = lines.join('\n').replace(/\n\n+$/,'\n');
+    const blob = new Blob([output], { type: 'text/plain;charset=utf-8' });
     downloadFile(blob, `playlist_links_${new Date().toISOString().replace(/[:.]/g,'-')}.txt`);
   };
 
