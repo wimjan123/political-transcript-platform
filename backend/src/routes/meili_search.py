@@ -199,6 +199,8 @@ def _map_hit_to_segment(hit: Dict[str, Any]) -> TranscriptSegmentResponse:
         video_url=hit.get("video_url"),
         vimeo_video_id=hit.get("vimeo_video_id"),
         vimeo_embed_url=hit.get("vimeo_embed_url"),
+        dataset=hit.get("dataset"),
+        source_type=hit.get("source_type"),
         format=hit.get("format"),
         candidate=hit.get("candidate"),
         place=_format_place_from_hit(hit),
