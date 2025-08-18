@@ -181,17 +181,17 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
     return (
       <div className="flex items-center justify-center py-4">
         <Loader2 className="h-5 w-5 animate-spin mr-2" />
-        <span className="text-sm text-gray-600">Checking video...</span>
+        <span className="text-sm text-gray-600 dark:text-gray-300">Checking video...</span>
       </div>
     );
   }
 
   if (!canSummarize) {
     return (
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 dark:bg-yellow-900/30 dark:border-yellow-800">
         <div className="flex items-center">
           <AlertCircle className="h-5 w-5 text-yellow-600 mr-2" />
-          <span className="text-sm text-yellow-800">
+          <span className="text-sm text-yellow-800 dark:text-yellow-300">
             This video cannot be summarized. It has {segmentCount} transcript segments.
           </span>
         </div>
@@ -203,8 +203,8 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
     <div className="space-y-4">
       {/* Video Info & Model Info */}
       {!compact && (
-        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-          <div className="flex items-center space-x-2 text-sm text-gray-600">
+        <div className="bg-gray-50 rounded-lg p-4 space-y-3 dark:bg-gray-800">
+          <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
             <FileText className="h-4 w-4" />
             <span className="font-medium">{videoTitle}</span>
             <span>•</span>
@@ -215,11 +215,11 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 text-sm">
               <Sparkles className="h-4 w-4 text-purple-600" />
-              <span className="text-gray-600">Using:</span>
-              <span className="font-medium text-gray-900" title={effectiveModel}>
+              <span className="text-gray-600 dark:text-gray-300">Using:</span>
+              <span className="font-medium text-gray-900 dark:text-gray-100" title={effectiveModel}>
                 {effectiveModelName}
               </span>
-              <span className="text-gray-500">via {provider === 'openai' ? 'OpenAI' : 'OpenRouter'}</span>
+              <span className="text-gray-500 dark:text-gray-400">via {provider === 'openai' ? 'OpenAI' : 'OpenRouter'}</span>
             </div>
             <div className={`flex items-center space-x-1 text-xs px-2 py-1 rounded-full ${
               hasValidConfig 
@@ -240,17 +240,17 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
         <div className="space-y-4">
           <button
             onClick={() => setShowCustomization(!showCustomization)}
-            className="flex items-center text-sm text-gray-600 hover:text-gray-800 transition-colors"
+            className="flex items-center text-sm text-gray-600 hover:text-gray-800 transition-colors dark:text-gray-300 dark:hover:text-gray-200"
           >
             <Settings className="h-4 w-4 mr-2" />
             {showCustomization ? 'Hide' : 'Show'} Customization Options
           </button>
 
           {showCustomization && (
-            <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+            <div className="bg-gray-50 rounded-lg p-4 space-y-4 dark:bg-gray-800">
               {/* Summary Length */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
                   Summary Length
                 </label>
                 <div className="space-y-1">
@@ -262,9 +262,9 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
                         value={length}
                         checked={summaryLength === length}
                         onChange={(e) => setSummaryLength(e.target.value as any)}
-                        className="h-3 w-3 text-purple-600 focus:ring-purple-500 border-gray-300"
+                      className="h-3 w-3 text-purple-600 focus:ring-purple-500 border-gray-300 dark:border-gray-600"
                       />
-                      <span className="ml-2 text-sm text-gray-700 capitalize">
+                      <span className="ml-2 text-sm text-gray-700 capitalize dark:text-gray-200">
                         {length} ({getBulletPointsCount(length)} points)
                       </span>
                     </label>
@@ -274,7 +274,7 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
 
               {/* Summary Format */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
                   Summary Format
                 </label>
                 <div className="space-y-1">
@@ -285,9 +285,9 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
                       value="bullet_points"
                       checked={summaryFormat === 'bullet_points'}
                       onChange={(e) => setSummaryFormat(e.target.value as any)}
-                      className="h-3 w-3 text-purple-600 focus:ring-purple-500 border-gray-300"
+                      className="h-3 w-3 text-purple-600 focus:ring-purple-500 border-gray-300 dark:border-gray-600"
                     />
-                    <span className="ml-2 text-sm text-gray-700">Bullet Points</span>
+                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">Bullet Points</span>
                   </label>
                   <label className="flex items-center">
                     <input
@@ -296,16 +296,16 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
                       value="paragraph"
                       checked={summaryFormat === 'paragraph'}
                       onChange={(e) => setSummaryFormat(e.target.value as any)}
-                      className="h-3 w-3 text-purple-600 focus:ring-purple-500 border-gray-300"
+                      className="h-3 w-3 text-purple-600 focus:ring-purple-500 border-gray-300 dark:border-gray-600"
                     />
-                    <span className="ml-2 text-sm text-gray-700">Paragraph</span>
+                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">Paragraph</span>
                   </label>
                 </div>
               </div>
 
               {/* Custom Prompt */}
               <div>
-                <label htmlFor="customPrompt" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="customPrompt" className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
                   Custom Instructions
                 </label>
                 <textarea
@@ -313,7 +313,7 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
                   value={customPrompt}
                   onChange={(e) => setCustomPrompt(e.target.value)}
                   rows={3}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                   placeholder="Enter custom instructions for the AI summarization..."
                 />
               </div>
@@ -345,10 +345,10 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
 
       {/* Error Display */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 dark:bg-red-900/30 dark:border-red-800">
           <div className="flex items-center">
             <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-            <span className="text-sm text-red-800">{error}</span>
+            <span className="text-sm text-red-800 dark:text-red-300">{error}</span>
           </div>
         </div>
       )}
@@ -359,7 +359,7 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
           summary.metadata?.cached 
             ? 'bg-blue-50 border border-blue-200' 
             : 'bg-green-50 border border-green-200'
-        }`}>
+        } dark:bg-gray-800/40 dark:border-gray-700`}>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
               {summary.metadata?.cached ? (
@@ -368,7 +368,7 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
                 <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
               )}
               <h3 className={`text-lg font-medium ${
-                summary.metadata?.cached ? 'text-blue-900' : 'text-green-900'
+                summary.metadata?.cached ? 'text-blue-900 dark:text-blue-300' : 'text-green-900 dark:text-green-300'
               }`}>
                 {summary.metadata?.cached ? 'Cached Summary' : 'Summary Generated'}
               </h3>
@@ -377,7 +377,7 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
             {summary.metadata?.cached && (
               <button
                 onClick={deleteCachedSummary}
-                className="inline-flex items-center px-3 py-1 text-xs text-blue-700 bg-blue-100 border border-blue-300 rounded-md hover:bg-blue-200 transition-colors"
+                className="inline-flex items-center px-3 py-1 text-xs text-blue-700 bg-blue-100 border border-blue-300 rounded-md hover:bg-blue-200 transition-colors dark:text-blue-300 dark:bg-blue-900/30 dark:border-blue-800 dark:hover:bg-blue-900/50"
                 title="Clear cached summary and generate a new one"
               >
                 <RefreshCw className="h-3 w-3 mr-1" />
@@ -389,9 +389,9 @@ const TranscriptSummarizer: React.FC<TranscriptSummarizerProps> = ({
           <div className="prose prose-sm max-w-none">
             <div className={`bg-white rounded-lg p-4 border ${
               summary.metadata?.cached ? 'border-blue-200' : 'border-green-200'
-            }`}>
-              <h4 className="text-sm font-medium text-gray-900 mb-3">{summary.video_title}</h4>
-              <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+            } dark:bg-gray-900 dark:border-gray-700`}>
+              <h4 className="text-sm font-medium text-gray-900 mb-3 dark:text-gray-100">{summary.video_title}</h4>
+              <div className="text-gray-700 whitespace-pre-wrap leading-relaxed dark:text-gray-300">
                 {summary.summary}
               </div>
             </div>

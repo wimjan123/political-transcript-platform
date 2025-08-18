@@ -8,6 +8,14 @@ import reportWebVitals from './reportWebVitals';
 // Setup Chart.js components
 import './utils/chartSetup';
 
+// Apply saved or system theme before render to avoid FOUC
+try {
+  const saved = localStorage.getItem('theme');
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const useDark = saved === 'dark' || (!saved || saved === 'system') && prefersDark;
+  document.documentElement.classList.toggle('dark', !!useDark);
+} catch {}
+
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );

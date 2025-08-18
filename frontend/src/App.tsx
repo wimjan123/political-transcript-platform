@@ -16,7 +16,7 @@ import PlaylistPage from './pages/PlaylistPage';
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<HomePage />} />

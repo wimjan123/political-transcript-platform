@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Search, BarChart3, Video, Database, Upload, Menu, X, ListMusic, Settings, Bot, ChevronDown, Shield, FileText } from 'lucide-react';
 import { playlist, usePlaylistCount } from '../services/playlist';
+import ThemeToggle from './ThemeToggle';
 
 const Layout: React.FC = () => {
   const location = useLocation();
@@ -49,9 +50,9 @@ const Layout: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 dark:from-gray-900 dark:to-gray-950">
       {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-md shadow-lg border-b border-gray-200/50 sticky top-0 z-50">
+      <nav className="bg-white/80 backdrop-blur-md shadow-lg border-b border-gray-200/50 sticky top-0 z-50 dark:bg-gray-900/80 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex">
@@ -61,10 +62,10 @@ const Layout: React.FC = () => {
                   <div className="h-8 w-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center group-hover:shadow-lg transition-all duration-300">
                     <Search className="h-5 w-5 text-white" />
                   </div>
-                  <span className="ml-3 text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent hidden sm:block">
+                  <span className="ml-3 text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent hidden sm:block dark:from-white dark:to-gray-300">
                     Political Transcript Search
                   </span>
-                  <span className="ml-3 text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent sm:hidden">
+                  <span className="ml-3 text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent sm:hidden dark:from-white dark:to-gray-300">
                     PTS
                   </span>
                 </div>
@@ -81,7 +82,7 @@ const Layout: React.FC = () => {
                       className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                         isActive(item.href)
                           ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 hover:shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 hover:shadow-sm dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-800/60'
                       }`}
                     >
                       <Icon className="h-4 w-4 mr-2" />
@@ -102,7 +103,7 @@ const Layout: React.FC = () => {
                     className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                       isAdminActive()
                         ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 hover:shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 hover:shadow-sm dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-800/60'
                     }`}
                   >
                     <Shield className="h-4 w-4 mr-2" />
@@ -114,7 +115,7 @@ const Layout: React.FC = () => {
                   
                   {/* Dropdown Menu */}
                   {isAdminDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200/50 py-1 z-50">
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200/50 py-1 z-50 dark:bg-gray-800 dark:border-gray-700">
                       {adminItems.map((item) => {
                         const Icon = item.icon;
                         return (
@@ -124,8 +125,8 @@ const Layout: React.FC = () => {
                             onClick={() => setIsAdminDropdownOpen(false)}
                             className={`flex items-center px-4 py-2 text-sm transition-colors duration-200 ${
                               isActive(item.href)
-                                ? 'bg-blue-50 text-blue-700'
-                                : 'text-gray-700 hover:bg-gray-50'
+                                ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                                : 'text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700'
                             }`}
                           >
                             <Icon className="h-4 w-4 mr-3" />
@@ -143,7 +144,7 @@ const Layout: React.FC = () => {
             <div className="md:hidden">
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="inline-flex items-center justify-center p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100/80 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 transition-all duration-200"
+                className="inline-flex items-center justify-center p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100/80 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 transition-all duration-200 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-800/60"
               >
                 <span className="sr-only">Open main menu</span>
                 {isMobileMenuOpen ? (
@@ -153,13 +154,21 @@ const Layout: React.FC = () => {
                 )}
               </button>
             </div>
+
+            {/* Desktop actions */}
+            <div className="hidden md:flex items-center gap-3">
+              <ThemeToggle />
+            </div>
           </div>
         </div>
 
         {/* Mobile menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden bg-white/95 backdrop-blur-md border-t border-gray-200/50">
+          <div className="md:hidden bg-white/95 backdrop-blur-md border-t border-gray-200/50 dark:bg-gray-900/95 dark:border-gray-800">
             <div className="pt-2 pb-3 space-y-1 px-3">
+              <div className="px-3 py-2">
+                <ThemeToggle />
+              </div>
               {navigation.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -170,7 +179,7 @@ const Layout: React.FC = () => {
                     className={`flex items-center px-3 py-3 rounded-lg text-base font-medium transition-all duration-200 ${
                       isActive(item.href)
                         ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 hover:shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 hover:shadow-sm dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-800/60'
                     }`}
                   >
                     <Icon className="h-5 w-5 mr-3" />
@@ -189,8 +198,8 @@ const Layout: React.FC = () => {
               {/* Admin Section Header */}
               <div className="pt-2 pb-1">
                 <div className="flex items-center px-3 py-2">
-                  <Shield className="h-4 w-4 mr-2 text-gray-500" />
-                  <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">Admin</span>
+                  <Shield className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
+                  <span className="text-sm font-medium text-gray-500 uppercase tracking-wide dark:text-gray-400">Admin</span>
                 </div>
               </div>
               
@@ -205,7 +214,7 @@ const Layout: React.FC = () => {
                     className={`flex items-center px-6 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                       isActive(item.href)
                         ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 hover:shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 hover:shadow-sm dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-800/60'
                     }`}
                   >
                     <Icon className="h-4 w-4 mr-3" />
@@ -224,7 +233,7 @@ const Layout: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gradient-to-r from-gray-900 to-gray-800 border-t border-gray-700 mt-12">
+      <footer className="bg-gradient-to-r from-gray-900 to-gray-800 border-t border-gray-700 mt-12 dark:from-black dark:to-gray-900 dark:border-gray-800">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
             <div className="text-sm text-gray-400">

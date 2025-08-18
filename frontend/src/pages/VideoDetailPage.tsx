@@ -390,7 +390,7 @@ const VideoDetailPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center dark:bg-gray-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading video details...</p>
@@ -401,7 +401,7 @@ const VideoDetailPage: React.FC = () => {
 
   if (error || !video) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center dark:bg-gray-900">
         <div className="text-center">
           <p className="text-red-600 mb-4">{error || 'Video not found'}</p>
           <Link to="/videos" className="btn btn-primary">
@@ -414,7 +414,7 @@ const VideoDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Button */}
         <div className="mb-6">
@@ -428,7 +428,7 @@ const VideoDetailPage: React.FC = () => {
         </div>
 
         {/* Video Header */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-8">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-8 dark:bg-gray-800 dark:border-gray-700">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
               {/* Vimeo Video Embed */}
@@ -444,10 +444,10 @@ const VideoDetailPage: React.FC = () => {
                 />
               </div>
               
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">{video.title}</h1>
+              <h1 className="text-3xl font-bold text-gray-900 mb-4 dark:text-gray-100">{video.title}</h1>
               
               {/* Video Metadata */}
-              <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600 mb-4">
+              <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600 mb-4 dark:text-gray-300">
                 {video.date && (
                   <div className="flex items-center">
                     <Calendar className="h-4 w-4 mr-2" />
@@ -490,25 +490,25 @@ const VideoDetailPage: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     {video.format && (
                       <div>
-                        <span className="text-gray-500">Format:</span>
+                      <span className="text-gray-500 dark:text-gray-400">Format:</span>
                         <span className="ml-2 font-medium">{video.format}</span>
                       </div>
                     )}
                     {video.candidate && (
                       <div>
-                        <span className="text-gray-500">Candidate:</span>
+                      <span className="text-gray-500 dark:text-gray-400">Candidate:</span>
                         <span className="ml-2 font-medium">{video.candidate}</span>
                       </div>
                     )}
                     {video.place && (
                       <div>
-                        <span className="text-gray-500">Place:</span>
+                      <span className="text-gray-500 dark:text-gray-400">Place:</span>
                         <span className="ml-2 font-medium">{video.place}</span>
                       </div>
                     )}
                     {video.record_type && (
                       <div>
-                        <span className="text-gray-500">Record Type:</span>
+                      <span className="text-gray-500 dark:text-gray-400">Record Type:</span>
                         <span className="ml-2 font-medium">{video.record_type}</span>
                       </div>
                     )}
@@ -574,7 +574,7 @@ const VideoDetailPage: React.FC = () => {
             </div>
 
             <div className="flex-shrink-0 ml-8">
-              <div className="text-right text-sm text-gray-500">
+              <div className="text-right text-sm text-gray-500 dark:text-gray-400">
                 <p>Added {formatDate(video.created_at)}</p>
                 <p className="mt-1">ID: {video.id}</p>
               </div>
@@ -585,7 +585,7 @@ const VideoDetailPage: React.FC = () => {
         {/* Statistics Cards */}
         {stats && (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-            <div className="bg-white overflow-hidden shadow rounded-lg">
+        <div className="bg-white overflow-hidden shadow rounded-lg dark:bg-gray-800">
               <div className="p-5">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
@@ -593,10 +593,10 @@ const VideoDetailPage: React.FC = () => {
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
+                      <dt className="text-sm font-medium text-gray-500 truncate dark:text-gray-400">
                         Total Segments
                       </dt>
-                      <dd className="text-lg font-medium text-gray-900">
+                      <dd className="text-lg font-medium text-gray-900 dark:text-gray-100">
                         {stats.total_segments.toLocaleString()}
                       </dd>
                     </dl>
@@ -605,7 +605,7 @@ const VideoDetailPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white overflow-hidden shadow rounded-lg">
+        <div className="bg-white overflow-hidden shadow rounded-lg dark:bg-gray-800">
               <div className="p-5">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
@@ -613,10 +613,10 @@ const VideoDetailPage: React.FC = () => {
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
+                      <dt className="text-sm font-medium text-gray-500 truncate dark:text-gray-400">
                         Total Words
                       </dt>
-                      <dd className="text-lg font-medium text-gray-900">
+                      <dd className="text-lg font-medium text-gray-900 dark:text-gray-100">
                         {stats.total_words.toLocaleString()}
                       </dd>
                     </dl>
@@ -625,7 +625,7 @@ const VideoDetailPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white overflow-hidden shadow rounded-lg">
+        <div className="bg-white overflow-hidden shadow rounded-lg dark:bg-gray-800">
               <div className="p-5">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
@@ -633,7 +633,7 @@ const VideoDetailPage: React.FC = () => {
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
+                      <dt className="text-sm font-medium text-gray-500 truncate dark:text-gray-400">
                         Avg Sentiment
                       </dt>
                       <dd className={`text-lg font-medium ${getSentimentColor(stats.avg_sentiment)}`}>
@@ -645,7 +645,7 @@ const VideoDetailPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white overflow-hidden shadow rounded-lg">
+        <div className="bg-white overflow-hidden shadow rounded-lg dark:bg-gray-800">
               <div className="p-5">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
@@ -653,10 +653,10 @@ const VideoDetailPage: React.FC = () => {
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
+                      <dt className="text-sm font-medium text-gray-500 truncate dark:text-gray-400">
                         Readability Grade
                       </dt>
-                      <dd className="text-lg font-medium text-gray-900">
+                      <dd className="text-lg font-medium text-gray-900 dark:text-gray-100">
                         {stats.avg_readability ? stats.avg_readability.toFixed(1) : 'N/A'}
                       </dd>
                     </dl>
@@ -669,7 +669,7 @@ const VideoDetailPage: React.FC = () => {
 
         {/* AI Transcript Summarizer */}
         {showSummarizer && video && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8 dark:bg-gray-800 dark:border-gray-700">
             <h2 className="text-lg font-medium text-gray-900 mb-6 flex items-center">
               <Sparkles className="h-5 w-5 mr-2" />
               AI Transcript Summarization
@@ -680,39 +680,39 @@ const VideoDetailPage: React.FC = () => {
 
         {/* Speaker Statistics */}
         {stats && stats.speaker_stats.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8 dark:bg-gray-800 dark:border-gray-700">
             <h2 className="text-lg font-medium text-gray-900 mb-4">Speaker Breakdown</h2>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
                       Speaker
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
                       Segments
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
                       Words
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
                       Avg Sentiment
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
                   {stats.speaker_stats.map((speakerStat) => (
                     <tr key={speakerStat.speaker}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                         {speakerStat.speaker}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         {speakerStat.segment_count.toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         {speakerStat.total_words.toLocaleString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">

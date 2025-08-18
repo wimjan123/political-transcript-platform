@@ -6,14 +6,22 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy import select, func, or_
 
 from ..database import get_db
+from ..models import VideoSummary, SummaryPreset, Video
+from ..schemas import (
+    SummaryPresetResponse, SummaryPresetCreateRequest, SummaryPresetUpdateRequest,
+    VideoSummaryResponse, VideoSummaryCreateRequest
+)
 from ..services.summarization_service import summarization_service
 
 router = APIRouter()
 
 
 class SummaryRequest(BaseModel):
+    name: str = Field(default="Default Summary", description="Name/label for this summary")
+    preset_id: Optional[int] = Field(default=None, description="ID of preset to use")
     bullet_points: int = Field(default=4, ge=3, le=5, description="Number of bullet points (3-5)")
     custom_prompt: Optional[str] = Field(default=None, description="Custom prompt for summarization")
     provider: Optional[str] = Field(default=None, description="AI provider (openai or openrouter)")
@@ -67,6 +75,8 @@ async def create_video_summary(
         result = await summarization_service.summarize_video_transcript(
             db=db,
             video_id=video_id,
+            name=request.name,
+            preset_id=request.preset_id,
             bullet_points=request.bullet_points,
             custom_prompt=request.custom_prompt,
             provider=request.provider,
@@ -180,28 +190,27 @@ async def check_video_can_summarize(
 @router.get("/video/{video_id}/cached-summary")
 async def get_cached_summary(
     video_id: int,
+    name: Optional[str] = Query(default="Default Summary", description="Name of the summary to retrieve"),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Get cached summary for a video if it exists
     
     - **video_id**: ID of the video to check for cached summary
+    - **name**: Name of the summary to retrieve (defaults to "Default Summary")
     """
     try:
-        from sqlalchemy import select
-        from ..models import VideoSummary
-        
         query = (
             select(VideoSummary)
-            .where(VideoSummary.video_id == video_id)
-            .options(selectinload(VideoSummary.video))
+            .where(VideoSummary.video_id == video_id, VideoSummary.name == name)
+            .options(selectinload(VideoSummary.video), selectinload(VideoSummary.preset))
         )
         
         result = await db.execute(query)
         cached_summary = result.scalar_one_or_none()
         
         if not cached_summary:
-            raise HTTPException(status_code=404, detail="No cached summary found for this video")
+            raise HTTPException(status_code=404, detail=f"No cached summary named '{name}' found for this video")
         
         return {
             "video_id": cached_summary.video_id,
@@ -213,7 +222,9 @@ async def get_cached_summary(
                 "cached": True,
                 "generated_at": cached_summary.generated_at.isoformat(),
                 "provider_used": cached_summary.provider,
-                "model_used": cached_summary.model
+                "model_used": cached_summary.model,
+                "summary_name": cached_summary.name,
+                "preset_used": cached_summary.preset.name if cached_summary.preset else None
             }
         }
         
@@ -226,28 +237,30 @@ async def get_cached_summary(
 @router.delete("/video/{video_id}/cached-summary")
 async def delete_cached_summary(
     video_id: int,
+    name: Optional[str] = Query(default="Default Summary", description="Name of the summary to delete"),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Delete cached summary for a video to force regeneration
     
     - **video_id**: ID of the video to clear cached summary for
+    - **name**: Name of the summary to delete (defaults to "Default Summary")
     """
     try:
-        from sqlalchemy import select
-        from ..models import VideoSummary
-        
-        query = select(VideoSummary).where(VideoSummary.video_id == video_id)
+        query = select(VideoSummary).where(
+            VideoSummary.video_id == video_id,
+            VideoSummary.name == name
+        )
         result = await db.execute(query)
         cached_summary = result.scalar_one_or_none()
         
         if not cached_summary:
-            raise HTTPException(status_code=404, detail="No cached summary found for this video")
+            raise HTTPException(status_code=404, detail=f"No cached summary named '{name}' found for this video")
         
         await db.delete(cached_summary)
         await db.commit()
         
-        return {"message": f"Cached summary deleted for video {video_id}"}
+        return {"message": f"Cached summary '{name}' deleted for video {video_id}"}
         
     except HTTPException:
         raise
@@ -425,3 +438,145 @@ async def get_summarization_model_info():
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get model info: {str(e)}")
+
+
+# Summary Presets Routes
+
+@router.get("/presets", response_model=List[SummaryPresetResponse])
+async def get_summary_presets(db: AsyncSession = Depends(get_db)):
+    """Get all available summary presets"""
+    try:
+        query = select(SummaryPreset).order_by(SummaryPreset.is_default.desc(), SummaryPreset.name)
+        result = await db.execute(query)
+        presets = result.scalars().all()
+        return [SummaryPresetResponse.model_validate(preset) for preset in presets]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get presets: {str(e)}")
+
+
+@router.post("/presets", response_model=SummaryPresetResponse)
+async def create_summary_preset(
+    request: SummaryPresetCreateRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Create a new summary preset"""
+    try:
+        # Check if preset with this name already exists
+        existing_query = select(SummaryPreset).where(SummaryPreset.name == request.name)
+        existing_result = await db.execute(existing_query)
+        if existing_result.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail=f"Preset with name '{request.name}' already exists")
+        
+        # If setting as default, unset other defaults
+        if request.is_default:
+            update_query = (
+                func.update(SummaryPreset.__table__)
+                .values(is_default=False)
+                .where(SummaryPreset.is_default == True)
+            )
+            await db.execute(update_query)
+        
+        preset = SummaryPreset(
+            name=request.name,
+            description=request.description,
+            custom_prompt=request.custom_prompt,
+            provider=request.provider,
+            model=request.model,
+            bullet_points=request.bullet_points,
+            is_default=request.is_default
+        )
+        
+        db.add(preset)
+        await db.commit()
+        await db.refresh(preset)
+        
+        return SummaryPresetResponse.model_validate(preset)
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to create preset: {str(e)}")
+
+
+@router.delete("/presets/{preset_id}")
+async def delete_summary_preset(preset_id: int, db: AsyncSession = Depends(get_db)):
+    """Delete a summary preset"""
+    try:
+        query = select(SummaryPreset).where(SummaryPreset.id == preset_id)
+        result = await db.execute(query)
+        preset = result.scalar_one_or_none()
+        
+        if not preset:
+            raise HTTPException(status_code=404, detail=f"Preset with ID {preset_id} not found")
+        
+        # Don't allow deleting the default preset if it's the only one
+        if preset.is_default:
+            count_query = select(func.count(SummaryPreset.id))
+            count_result = await db.execute(count_query)
+            total_presets = count_result.scalar_one()
+            
+            if total_presets <= 1:
+                raise HTTPException(status_code=400, detail="Cannot delete the only remaining preset")
+        
+        await db.delete(preset)
+        await db.commit()
+        
+        return {"message": f"Preset '{preset.name}' deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to delete preset: {str(e)}")
+
+
+# Multiple Summaries Routes
+
+@router.get("/video/{video_id}/summaries", response_model=List[VideoSummaryResponse])
+async def get_video_summaries(video_id: int, db: AsyncSession = Depends(get_db)):
+    """Get all summaries for a video"""
+    try:
+        query = (
+            select(VideoSummary)
+            .where(VideoSummary.video_id == video_id)
+            .options(selectinload(VideoSummary.preset))
+            .order_by(VideoSummary.generated_at.desc())
+        )
+        
+        result = await db.execute(query)
+        summaries = result.scalars().all()
+        
+        return [VideoSummaryResponse.model_validate(summary) for summary in summaries]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get video summaries: {str(e)}")
+
+
+@router.delete("/video/{video_id}/summary/{summary_id}")
+async def delete_video_summary(
+    video_id: int,
+    summary_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete a specific summary for a video"""
+    try:
+        query = select(VideoSummary).where(
+            VideoSummary.id == summary_id,
+            VideoSummary.video_id == video_id
+        )
+        result = await db.execute(query)
+        summary = result.scalar_one_or_none()
+        
+        if not summary:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Summary {summary_id} not found for video {video_id}"
+            )
+        
+        await db.delete(summary)
+        await db.commit()
+        
+        return {"message": f"Summary '{summary.name}' deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to delete summary: {str(e)}")

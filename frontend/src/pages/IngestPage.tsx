@@ -187,23 +187,23 @@ const IngestPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-8 dark:bg-gray-900">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center dark:text-gray-100">
             <Upload className="h-8 w-8 mr-3 text-primary-600" />
             Video Ingest
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-gray-600 mt-2 dark:text-gray-300">
             Add new video transcripts by uploading YouTube videos and transcribing them with OpenAI Whisper
           </p>
         </div>
 
         {/* Main Form */}
-        <div className="bg-white shadow rounded-lg mb-8">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900 flex items-center">
+        <div className="bg-white shadow rounded-lg mb-8 dark:bg-gray-800 dark:border-gray-700">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg font-medium text-gray-900 flex items-center dark:text-gray-100">
               <Youtube className="h-5 w-5 mr-2 text-red-600" />
               YouTube Video Ingestion
             </h2>
@@ -212,7 +212,7 @@ const IngestPage: React.FC = () => {
           <div className="p-6 space-y-6">
             {/* YouTube URL Input */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
                 YouTube URL *
               </label>
               <div className="flex space-x-2">
@@ -221,7 +221,7 @@ const IngestPage: React.FC = () => {
                   value={youtubeUrl}
                   onChange={(e) => setYoutubeUrl(e.target.value)}
                   placeholder="https://www.youtube.com/watch?v=..."
-                  className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                 />
                 <button
                   onClick={handleGetVideoInfo}
@@ -239,28 +239,28 @@ const IngestPage: React.FC = () => {
 
             {/* Video Info Preview */}
             {videoInfo && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-gray-900 mb-3">Video Information</h3>
+              <div className="bg-gray-50 rounded-lg p-4 dark:bg-gray-800">
+                <h3 className="text-sm font-medium text-gray-900 mb-3 dark:text-gray-100">Video Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <div>
-                      <span className="text-sm font-medium text-gray-700">Title:</span>
-                      <p className="text-sm text-gray-600">{videoInfo.title}</p>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Title:</span>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">{videoInfo.title}</p>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-700">Channel:</span>
-                      <p className="text-sm text-gray-600">{videoInfo.uploader}</p>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Channel:</span>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">{videoInfo.uploader}</p>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-700">Duration:</span>
-                      <p className="text-sm text-gray-600">{formatDuration(videoInfo.duration)}</p>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Duration:</span>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">{formatDuration(videoInfo.duration)}</p>
                     </div>
                   </div>
                   <div className="flex justify-center">
                     <img 
                       src={videoInfo.thumbnail} 
                       alt="Video thumbnail"
-                      className="w-48 h-auto rounded-lg border"
+                      className="w-48 h-auto rounded-lg border dark:border-gray-700"
                     />
                   </div>
                 </div>
@@ -269,7 +269,7 @@ const IngestPage: React.FC = () => {
 
             {/* OpenAI API Key */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
                 OpenAI API Key *
               </label>
               <div className="flex space-x-2">
@@ -278,7 +278,7 @@ const IngestPage: React.FC = () => {
                   value={openaiApiKey}
                   onChange={(e) => setOpenaiApiKey(e.target.value)}
                   placeholder="sk-..."
-                  className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                 />
                 <button
                   onClick={handleTestApiKey}
@@ -291,14 +291,14 @@ const IngestPage: React.FC = () => {
               </div>
               
               {apiKeyStatus && (
-                <div className={`mt-2 p-3 rounded-md ${apiKeyStatus.valid ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                <div className={`mt-2 p-3 rounded-md ${apiKeyStatus.valid ? 'bg-green-50 border border-green-200 dark:bg-green-900/30 dark:border-green-800' : 'bg-red-50 border border-red-200 dark:bg-red-900/30 dark:border-red-800'}`}>
                   <div className="flex items-center">
                     {apiKeyStatus.valid ? (
                       <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
                     ) : (
                       <XCircle className="h-4 w-4 text-red-600 mr-2" />
                     )}
-                    <p className={`text-sm ${apiKeyStatus.valid ? 'text-green-700' : 'text-red-700'}`}>
+                    <p className={`text-sm ${apiKeyStatus.valid ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
                       {apiKeyStatus.message}
                     </p>
                   </div>
@@ -309,7 +309,7 @@ const IngestPage: React.FC = () => {
             {/* Optional Overrides */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
                   Title Override (optional)
                 </label>
                 <input
@@ -317,12 +317,12 @@ const IngestPage: React.FC = () => {
                   value={titleOverride}
                   onChange={(e) => setTitleOverride(e.target.value)}
                   placeholder="Custom title for the video"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
                   Speaker Override (optional)
                 </label>
                 <input
@@ -330,7 +330,7 @@ const IngestPage: React.FC = () => {
                   value={speakerOverride}
                   onChange={(e) => setSpeakerOverride(e.target.value)}
                   placeholder="Custom speaker name"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                 />
               </div>
             </div>

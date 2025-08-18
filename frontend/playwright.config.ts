@@ -8,6 +8,13 @@ export default defineConfig({
     trace: 'on-first-retry',
     video: 'retain-on-failure',
   },
+  webServer: {
+    command: 'npm start',
+    port: 3000,
+    reuseExistingServer: true,
+    cwd: './',
+    timeout: 120 * 1000,
+  },
   projects: [
     {
       name: 'chromium',
@@ -15,4 +22,3 @@ export default defineConfig({
     },
   ],
 });
-

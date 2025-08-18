@@ -106,8 +106,8 @@ const VideoSummary: React.FC<VideoSummaryProps> = ({ videoId, videoTitle }) => {
 
   if (!capability) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center space-x-2 text-gray-500">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 dark:bg-gray-800 dark:border-gray-700">
+        <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400">
           <Loader2 className="h-4 w-4 animate-spin" />
           <span>Checking summary availability...</span>
         </div>
@@ -117,12 +117,12 @@ const VideoSummary: React.FC<VideoSummaryProps> = ({ videoId, videoTitle }) => {
 
   if (!capability.can_summarize) {
     return (
-      <div className="bg-amber-50 rounded-lg border border-amber-200 p-6">
+      <div className="bg-amber-50 rounded-lg border border-amber-200 p-6 dark:bg-amber-900/30 dark:border-amber-800">
         <div className="flex items-start space-x-3">
           <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5" />
           <div>
-            <h3 className="font-medium text-amber-800">Summary Not Available</h3>
-            <p className="text-sm text-amber-700 mt-1">
+            <h3 className="font-medium text-amber-800 dark:text-amber-300">Summary Not Available</h3>
+            <p className="text-sm text-amber-700 mt-1 dark:text-amber-200">
               This video has no transcript segments available for summarization.
             </p>
           </div>
@@ -132,17 +132,17 @@ const VideoSummary: React.FC<VideoSummaryProps> = ({ videoId, videoTitle }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200">
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
               <FileText className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h3 className="text-lg font-medium text-gray-900">AI Summary</h3>
-              <p className="text-sm text-gray-600">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">AI Summary</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
                 {capability.segment_count} transcript segments available
               </p>
             </div>
@@ -155,7 +155,7 @@ const VideoSummary: React.FC<VideoSummaryProps> = ({ videoId, videoTitle }) => {
                 <select
                   value={bulletPoints}
                   onChange={(e) => setBulletPoints(Number(e.target.value))}
-                  className="text-sm border border-gray-300 rounded px-2 py-1"
+                  className="text-sm border border-gray-300 rounded px-2 py-1 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                   disabled={isLoading}
                 >
                   <option value={3}>3 points</option>
@@ -187,16 +187,16 @@ const VideoSummary: React.FC<VideoSummaryProps> = ({ videoId, videoTitle }) => {
 
       {/* Error Message */}
       {error && (
-        <div className="p-6 border-b border-gray-200">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 dark:bg-red-900/30 dark:border-red-800">
             <div className="flex items-start space-x-3">
               <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
               <div>
-                <h4 className="font-medium text-red-800">Error Generating Summary</h4>
-                <p className="text-sm text-red-700 mt-1">{error}</p>
+                <h4 className="font-medium text-red-800 dark:text-red-300">Error Generating Summary</h4>
+                <p className="text-sm text-red-700 mt-1 dark:text-red-300">{error}</p>
                 <button
                   onClick={generateSummary}
-                  className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+                  className="mt-2 text-sm text-red-600 hover:text-red-800 underline dark:text-red-300 dark:hover:text-red-200"
                 >
                   Try again
                 </button>
@@ -212,22 +212,22 @@ const VideoSummary: React.FC<VideoSummaryProps> = ({ videoId, videoTitle }) => {
           {/* Summary Text */}
           <div className="mb-6">
             <div className="prose max-w-none">
-              <div className="whitespace-pre-line text-gray-900 text-base leading-relaxed">
+              <div className="whitespace-pre-line text-gray-900 text-base leading-relaxed dark:text-gray-100">
                 {summaryData.summary}
               </div>
             </div>
           </div>
 
           {/* Metadata */}
-          <div className="border-t border-gray-200 pt-4">
+          <div className="border-t border-gray-200 pt-4 dark:border-gray-700">
             <button
               onClick={() => setIsExpanded(!isExpanded)}
               className="flex items-center justify-between w-full text-left"
             >
-              <span className="text-sm font-medium text-gray-700">Summary Details</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Summary Details</span>
               <div className="flex items-center space-x-2">
                 <CheckCircle className="h-4 w-4 text-green-500" />
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-500 dark:text-gray-400">
                   {isExpanded ? 'Hide' : 'Show'} details
                 </span>
               </div>
@@ -235,49 +235,49 @@ const VideoSummary: React.FC<VideoSummaryProps> = ({ videoId, videoTitle }) => {
 
             {isExpanded && (
               <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-gray-50 rounded-lg p-3">
+                <div className="bg-gray-50 rounded-lg p-3 dark:bg-gray-900">
                   <div className="flex items-center space-x-2">
                     <BarChart3 className="h-4 w-4 text-blue-500" />
-                    <span className="text-xs font-medium text-gray-600">Segments</span>
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Segments</span>
                   </div>
-                  <p className="text-lg font-semibold text-gray-900 mt-1">
+                  <p className="text-lg font-semibold text-gray-900 mt-1 dark:text-gray-100">
                     {summaryData.metadata.total_segments.toLocaleString()}
                   </p>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-3">
+                <div className="bg-gray-50 rounded-lg p-3 dark:bg-gray-900">
                   <div className="flex items-center space-x-2">
                     <FileText className="h-4 w-4 text-green-500" />
-                    <span className="text-xs font-medium text-gray-600">Words</span>
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Words</span>
                   </div>
-                  <p className="text-lg font-semibold text-gray-900 mt-1">
+                  <p className="text-lg font-semibold text-gray-900 mt-1 dark:text-gray-100">
                     {summaryData.metadata.total_words.toLocaleString()}
                   </p>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-3">
+                <div className="bg-gray-50 rounded-lg p-3 dark:bg-gray-900">
                   <div className="flex items-center space-x-2">
                     <Clock className="h-4 w-4 text-purple-500" />
-                    <span className="text-xs font-medium text-gray-600">Duration</span>
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Duration</span>
                   </div>
-                  <p className="text-lg font-semibold text-gray-900 mt-1">
+                  <p className="text-lg font-semibold text-gray-900 mt-1 dark:text-gray-100">
                     {formatDuration(summaryData.metadata.duration_seconds)}
                   </p>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-3">
+                <div className="bg-gray-50 rounded-lg p-3 dark:bg-gray-900">
                   <div className="flex items-center space-x-2">
                     <Settings2 className="h-4 w-4 text-orange-500" />
-                    <span className="text-xs font-medium text-gray-600">Model</span>
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Model</span>
                   </div>
-                  <p className="text-sm font-semibold text-gray-900 mt-1">
+                  <p className="text-sm font-semibold text-gray-900 mt-1 dark:text-gray-100">
                     {summaryData.metadata.model_used}
                   </p>
                 </div>
               </div>
             )}
 
-            <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
+            <div className="mt-4 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
               <span>Generated {formatDate(summaryData.metadata.generated_at)}</span>
               <button
                 onClick={generateSummary}

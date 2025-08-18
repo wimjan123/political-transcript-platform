@@ -197,7 +197,11 @@ class VideoSummary(Base):
     __tablename__ = "video_summaries"
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    video_id: Mapped[int] = mapped_column(Integer, ForeignKey("videos.id"), unique=True, index=True)
+    video_id: Mapped[int] = mapped_column(Integer, ForeignKey("videos.id"), index=True)
+    
+    # Summary identification
+    name: Mapped[str] = mapped_column(String(100), nullable=False, default="Default Summary")
+    preset_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("summary_presets.id"), nullable=True)
     
     # Summary content
     summary_text: Mapped[str] = mapped_column(Text, nullable=False)
@@ -218,9 +222,36 @@ class VideoSummary(Base):
     
     # Relationships
     video: Mapped["Video"] = relationship("Video")
+    preset: Mapped[Optional["SummaryPreset"]] = relationship("SummaryPreset")
     
     def __repr__(self):
-        return f"<VideoSummary(id={self.id}, video_id={self.video_id}, provider='{self.provider}', model='{self.model}')>"
+        return f"<VideoSummary(id={self.id}, video_id={self.video_id}, name='{self.name}', provider='{self.provider}', model='{self.model}')>"
+
+
+class SummaryPreset(Base):
+    """Summary preset templates for custom instructions"""
+    __tablename__ = "summary_presets"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, index=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    custom_prompt: Mapped[str] = mapped_column(Text, nullable=False)
+    
+    # Default generation parameters
+    provider: Mapped[str] = mapped_column(String(50), nullable=False, default="openrouter")
+    model: Mapped[str] = mapped_column(String(100), nullable=False, default="deepseek/deepseek-chat-v3-0324:free")
+    bullet_points: Mapped[int] = mapped_column(Integer, nullable=False, default=4)
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False)
+    
+    # Metadata
+    created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
+    updated_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    summaries: Mapped[List["VideoSummary"]] = relationship("VideoSummary", back_populates="preset")
+    
+    def __repr__(self):
+        return f"<SummaryPreset(id={self.id}, name='{self.name}', is_default={self.is_default})>"
 
 
 # Create database indexes for better performance

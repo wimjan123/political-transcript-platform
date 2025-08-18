@@ -104,17 +104,17 @@ const PlaylistPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Playlist</h1>
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Playlist</h1>
             <div className="mt-2 flex items-center gap-2">
-              <label className="text-sm text-gray-600">Active:</label>
+              <label className="text-sm text-gray-600 dark:text-gray-300">Active:</label>
               <select
                 value={active}
                 onChange={(e) => setActiveList(e.target.value)}
-                className="text-sm border border-gray-300 rounded-md px-2 py-1"
+                className="text-sm border border-gray-300 rounded-md px-2 py-1 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
               >
                 {playlists.map((n) => (
                   <option key={n} value={n}>{n}</option>
@@ -124,7 +124,7 @@ const PlaylistPage: React.FC = () => {
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="New playlist name"
-                className="text-sm border border-gray-300 rounded-md px-2 py-1"
+                className="text-sm border border-gray-300 rounded-md px-2 py-1 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
               />
               <button onClick={createList} className="btn btn-outline">Create</button>
               <button onClick={() => renameList(active)} className="btn btn-outline">Rename</button>
@@ -142,25 +142,25 @@ const PlaylistPage: React.FC = () => {
         </div>
 
         {items.length === 0 ? (
-          <div className="text-gray-500">Your playlist is empty.</div>
+          <div className="text-gray-500 dark:text-gray-400">Your playlist is empty.</div>
         ) : (
           <ul className="space-y-3">
             {items.map(it => (
-              <li key={it.id} className="bg-white border border-gray-200 rounded-md p-4 flex items-start justify-between">
+              <li key={it.id} className="bg-white border border-gray-200 rounded-md p-4 flex items-start justify-between dark:bg-gray-800 dark:border-gray-700">
                 <div className="pr-4">
-                  <div className="text-sm text-gray-500 mb-1">{it.type.toUpperCase()} • Video #{it.videoId} • Added {new Date(it.addedAt).toLocaleString()}</div>
-                  <div className="font-medium text-gray-900">{it.videoTitle}</div>
-                  <div className="text-sm text-gray-700 mt-1">
+                  <div className="text-sm text-gray-500 mb-1 dark:text-gray-400">{it.type.toUpperCase()} • Video #{it.videoId} • Added {new Date(it.addedAt).toLocaleString()}</div>
+                  <div className="font-medium text-gray-900 dark:text-gray-100">{it.videoTitle}</div>
+                  <div className="text-sm text-gray-700 mt-1 dark:text-gray-300">
                     {it.speaker && <span className="mr-2">{it.speaker}:</span>}
                     {it.text || it.label}
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-xs text-gray-500 mt-1 dark:text-gray-400">
                     {it.date && <span className="mr-2">{String(it.date).slice(0,10)}</span>}
                     {it.place && <span className="mr-2">{it.place}</span>}
                     <span>[{formatTimestamp(Math.floor(it.startSeconds || 0))}{it.durationSeconds ? ` - ${formatTimestamp(Math.floor((it.startSeconds || 0) + (it.durationSeconds || 0)))}` : ''}]</span>
                   </div>
                 </div>
-                <button onClick={() => remove(it.id)} className="text-gray-400 hover:text-red-600"><Trash2 className="h-5 w-5" /></button>
+                <button onClick={() => remove(it.id)} className="text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-500"><Trash2 className="h-5 w-5" /></button>
               </li>
             ))}
           </ul>

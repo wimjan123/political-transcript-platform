@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.orm import selectinload
 
-from ..models import Video, TranscriptSegment, VideoSummary
+from ..models import Video, TranscriptSegment, VideoSummary, SummaryPreset
 from ..config import settings
 
 # Try to import OpenAI, fallback if not available
@@ -58,6 +58,8 @@ class SummarizationService:
         self, 
         db: AsyncSession, 
         video_id: int,
+        name: str = "Default Summary",
+        preset_id: Optional[int] = None,
         bullet_points: int = 4,
         custom_prompt: Optional[str] = None,
         provider: Optional[str] = None,
@@ -70,6 +72,8 @@ class SummarizationService:
         Args:
             db: Database session
             video_id: ID of the video to summarize
+            name: Name/label for this summary
+            preset_id: Optional preset ID to use for default parameters
             bullet_points: Number of bullet points to generate (3-5)
             custom_prompt: Optional custom prompt for summarization
             provider: AI provider (openai or openrouter)
@@ -81,28 +85,43 @@ class SummarizationService:
         """
         bullet_points = max(3, min(5, bullet_points))  # Enforce 3-5 range
         
-        # Check for cached summary first
-        effective_model = model or self.model
-        effective_provider = provider or "openai"
+        # Load preset if provided
+        preset = None
+        if preset_id:
+            preset_query = select(SummaryPreset).where(SummaryPreset.id == preset_id)
+            preset_result = await db.execute(preset_query)
+            preset = preset_result.scalar_one_or_none()
+            if not preset:
+                raise ValueError(f"Summary preset with ID {preset_id} not found")
         
-        # Try to find existing summary with matching parameters
-        cached_summary = await self._get_cached_summary(
-            db, video_id, bullet_points, effective_provider, effective_model, custom_prompt
-        )
+        # Determine effective parameters (preset overrides defaults, explicit params override preset)
+        effective_provider = provider or (preset.provider if preset else "openai")
+        effective_model = model or (preset.model if preset else self.model)
+        effective_prompt = custom_prompt or (preset.custom_prompt if preset else None)
+        effective_bullet_points = bullet_points if bullet_points != 4 else (preset.bullet_points if preset else 4)
         
-        if cached_summary:
-            logger.info(f"Returning cached summary for video {video_id}")
+        # Check for existing summary with same name for this video
+        existing_query = select(VideoSummary).where(
+            VideoSummary.video_id == video_id,
+            VideoSummary.name == name
+        ).options(selectinload(VideoSummary.video))
+        
+        existing_result = await db.execute(existing_query)
+        existing_summary = existing_result.scalar_one_or_none()
+        
+        if existing_summary:
+            logger.info(f"Returning existing summary '{name}' for video {video_id}")
             return {
-                "video_id": cached_summary.video_id,
-                "video_title": cached_summary.video.title,
-                "summary": cached_summary.summary_text,
-                "bullet_points": cached_summary.bullet_points,
+                "video_id": existing_summary.video_id,
+                "video_title": existing_summary.video.title,
+                "summary": existing_summary.summary_text,
+                "bullet_points": existing_summary.bullet_points,
                 "metadata": {
-                    **(cached_summary.summary_metadata or {}),
+                    **(existing_summary.summary_metadata or {}),
                     "cached": True,
-                    "generated_at": cached_summary.generated_at.isoformat(),
-                    "provider_used": cached_summary.provider,
-                    "model_used": cached_summary.model
+                    "generated_at": existing_summary.generated_at.isoformat(),
+                    "provider_used": existing_summary.provider,
+                    "model_used": existing_summary.model
                 }
             }
         
@@ -174,15 +193,15 @@ class SummarizationService:
         
         # Save the summary to cache
         await self._save_summary_to_cache(
-            db, video_id, summary_text, bullet_points,
-            effective_provider, effective_model, custom_prompt, metadata
+            db, video_id, summary_text, effective_bullet_points,
+            effective_provider, effective_model, effective_prompt, metadata, name, preset_id
         )
         
         return {
             "video_id": video_id,
             "video_title": video.title,
             "summary": summary_text,
-            "bullet_points": bullet_points,
+            "bullet_points": effective_bullet_points,
             "metadata": metadata
         }
     
@@ -449,12 +468,17 @@ Please provide exactly {bullet_points} bullet points in this format:
         provider: str,
         model: str,
         custom_prompt: Optional[str],
-        metadata: Dict[str, Any]
+        metadata: Dict[str, Any],
+        name: str = "Default Summary",
+        preset_id: Optional[int] = None
     ) -> VideoSummary:
         """Save generated summary to cache"""
         
-        # First, delete any existing summary for this video (one summary per video for now)
-        existing_query = select(VideoSummary).where(VideoSummary.video_id == video_id)
+        # Delete any existing summary with the same name for this video
+        existing_query = select(VideoSummary).where(
+            VideoSummary.video_id == video_id,
+            VideoSummary.name == name
+        )
         existing_result = await db.execute(existing_query)
         existing_summary = existing_result.scalar_one_or_none()
         
@@ -464,6 +488,8 @@ Please provide exactly {bullet_points} bullet points in this format:
         # Create new summary record
         video_summary = VideoSummary(
             video_id=video_id,
+            name=name,
+            preset_id=preset_id,
             summary_text=summary_text,
             bullet_points=bullet_points,
             provider=provider,

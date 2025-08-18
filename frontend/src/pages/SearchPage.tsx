@@ -394,7 +394,7 @@ const SearchPage: React.FC = () => {
     const sentimentLabel = getSentimentLabel(segment.sentiment_loughran_score);
 
     return (
-      <div key={segment.id} className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-6 hover:shadow-xl hover:border-blue-300/50 transition-all duration-300 transform hover:-translate-y-1">
+      <div key={segment.id} className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-6 hover:shadow-xl hover:border-blue-300/50 transition-all duration-300 transform hover:-translate-y-1 dark:bg-gray-800/70 dark:border-gray-700 dark:hover:border-blue-400/30">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             {/* Header */}
@@ -403,17 +403,17 @@ const SearchPage: React.FC = () => {
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                   <User className="h-4 w-4 text-white" />
                 </div>
-                <span className="font-semibold text-gray-900">{segment.speaker_name}</span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100">{segment.speaker_name}</span>
               </div>
               
               {segment.video && (
-                <div className="flex items-center space-x-2 text-sm text-gray-500">
+                <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
                   <Calendar className="h-4 w-4" />
                   <span>{segment.video.date}</span>
                 </div>
               )}
               
-              <div className="flex items-center space-x-2 text-sm text-gray-500">
+              <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
                 <Clock className="h-4 w-4" />
                 <span>{formatTimestamp(segment.video_seconds)}</span>
                 {segment.timestamp_start && segment.timestamp_end && (
@@ -424,7 +424,7 @@ const SearchPage: React.FC = () => {
 
             {/* Video Info */}
             {segment.video && (
-              <div className="text-sm text-gray-600 mb-2">
+              <div className="text-sm text-gray-600 mb-2 dark:text-gray-300">
                 <Link
                   to={`/videos/${segment.video.id}?t=${segment.video_seconds}&segment_id=${segment.id}`}
                   className="font-medium text-primary-600 hover:text-primary-700 hover:underline"
@@ -438,7 +438,7 @@ const SearchPage: React.FC = () => {
             )}
 
             {/* Transcript Text */}
-            <div className="text-gray-900 mb-4 leading-relaxed">
+            <div className="text-gray-900 mb-4 leading-relaxed dark:text-gray-100">
               {selectionMode && (
                 <label className="inline-flex items-center mr-3 align-top">
                   <input
@@ -453,7 +453,7 @@ const SearchPage: React.FC = () => {
             </div>
 
             {/* Metadata Row */}
-            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 mb-3">
+            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 mb-3 dark:text-gray-400">
               <span>{segment.word_count} words</span>
               
               {typeof segment.similarity_score === 'number' && (
@@ -521,7 +521,7 @@ const SearchPage: React.FC = () => {
           {/* Expand/Collapse Button */}
           <button
             onClick={() => toggleSegmentExpansion(segment.id)}
-            className="ml-4 p-2 text-gray-400 hover:text-gray-600 transition-colors"
+            className="ml-4 p-2 text-gray-400 hover:text-gray-600 transition-colors dark:text-gray-500 dark:hover:text-gray-300"
           >
             {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
           </button>
@@ -543,7 +543,7 @@ const SearchPage: React.FC = () => {
           {/* Expand/Collapse Button */}
           <button
             onClick={() => toggleSegmentExpansion(segment.id)}
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-2 text-gray-400 hover:text-gray-600 transition-colors dark:text-gray-500 dark:hover:text-gray-300"
             aria-label={isExpanded ? 'Collapse' : 'Expand'}
           >
             {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
@@ -552,17 +552,17 @@ const SearchPage: React.FC = () => {
 
         {/* Expanded Details */}
         {isExpanded && (
-              <div className="mt-4 pt-4 border-t border-gray-200 space-y-4">
+              <div className="mt-4 pt-4 border-t border-gray-200 space-y-4 dark:border-gray-700">
             {/* Detailed Sentiment Analysis */}
             {(typeof segment.sentiment_loughran_score === 'number' || 
               typeof segment.sentiment_harvard_score === 'number' || 
               typeof segment.sentiment_vader_score === 'number') && (
               <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-2">Sentiment Analysis</h4>
+                <h4 className="text-sm font-medium text-gray-900 mb-2 dark:text-gray-100">Sentiment Analysis</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                   {typeof segment.sentiment_loughran_score === 'number' && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Loughran-McDonald:</span>
+                      <span className="text-gray-600 dark:text-gray-300">Loughran-McDonald:</span>
                       <span className={getSentimentColor(segment.sentiment_loughran_score)}>
                         {segment.sentiment_loughran_score.toFixed(3)}
                       </span>
@@ -570,7 +570,7 @@ const SearchPage: React.FC = () => {
                   )}
                   {typeof segment.sentiment_harvard_score === 'number' && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Harvard-IV:</span>
+                      <span className="text-gray-600 dark:text-gray-300">Harvard-IV:</span>
                       <span className={getSentimentColor(segment.sentiment_harvard_score)}>
                         {segment.sentiment_harvard_score.toFixed(3)}
                       </span>
@@ -578,7 +578,7 @@ const SearchPage: React.FC = () => {
                   )}
                   {typeof segment.sentiment_vader_score === 'number' && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">VADER:</span>
+                      <span className="text-gray-600 dark:text-gray-300">VADER:</span>
                       <span className={getSentimentColor(segment.sentiment_vader_score)}>
                         {segment.sentiment_vader_score.toFixed(3)}
                       </span>
@@ -593,23 +593,23 @@ const SearchPage: React.FC = () => {
               typeof segment.flesch_reading_ease === 'number' ||
               typeof segment.gunning_fog_index === 'number') && (
               <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-2">Readability Metrics</h4>
+                <h4 className="text-sm font-medium text-gray-900 mb-2 dark:text-gray-100">Readability Metrics</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                   {typeof segment.flesch_kincaid_grade === 'number' && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Flesch-Kincaid Grade:</span>
+                      <span className="text-gray-600 dark:text-gray-300">Flesch-Kincaid Grade:</span>
                       <span className="text-gray-900">{segment.flesch_kincaid_grade.toFixed(1)}</span>
                     </div>
                   )}
                   {typeof segment.flesch_reading_ease === 'number' && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Reading Ease:</span>
+                      <span className="text-gray-600 dark:text-gray-300">Reading Ease:</span>
                       <span className="text-gray-900">{segment.flesch_reading_ease.toFixed(1)}</span>
                     </div>
                   )}
                   {typeof segment.gunning_fog_index === 'number' && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Gunning Fog:</span>
+                      <span className="text-gray-600 dark:text-gray-300">Gunning Fog:</span>
                       <span className="text-gray-900">{segment.gunning_fog_index.toFixed(1)}</span>
                     </div>
                   )}
@@ -670,10 +670,10 @@ const SearchPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Search Header */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-6 mb-8">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-6 mb-8 dark:bg-gray-800/70 dark:border-gray-700">
           <form onSubmit={handleSearch} className="space-y-6">
             {/* Main Search Input */}
             <div className="relative group">
@@ -688,7 +688,7 @@ const SearchPage: React.FC = () => {
                   setQuery(e.target.value);
                   setIsTyping(true);
                 }}
-                className="block w-full pl-12 pr-44 py-4 border border-gray-300/50 rounded-xl text-base placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300"
+                className="block w-full pl-12 pr-44 py-4 border border-gray-300/50 rounded-xl text-base placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 dark:bg-gray-800/70 dark:border-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
                 placeholder="Search transcripts, speakers, topics..."
               />
               <div className="absolute inset-y-0 right-0 flex items-center pr-2 space-x-2">
@@ -769,7 +769,7 @@ const SearchPage: React.FC = () => {
                   showLabel={true}
                 />
               </div>
-              <div className="text-xs text-gray-500 pt-7">
+              <div className="text-xs text-gray-500 pt-7 dark:text-gray-400">
                 Language selection helps improve search accuracy when using Meilisearch semantic or hybrid modes.
               </div>
             </div>
@@ -779,7 +779,7 @@ const SearchPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowFilters(!showFilters)}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+                className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
               >
                 <Filter className="h-4 w-4 mr-2" />
                 Advanced Filters
@@ -791,7 +791,7 @@ const SearchPage: React.FC = () => {
                 <select
                   value={pageSize}
                   onChange={(e) => setPageSize(parseInt(e.target.value))}
-                  className="text-sm border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                  className="text-sm border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                 >
                   <option value="10">10 per page</option>
                   <option value="25">25 per page</option>
@@ -804,7 +804,7 @@ const SearchPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setSelectionMode(!selectionMode)}
-                      className={`inline-flex items-center px-3 py-2 border text-sm font-medium rounded-md ${selectionMode ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-gray-300'} hover:bg-gray-50`}
+                      className={`inline-flex items-center px-3 py-2 border text-sm font-medium rounded-md ${selectionMode ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700'} hover:bg-gray-50 dark:hover:bg-gray-700`}
                     >
                       {selectionMode ? 'Exit Selection' : 'Select Segments'}
                     </button>
@@ -819,7 +819,7 @@ const SearchPage: React.FC = () => {
                     <button
                       onClick={() => handleExport('csv')}
                       disabled={isExporting}
-                      className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 transition-colors"
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 transition-colors dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
                     >
                       <Download className="h-4 w-4 mr-2" />
                       {isExporting ? 'Exporting...' : 'Export CSV'}
@@ -827,7 +827,7 @@ const SearchPage: React.FC = () => {
                     <button
                       onClick={() => handleExport('json')}
                       disabled={isExporting}
-                      className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 transition-colors"
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 transition-colors dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
                     >
                       Export JSON
                     </button>
@@ -838,7 +838,7 @@ const SearchPage: React.FC = () => {
 
             {/* Advanced Filters */}
             {showFilters && (
-              <div className="pt-4 border-t border-gray-200 space-y-4">
+              <div className="pt-4 border-t border-gray-200 space-y-4 dark:border-gray-700">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {/* Speaker Filter */}
                   <div>

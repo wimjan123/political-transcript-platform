@@ -94,7 +94,7 @@ const AISettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -103,39 +103,39 @@ const AISettingsPage: React.FC = () => {
               <Bot className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">AI Settings</h1>
-              <p className="text-gray-600">Configure AI-powered transcript summarization</p>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">AI Settings</h1>
+              <p className="text-gray-600 dark:text-gray-300">Configure AI-powered transcript summarization</p>
             </div>
           </div>
         </div>
 
         {/* Model Information Card */}
         {modelInfo && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-            <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8 dark:bg-gray-800 dark:border-gray-700">
+            <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center dark:text-gray-100">
               <Settings className="h-5 w-5 mr-2" />
               Summarization Service Status
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-gray-500">OpenAI Available:</span>
+                <span className="text-gray-500 dark:text-gray-400">OpenAI Available:</span>
                 <span className={`ml-2 font-medium ${modelInfo.openai_available ? 'text-green-600' : 'text-red-600'}`}>
                   {modelInfo.openai_available ? 'Yes' : 'No'}
                 </span>
               </div>
               <div>
-                <span className="text-gray-500">Primary Model:</span>
-                <span className="ml-2 font-medium">
+                <span className="text-gray-500 dark:text-gray-400">Primary Model:</span>
+                <span className="ml-2 font-medium dark:text-gray-200">
                   {modelInfo.primary_model || 'Not configured'}
                 </span>
               </div>
               <div>
-                <span className="text-gray-500">Fallback Method:</span>
-                <span className="ml-2 font-medium">{modelInfo.fallback_method}</span>
+                <span className="text-gray-500 dark:text-gray-400">Fallback Method:</span>
+                <span className="ml-2 font-medium dark:text-gray-200">{modelInfo.fallback_method}</span>
               </div>
               <div>
-                <span className="text-gray-500">Supported Bullet Points:</span>
-                <span className="ml-2 font-medium">
+                <span className="text-gray-500 dark:text-gray-400">Supported Bullet Points:</span>
+                <span className="ml-2 font-medium dark:text-gray-200">
                   {modelInfo.supported_bullet_points?.min}-{modelInfo.supported_bullet_points?.max}
                 </span>
               </div>
@@ -144,15 +144,15 @@ const AISettingsPage: React.FC = () => {
         )}
 
         {/* Settings Form */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-          <h2 className="text-lg font-medium text-gray-900 mb-6 flex items-center">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8 dark:bg-gray-800 dark:border-gray-700">
+          <h2 className="text-lg font-medium text-gray-900 mb-6 flex items-center dark:text-gray-100">
             <Key className="h-5 w-5 mr-2" />
             AI Provider Configuration
           </h2>
 
           {/* Provider Selection */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-sm font-medium text-gray-700 mb-3 dark:text-gray-300">
               AI Provider
             </label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -162,8 +162,8 @@ const AISettingsPage: React.FC = () => {
                   className={`relative border rounded-lg p-4 cursor-pointer transition-all ${
                     settings.provider === provider
                       ? 'border-purple-500 bg-purple-50 ring-2 ring-purple-500'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                      : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
+                  } dark:bg-gray-800`}
                   onClick={() => handleProviderChange(provider)}
                 >
                   <div className="flex items-start justify-between">
@@ -175,20 +175,20 @@ const AISettingsPage: React.FC = () => {
                           value={provider}
                           checked={settings.provider === provider}
                           onChange={() => handleProviderChange(provider)}
-                          className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300"
+                          className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 dark:border-gray-600"
                         />
-                        <h3 className="ml-3 text-sm font-medium text-gray-900">{info.name}</h3>
+                        <h3 className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-100">{info.name}</h3>
                         <a
                           href={info.website}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="ml-2 text-gray-400 hover:text-gray-600"
+                          className="ml-2 text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <ExternalLink className="h-3 w-3" />
                         </a>
                       </div>
-                      <p className="mt-1 text-xs text-gray-500">{info.description}</p>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{info.description}</p>
                     </div>
                   </div>
                 </div>
@@ -198,14 +198,14 @@ const AISettingsPage: React.FC = () => {
 
           {/* Model Selection */}
           <div className="mb-6">
-            <label htmlFor="model" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="model" className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
               Model Selection
             </label>
             <select
               id="model"
               value={settings.model}
               onChange={(e) => handleSettingChange('model', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
             >
               {availableModels.map((model) => (
                 <option key={model.id} value={model.id}>
@@ -312,7 +312,7 @@ const AISettingsPage: React.FC = () => {
 
           {/* Default Summary Length */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
               Default Summary Length
             </label>
             <div className="space-y-2">
@@ -324,12 +324,12 @@ const AISettingsPage: React.FC = () => {
                     value={length}
                     checked={settings.defaultSummaryLength === length}
                     onChange={(e) => handleSettingChange('defaultSummaryLength', e.target.value)}
-                    className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300"
-                  />
-                  <span className="ml-3 text-sm text-gray-700 capitalize">
+                  className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 dark:border-gray-600"
+                />
+                  <span className="ml-3 text-sm text-gray-700 capitalize dark:text-gray-200">
                     {length}
                   </span>
-                  <span className="ml-2 text-xs text-gray-500">
+                  <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
                     {getSummaryLengthDescription(length)}
                   </span>
                 </label>
@@ -339,7 +339,7 @@ const AISettingsPage: React.FC = () => {
 
           {/* Default Summary Format */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
               Default Summary Format
             </label>
             <div className="space-y-2">
@@ -350,10 +350,10 @@ const AISettingsPage: React.FC = () => {
                   value="bullet_points"
                   checked={settings.defaultSummaryFormat === 'bullet_points'}
                   onChange={(e) => handleSettingChange('defaultSummaryFormat', e.target.value)}
-                  className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300"
+                  className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 dark:border-gray-600"
                 />
-                <span className="ml-3 text-sm text-gray-700">Bullet Points</span>
-                <span className="ml-2 text-xs text-gray-500">Structured list format</span>
+                <span className="ml-3 text-sm text-gray-700 dark:text-gray-200">Bullet Points</span>
+                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">Structured list format</span>
               </label>
               <label className="flex items-center">
                 <input
@@ -362,17 +362,17 @@ const AISettingsPage: React.FC = () => {
                   value="paragraph"
                   checked={settings.defaultSummaryFormat === 'paragraph'}
                   onChange={(e) => handleSettingChange('defaultSummaryFormat', e.target.value)}
-                  className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300"
+                  className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 dark:border-gray-600"
                 />
-                <span className="ml-3 text-sm text-gray-700">Paragraph</span>
-                <span className="ml-2 text-xs text-gray-500">Flowing text format</span>
+                <span className="ml-3 text-sm text-gray-700 dark:text-gray-200">Paragraph</span>
+                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">Flowing text format</span>
               </label>
             </div>
           </div>
 
           {/* Default Custom Prompt */}
           <div className="mb-6">
-            <label htmlFor="customPrompt" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="customPrompt" className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
               Default Custom Prompt
             </label>
             <textarea
@@ -381,9 +381,9 @@ const AISettingsPage: React.FC = () => {
               onChange={(e) => handleSettingChange('defaultCustomPrompt', e.target.value)}
               rows={4}
               placeholder="Enter default instructions for the AI summarization..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               This prompt will guide the AI in generating summaries. You can override this for individual summaries.
             </p>
           </div>
@@ -401,13 +401,13 @@ const AISettingsPage: React.FC = () => {
 
             {/* Save Status */}
             {saveStatus === 'success' && (
-              <div className="flex items-center text-green-600 text-sm">
+              <div className="flex items-center text-green-600 text-sm dark:text-green-300">
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Settings saved successfully
               </div>
             )}
             {saveStatus === 'error' && (
-              <div className="flex items-center text-red-600 text-sm">
+              <div className="flex items-center text-red-600 text-sm dark:text-red-300">
                 <AlertCircle className="h-4 w-4 mr-2" />
                 Failed to save settings
               </div>
@@ -416,14 +416,14 @@ const AISettingsPage: React.FC = () => {
         </div>
 
         {/* Test Summarization */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-6 flex items-center">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 dark:bg-gray-800 dark:border-gray-700">
+          <h2 className="text-lg font-medium text-gray-900 mb-6 flex items-center dark:text-gray-100">
             <Sparkles className="h-5 w-5 mr-2" />
             Test Summarization
           </h2>
           
           <div className="mb-4">
-            <label htmlFor="testVideoId" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="testVideoId" className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
               Video ID to Test
             </label>
             <input
@@ -432,9 +432,9 @@ const AISettingsPage: React.FC = () => {
               value={testVideoId}
               onChange={(e) => setTestVideoId(e.target.value)}
               placeholder="Enter a video ID to test summarization"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Test the summarization feature with a specific video ID
             </p>
           </div>

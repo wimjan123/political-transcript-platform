@@ -71,12 +71,12 @@ const AnalyticsDashboard: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Search Analytics</h2>
-          <p className="text-gray-500">Conversational search usage and insights</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Search Analytics</h2>
+          <p className="text-gray-500 dark:text-gray-400">Conversational search usage and insights</p>
         </div>
         <button
           onClick={loadData}
-          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
         >
           <RefreshCw className="h-4 w-4 mr-2" />
           Refresh
@@ -86,44 +86,44 @@ const AnalyticsDashboard: React.FC = () => {
       {/* Stats Cards */}
       {currentAnalytics && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+          <div className="bg-white p-6 rounded-lg shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
             <div className="flex items-center">
               <MessageSquare className="h-8 w-8 text-blue-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Total Queries</p>
-                <p className="text-2xl font-bold text-gray-900">{currentAnalytics.totalQueries}</p>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Queries</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{currentAnalytics.totalQueries}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+          <div className="bg-white p-6 rounded-lg shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
             <div className="flex items-center">
               <Clock className="h-8 w-8 text-green-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Avg Response Time</p>
-                <p className="text-2xl font-bold text-gray-900">{Math.round(currentAnalytics.avgResponseTime)}ms</p>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Response Time</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{Math.round(currentAnalytics.avgResponseTime)}ms</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+          <div className="bg-white p-6 rounded-lg shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
             <div className="flex items-center">
               <Search className="h-8 w-8 text-purple-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Search Modes</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Search Modes</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {Object.keys(currentAnalytics.searchModeDistribution).length}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+          <div className="bg-white p-6 rounded-lg shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
             <div className="flex items-center">
               <Globe className="h-8 w-8 text-orange-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Languages</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Languages</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {Object.keys(currentAnalytics.languageDistribution).length}
                 </p>
               </div>
@@ -135,13 +135,13 @@ const AnalyticsDashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Queries */}
         {currentAnalytics && currentAnalytics.topQueries.length > 0 && (
-          <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Top Queries</h3>
+          <div className="bg-white p-6 rounded-lg shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+            <h3 className="text-lg font-medium text-gray-900 mb-4 dark:text-gray-100">Top Queries</h3>
             <div className="space-y-3">
               {currentAnalytics.topQueries.slice(0, 10).map((item, index) => (
                 <div key={index} className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700 truncate flex-1">{item.query}</span>
-                  <span className="text-sm font-medium text-gray-900 ml-2">{item.count}</span>
+                  <span className="text-sm text-gray-700 truncate flex-1 dark:text-gray-300">{item.query}</span>
+                  <span className="text-sm font-medium text-gray-900 ml-2 dark:text-gray-100">{item.count}</span>
                 </div>
               ))}
             </div>
@@ -150,8 +150,8 @@ const AnalyticsDashboard: React.FC = () => {
 
         {/* Search Mode Distribution */}
         {currentAnalytics && (
-          <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Search Mode Usage</h3>
+          <div className="bg-white p-6 rounded-lg shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+            <h3 className="text-lg font-medium text-gray-900 mb-4 dark:text-gray-100">Search Mode Usage</h3>
             <div className="space-y-3">
               {Object.entries(currentAnalytics.searchModeDistribution).map(([mode, count]) => (
                 <div key={mode} className="flex items-center justify-between">
@@ -160,9 +160,9 @@ const AnalyticsDashboard: React.FC = () => {
                       mode === 'semantic' ? 'bg-purple-500' :
                       mode === 'hybrid' ? 'bg-blue-500' : 'bg-green-500'
                     }`} />
-                    <span className="text-sm text-gray-700 capitalize">{mode}</span>
+                    <span className="text-sm text-gray-700 capitalize dark:text-gray-300">{mode}</span>
                   </div>
-                  <span className="text-sm font-medium text-gray-900">{count}</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{count}</span>
                 </div>
               ))}
             </div>
@@ -179,42 +179,42 @@ const AnalyticsDashboard: React.FC = () => {
           </p>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
                   Query
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
                   Mode
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
                   Results
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
                   Response Time
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
                   Timestamp
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
               {recentQueries.map((query) => (
-                <tr key={query.id} className="hover:bg-gray-50">
+                <tr key={query.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 max-w-xs truncate">
+                    <div className="text-sm text-gray-900 max-w-xs truncate dark:text-gray-100">
                       {query.userQuery}
                     </div>
-                    <div className="text-xs text-gray-500 max-w-xs truncate">
+                    <div className="text-xs text-gray-500 max-w-xs truncate dark:text-gray-400">
                       Extracted: {query.extractedSearchQuery}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      query.searchMode === 'semantic' ? 'bg-purple-100 text-purple-800' :
-                      query.searchMode === 'hybrid' ? 'bg-blue-100 text-blue-800' :
-                      'bg-green-100 text-green-800'
+                      query.searchMode === 'semantic' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
+                      query.searchMode === 'hybrid' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                      'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
                     }`}>
                       {query.searchMode}
                     </span>

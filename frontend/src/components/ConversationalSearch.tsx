@@ -271,18 +271,18 @@ const ConversationalSearch: React.FC<ConversationalSearchProps> = ({ onClose, cl
   };
 
   return (
-    <div className={`flex flex-col h-full bg-white ${className}`}>
+    <div className={`flex flex-col h-full bg-white ${className} dark:bg-gray-900`}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-800 dark:border-gray-700">
         <div className="flex items-center space-x-2">
           <Bot className="h-6 w-6 text-blue-600" />
-          <h2 className="text-lg font-semibold text-gray-900">AI Search Assistant</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">AI Search Assistant</h2>
           <Sparkles className="h-4 w-4 text-purple-500" />
         </div>
         {onClose && (
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 transition-colors dark:text-gray-300 dark:hover:text-gray-200"
           >
             ×
           </button>
@@ -293,7 +293,7 @@ const ConversationalSearch: React.FC<ConversationalSearchProps> = ({ onClose, cl
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
           <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] ${message.type === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-900'} rounded-lg p-3`}>
+            <div className={`max-w-[80%] ${message.type === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100'} rounded-lg p-3`}>
               <div className="flex items-center space-x-2 mb-1">
                 {message.type === 'user' ? (
                   <User className="h-4 w-4" />
@@ -320,7 +320,7 @@ const ConversationalSearch: React.FC<ConversationalSearchProps> = ({ onClose, cl
                           <User className="h-3 w-3 text-gray-400" />
                           <span className="text-xs font-medium text-gray-900">{segment.speaker_name}</span>
                         </div>
-                        <div className="flex items-center space-x-2 text-xs text-gray-500">
+                        <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
                           {typeof segment.video_seconds === 'number' && (
                             <>
                               <Clock className="h-3 w-3" />
@@ -330,7 +330,7 @@ const ConversationalSearch: React.FC<ConversationalSearchProps> = ({ onClose, cl
                         </div>
                       </div>
                       
-                      <p className="text-xs text-gray-700 leading-relaxed" style={{ 
+                      <p className="text-xs text-gray-700 leading-relaxed dark:text-gray-300" style={{ 
                         display: '-webkit-box',
                         WebkitLineClamp: 3,
                         WebkitBoxOrient: 'vertical',
@@ -340,7 +340,7 @@ const ConversationalSearch: React.FC<ConversationalSearchProps> = ({ onClose, cl
                       </p>
                       
                       {segment.video && (
-                        <p className="text-xs text-gray-500 mt-1 truncate">
+                        <p className="text-xs text-gray-500 mt-1 truncate dark:text-gray-400">
                           {segment.video.title}
                         </p>
                       )}
@@ -357,7 +357,7 @@ const ConversationalSearch: React.FC<ConversationalSearchProps> = ({ onClose, cl
                   ))}
                   
                   {message.searchResults.total > 5 && (
-                    <p className="text-xs text-gray-600 mt-2">
+                    <p className="text-xs text-gray-600 mt-2 dark:text-gray-400">
                       ... and {message.searchResults.total - 5} more results
                     </p>
                   )}
@@ -369,11 +369,11 @@ const ConversationalSearch: React.FC<ConversationalSearchProps> = ({ onClose, cl
         
         {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-gray-100 rounded-lg p-3">
+          <div className="bg-gray-100 rounded-lg p-3 dark:bg-gray-800">
               <div className="flex items-center space-x-2">
                 <Bot className="h-4 w-4 text-blue-600" />
                 <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                <span className="text-sm text-gray-600">Searching...</span>
+                <span className="text-sm text-gray-600 dark:text-gray-300">Searching...</span>
               </div>
             </div>
           </div>
@@ -383,7 +383,7 @@ const ConversationalSearch: React.FC<ConversationalSearchProps> = ({ onClose, cl
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 bg-gray-50">
+      <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
         <div className="flex space-x-2">
           <input
             ref={inputRef}
@@ -391,7 +391,7 @@ const ConversationalSearch: React.FC<ConversationalSearchProps> = ({ onClose, cl
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Ask me anything about the transcripts..."
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
             disabled={isLoading}
           />
           <button

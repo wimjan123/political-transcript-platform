@@ -164,54 +164,54 @@ const SummarySearchPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Summary Search</h1>
-          <p className="text-gray-600">Search through AI-generated video summaries</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2 dark:text-gray-100">Summary Search</h1>
+          <p className="text-gray-600 dark:text-gray-300">Search through AI-generated video summaries</p>
         </div>
 
         {/* Summary Stats Overview */}
         {!query && summaryStats && (
           <div className="mb-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-6">
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-6 dark:bg-gray-800/70 dark:border-gray-700">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
                     <BarChart3 className="h-8 w-8 text-blue-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Total Summaries</p>
-                    <p className="text-2xl font-bold text-gray-900">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Summaries</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                       {results?.total?.toLocaleString() || '0'}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-6">
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-6 dark:bg-gray-800/70 dark:border-gray-700">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
                     <TrendingUp className="h-8 w-8 text-green-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Videos with Transcripts</p>
-                    <p className="text-2xl font-bold text-gray-900">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Videos with Transcripts</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                       {summaryStats.videos_with_transcripts?.toLocaleString() || '0'}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-6">
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-6 dark:bg-gray-800/70 dark:border-gray-700">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
                     <Bot className="h-8 w-8 text-purple-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Avg Segments/Video</p>
-                    <p className="text-2xl font-bold text-gray-900">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Segments/Video</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                       {summaryStats.average_segments_per_video?.toFixed(1) || '0'}
                     </p>
                   </div>
@@ -222,7 +222,7 @@ const SummarySearchPage: React.FC = () => {
         )}
 
         {/* Search Form */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-6 mb-8">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-6 mb-8 dark:bg-gray-800/70 dark:border-gray-700">
           <form onSubmit={handleSearch} className="space-y-4">
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -232,7 +232,7 @@ const SummarySearchPage: React.FC = () => {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="block w-full pl-12 pr-4 py-4 border border-gray-300/50 rounded-xl text-base placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300"
+                className="block w-full pl-12 pr-4 py-4 border border-gray-300/50 rounded-xl text-base placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 dark:bg-gray-800/70 dark:border-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
                 placeholder="Search summaries by content, video title, or description..."
               />
             </div>
@@ -314,7 +314,7 @@ const SummarySearchPage: React.FC = () => {
             {/* Results List */}
             <div className="space-y-6 mb-8">
               {results.results.map((summary) => (
-                <div key={summary.id} className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-6 hover:shadow-xl hover:border-blue-300/50 transition-all duration-300">
+                <div key={summary.id} className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-6 hover:shadow-xl hover:border-blue-300/50 transition-all duration-300 dark:bg-gray-800/70 dark:border-gray-700 dark:hover:border-blue-400/30">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       {/* Video Title */}
@@ -330,7 +330,7 @@ const SummarySearchPage: React.FC = () => {
                       </div>
 
                       {/* Metadata */}
-                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-3">
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-3 dark:text-gray-400">
                         <div className="flex items-center space-x-1">
                           <Calendar className="h-4 w-4" />
                           <span>{formatDate(summary.video_date)}</span>
@@ -352,7 +352,7 @@ const SummarySearchPage: React.FC = () => {
 
                   {/* Summary Content */}
                   <div className="prose prose-sm max-w-none">
-                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
                       <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">
                         {highlightText(summary.summary_text, query)}
                       </div>
@@ -365,7 +365,7 @@ const SummarySearchPage: React.FC = () => {
             {/* Pagination */}
             {results.total_pages > 1 && (
               <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-gray-500 dark:text-gray-400">
                   Page {results.page} of {results.total_pages}
                 </div>
                 <div className="flex items-center space-x-2">

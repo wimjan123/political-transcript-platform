@@ -75,10 +75,10 @@ const AnalyticsPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center dark:bg-gray-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading analytics...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading analytics...</p>
         </div>
       </div>
     );
@@ -86,7 +86,7 @@ const AnalyticsPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center dark:bg-gray-900">
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
           <button
@@ -101,26 +101,26 @@ const AnalyticsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-10">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent mb-3">Analytics Dashboard</h1>
-          <p className="text-lg text-gray-600 leading-relaxed">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent mb-3 dark:from-white dark:via-blue-200 dark:to-purple-200">Analytics Dashboard</h1>
+          <p className="text-lg text-gray-600 leading-relaxed dark:text-gray-300">
             Comprehensive analytics and insights from political transcript data
           </p>
         </div>
 
         {/* Tab Navigation */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
-          <div className="border-b border-gray-200">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8 dark:bg-gray-800 dark:border-gray-700">
+          <div className="border-b border-gray-200 dark:border-gray-700">
             <nav className="flex space-x-8" aria-label="Tabs">
               <button
                 onClick={() => setActiveTab('content')}
                 className={`py-4 px-6 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === 'content'
                     ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-300 dark:hover:text-gray-200 dark:hover:border-gray-600'
                 }`}
               >
                 <BarChart3 className="h-4 w-4 inline mr-2" />
@@ -131,7 +131,7 @@ const AnalyticsPage: React.FC = () => {
                 className={`py-4 px-6 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === 'conversational'
                     ? 'border-purple-500 text-purple-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-300 dark:hover:text-gray-200 dark:hover:border-gray-600'
                 }`}
               >
                 <Bot className="h-4 w-4 inline mr-2" />
@@ -156,7 +156,7 @@ const AnalyticsPage: React.FC = () => {
             {/* KPI Stats */}
             {dashboardData && (
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-                <div className="bg-white overflow-hidden shadow rounded-lg">
+                <div className="bg-white overflow-hidden shadow rounded-lg dark:bg-gray-800">
                   <div className="p-5">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
@@ -164,10 +164,10 @@ const AnalyticsPage: React.FC = () => {
                       </div>
                       <div className="ml-5 w-0 flex-1">
                         <dl>
-                          <dt className="text-sm font-medium text-gray-500 truncate">
+                          <dt className="text-sm font-medium text-gray-500 truncate dark:text-gray-400">
                             Total Videos
                           </dt>
-                          <dd className="text-lg font-medium text-gray-900">
+                          <dd className="text-lg font-medium text-gray-900 dark:text-gray-100">
                             {formatNumber(dashboardData.kpi_stats.total_videos)}
                           </dd>
                         </dl>
@@ -176,7 +176,7 @@ const AnalyticsPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="bg-white overflow-hidden shadow rounded-lg">
+                <div className="bg-white overflow-hidden shadow rounded-lg dark:bg-gray-800">
                   <div className="p-5">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
@@ -184,10 +184,10 @@ const AnalyticsPage: React.FC = () => {
                       </div>
                       <div className="ml-5 w-0 flex-1">
                         <dl>
-                          <dt className="text-sm font-medium text-gray-500 truncate">
+                          <dt className="text-sm font-medium text-gray-500 truncate dark:text-gray-400">
                             Transcript Segments
                           </dt>
-                          <dd className="text-lg font-medium text-gray-900">
+                          <dd className="text-lg font-medium text-gray-900 dark:text-gray-100">
                             {formatNumber(dashboardData.kpi_stats.total_segments)}
                           </dd>
                         </dl>
@@ -196,7 +196,7 @@ const AnalyticsPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="bg-white overflow-hidden shadow rounded-lg">
+                <div className="bg-white overflow-hidden shadow rounded-lg dark:bg-gray-800">
                   <div className="p-5">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
@@ -204,10 +204,10 @@ const AnalyticsPage: React.FC = () => {
                       </div>
                       <div className="ml-5 w-0 flex-1">
                         <dl>
-                          <dt className="text-sm font-medium text-gray-500 truncate">
+                          <dt className="text-sm font-medium text-gray-500 truncate dark:text-gray-400">
                             Speakers
                           </dt>
-                          <dd className="text-lg font-medium text-gray-900">
+                          <dd className="text-lg font-medium text-gray-900 dark:text-gray-100">
                             {formatNumber(dashboardData.kpi_stats.total_speakers)}
                           </dd>
                         </dl>
@@ -216,7 +216,7 @@ const AnalyticsPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="bg-white overflow-hidden shadow rounded-lg">
+                <div className="bg-white overflow-hidden shadow rounded-lg dark:bg-gray-800">
                   <div className="p-5">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
@@ -224,10 +224,10 @@ const AnalyticsPage: React.FC = () => {
                       </div>
                       <div className="ml-5 w-0 flex-1">
                         <dl>
-                          <dt className="text-sm font-medium text-gray-500 truncate">
+                          <dt className="text-sm font-medium text-gray-500 truncate dark:text-gray-400">
                             Avg Reading Level
                           </dt>
-                          <dd className="text-lg font-medium text-gray-900">
+                          <dd className="text-lg font-medium text-gray-900 dark:text-gray-100">
                             {dashboardData.readability_metrics.avg_grade_level.toFixed(1)}
                           </dd>
                         </dl>
@@ -275,10 +275,10 @@ const AnalyticsPage: React.FC = () => {
               </div>
 
               {/* Sentiment by Speaker */}
-              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
                 <div className="flex items-center mb-4">
                   <TrendingUp className="h-5 w-5 text-gray-400 mr-2" />
-                  <h3 className="text-lg font-medium text-gray-900">Top Sentiment by Speaker</h3>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Top Sentiment by Speaker</h3>
                 </div>
                 
                 {isLoading ? (
@@ -290,10 +290,10 @@ const AnalyticsPage: React.FC = () => {
                     {dashboardData?.sentiment_by_speaker.slice(0, 8).map((item, index) => (
                       <div key={item.speaker} className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
+                          <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">
                             {item.speaker}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
                             {item.segments} segments
                           </p>
                         </div>

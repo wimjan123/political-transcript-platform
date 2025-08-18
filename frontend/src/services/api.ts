@@ -441,10 +441,10 @@ export const formatDateTime = (dateString: string): string => {
 };
 
 export const getSentimentColor = (score?: number | null): string => {
-  if (score === undefined || score === null) return 'text-gray-500';
-  if (score > 0.1) return 'text-green-600';
-  if (score < -0.1) return 'text-red-600';
-  return 'text-gray-600';
+  if (score === undefined || score === null) return 'text-gray-500 dark:text-gray-400';
+  if (score > 0.1) return 'text-green-600 dark:text-green-400';
+  if (score < -0.1) return 'text-red-600 dark:text-red-400';
+  return 'text-gray-600 dark:text-gray-300';
 };
 
 export const getSentimentLabel = (score?: number | null): string => {

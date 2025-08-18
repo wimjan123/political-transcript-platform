@@ -171,33 +171,33 @@ const VideosPage: React.FC = () => {
 
   if (isLoading && videos.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center dark:bg-gray-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading videos...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading videos...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-10">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent mb-3">Video Library</h1>
-          <p className="text-lg text-gray-600 leading-relaxed">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent mb-3 dark:from-white dark:via-blue-200 dark:to-purple-200">Video Library</h1>
+          <p className="text-lg text-gray-600 leading-relaxed dark:text-gray-300">
             Browse and explore the complete collection of political video transcripts
           </p>
         </div>
 
         {/* Filters */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-6 mb-8">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-6 mb-8 dark:bg-gray-800/70 dark:border-gray-700">
           {/* Filter Toggle */}
           <div className="flex items-center justify-between mb-4">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+              className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
             >
               <Filter className="h-4 w-4 mr-2" />
               Filters
@@ -214,7 +214,7 @@ const VideosPage: React.FC = () => {
                 </button>
               ) : (
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-gray-600 dark:text-gray-300">
                     {selectedVideoIds.size} selected
                   </span>
                   <button
@@ -225,7 +225,7 @@ const VideosPage: React.FC = () => {
                   </button>
                   <button
                     onClick={clearSelection}
-                    className="text-sm text-gray-600 hover:text-gray-700"
+                    className="text-sm text-gray-600 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200"
                   >
                     Clear
                   </button>
@@ -261,7 +261,7 @@ const VideosPage: React.FC = () => {
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(parseInt(e.target.value))}
-                className="text-sm border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                className="text-sm border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
               >
                 <option value="10">10 per page</option>
                 <option value="25">25 per page</option>
@@ -273,7 +273,7 @@ const VideosPage: React.FC = () => {
 
           {/* Filter Form */}
           {showFilters && (
-            <div className="pt-4 border-t border-gray-200 space-y-4">
+            <div className="pt-4 border-t border-gray-200 space-y-4 dark:border-gray-700">
               {/* Search and Source */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -359,7 +359,7 @@ const VideosPage: React.FC = () => {
               <div className="flex justify-between pt-4">
                 <button
                   onClick={clearFilters}
-                  className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                  className="text-sm text-gray-500 hover:text-gray-700 transition-colors dark:text-gray-400 dark:hover:text-gray-300"
                 >
                   Clear all filters
                 </button>
@@ -646,21 +646,21 @@ const VideosPage: React.FC = () => {
         {/* Pagination */}
         {videos.length > 0 && (
           <div className="flex items-center justify-between mt-8">
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
               Page {currentPage} {totalPages > currentPage && `of ${totalPages}+`}
             </div>
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
               >
                 Previous
               </button>
               <button
                 onClick={() => setCurrentPage(currentPage + 1)}
                 disabled={videos.length < pageSize}
-                className="px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
               >
                 Next
               </button>

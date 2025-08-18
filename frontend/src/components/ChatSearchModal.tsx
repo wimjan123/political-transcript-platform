@@ -20,11 +20,11 @@ const ChatSearchModal: React.FC<ChatSearchModalProps> = ({ isOpen, onClose }) =>
       
       {/* Modal */}
       <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[80vh] overflow-hidden">
+        <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[80vh] overflow-hidden dark:bg-gray-800">
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 z-10 text-gray-400 hover:text-gray-600 transition-colors bg-white rounded-full p-1 shadow-sm"
+            className="absolute top-4 right-4 z-10 text-gray-400 hover:text-gray-600 transition-colors bg-white rounded-full p-1 shadow-sm dark:bg-gray-700 dark:hover:text-gray-300"
           >
             <X className="h-5 w-5" />
           </button>

@@ -192,17 +192,17 @@ const DatabaseStatusPage: React.FC = () => {
 
   if (loading && !importStatus && !databaseStats && !embeddingStatus) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-gray-50 py-8 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col items-center justify-center py-20">
-            <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
+            <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
               <div className="flex items-center justify-center mb-4">
                 <div className="bg-blue-100 p-4 rounded-full">
                   <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
                 </div>
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 text-center mb-2">Loading Database Status</h2>
-              <p className="text-gray-600 text-center">Please wait while we fetch the latest information...</p>
+              <h2 className="text-xl font-semibold text-gray-900 text-center mb-2 dark:text-gray-100">Loading Database Status</h2>
+              <p className="text-gray-600 text-center dark:text-gray-300">Please wait while we fetch the latest information...</p>
             </div>
           </div>
         </div>
@@ -211,32 +211,32 @@ const DatabaseStatusPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-8 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center dark:text-gray-100">
                 <div className="bg-blue-100 p-2 sm:p-3 rounded-xl mr-3 sm:mr-4">
                   <Database className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
                 </div>
                 <div>
                   <span>Database Status</span>
                   {lastUpdated && (
-                    <div className="text-xs sm:text-sm text-gray-500 font-normal mt-1 sm:hidden">
+                    <div className="text-xs sm:text-sm text-gray-500 font-normal mt-1 sm:hidden dark:text-gray-400">
                       Updated: {lastUpdated.toLocaleTimeString()}
                     </div>
                   )}
                 </div>
               </h1>
-              <p className="text-gray-600 mt-2 text-sm sm:text-base">
+              <p className="text-gray-600 mt-2 text-sm sm:text-base dark:text-gray-300">
                 Monitor import progress and database statistics
               </p>
             </div>
             <div className="flex items-center justify-between sm:justify-end gap-4">
               {lastUpdated && (
-                <span className="hidden sm:block text-sm text-gray-500">
+                <span className="hidden sm:block text-sm text-gray-500 dark:text-gray-400">
                   Last updated: {lastUpdated.toLocaleTimeString()}
                 </span>
               )}
@@ -253,55 +253,55 @@ const DatabaseStatusPage: React.FC = () => {
         </div>
 
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm">
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm dark:bg-red-900/30 dark:border-red-800">
             <div className="flex">
               <div className="bg-red-100 p-2 rounded-lg mr-3 flex-shrink-0">
                 <AlertTriangle className="h-5 w-5 text-red-600" />
               </div>
               <div>
-                <h3 className="text-sm font-medium text-red-800 mb-1">Error</h3>
-                <p className="text-sm text-red-700">{error}</p>
+                <h3 className="text-sm font-medium text-red-800 mb-1 dark:text-red-300">Error</h3>
+                <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
               </div>
             </div>
           </div>
         )}
 
         {actionMessage && (
-          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4 shadow-sm">
+          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4 shadow-sm dark:bg-blue-900/20 dark:border-blue-800">
             <div className="flex">
               <div className="bg-blue-100 p-2 rounded-lg mr-3 flex-shrink-0">
                 <CheckCircle className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <h3 className="text-sm font-medium text-blue-800 mb-1">Success</h3>
-                <p className="text-sm text-blue-700">{actionMessage}</p>
+                <h3 className="text-sm font-medium text-blue-800 mb-1 dark:text-blue-300">Success</h3>
+                <p className="text-sm text-blue-700 dark:text-blue-300">{actionMessage}</p>
               </div>
             </div>
           </div>
         )}
 
         {/* Database Controls */}
-        <div className="bg-white shadow-lg rounded-xl mb-8 border border-gray-100">
-          <div className="px-4 sm:px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-xl border-b border-gray-100">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center">
+        <div className="bg-white shadow-lg rounded-xl mb-8 border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+          <div className="px-4 sm:px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-xl border-b border-gray-100 dark:from-gray-800 dark:to-gray-800 dark:border-gray-700">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center dark:text-gray-100">
               <div className="bg-blue-100 p-2 rounded-lg mr-3">
                 <FileText className="h-5 w-5 text-blue-600" />
               </div>
               Database Controls
             </h2>
-            <p className="text-sm text-gray-600 mt-1">Manage HTML imports and embedding generation</p>
+            <p className="text-sm text-gray-600 mt-1 dark:text-gray-300">Manage HTML imports and embedding generation</p>
           </div>
           <div className="p-4 sm:p-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* HTML Import Controls */}
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 sm:p-5 rounded-xl border border-green-100">
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 sm:p-5 rounded-xl border border-green-100 dark:from-green-900/20 dark:to-emerald-900/20 dark:border-green-900/30">
                 <div className="flex items-center mb-4">
                   <div className="bg-green-100 p-2 rounded-lg mr-3">
                     <Upload className="h-5 w-5 text-green-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">HTML Import</h3>
-                    <p className="text-xs text-gray-600">Process transcript files</p>
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">HTML Import</h3>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Process transcript files</p>
                   </div>
                 </div>
                 <div className="space-y-3">
@@ -343,14 +343,14 @@ const DatabaseStatusPage: React.FC = () => {
               </div>
 
               {/* Embedding Controls */}
-              <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-4 sm:p-5 rounded-xl border border-purple-100">
+              <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-4 sm:p-5 rounded-xl border border-purple-100 dark:from-purple-900/20 dark:to-indigo-900/20 dark:border-purple-900/30">
                 <div className="flex items-center mb-4">
                   <div className="bg-purple-100 p-2 rounded-lg mr-3">
                     <Brain className="h-5 w-5 text-purple-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">Embeddings</h3>
-                    <p className="text-xs text-gray-600">Semantic search vectors</p>
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">Embeddings</h3>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Semantic search vectors</p>
                   </div>
                 </div>
                 <div className="space-y-3">

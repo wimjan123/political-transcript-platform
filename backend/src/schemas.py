@@ -280,3 +280,74 @@ class ImportStatusResponse(BaseModel):
     current_file: Optional[str]
     errors: List[str]
     estimated_completion: Optional[datetime]
+
+
+class SummaryPresetResponse(BaseModel):
+    """Summary preset response schema"""
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: int
+    name: str
+    description: Optional[str]
+    custom_prompt: str
+    provider: str
+    model: str
+    bullet_points: int
+    is_default: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class SummaryPresetCreateRequest(BaseModel):
+    """Summary preset creation request schema"""
+    name: str
+    description: Optional[str] = None
+    custom_prompt: str
+    provider: str = "openrouter"
+    model: str = "deepseek/deepseek-chat-v3-0324:free"
+    bullet_points: int = 4
+    is_default: bool = False
+
+
+class SummaryPresetUpdateRequest(BaseModel):
+    """Summary preset update request schema"""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    custom_prompt: Optional[str] = None
+    provider: Optional[str] = None
+    model: Optional[str] = None
+    bullet_points: Optional[int] = None
+    is_default: Optional[bool] = None
+
+
+class VideoSummaryResponse(BaseModel):
+    """Video summary response schema"""
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: int
+    video_id: int
+    name: str
+    preset_id: Optional[int]
+    summary_text: str
+    bullet_points: int
+    provider: str
+    model: str
+    custom_prompt: Optional[str]
+    summary_metadata: Optional[Dict[str, Any]]
+    generated_at: datetime
+    created_at: datetime
+    updated_at: datetime
+    
+    # Related data
+    preset: Optional[SummaryPresetResponse] = None
+
+
+class VideoSummaryCreateRequest(BaseModel):
+    """Video summary creation request schema"""
+    video_id: int
+    name: str = "Default Summary"
+    preset_id: Optional[int] = None
+    custom_prompt: Optional[str] = None
+    provider: Optional[str] = None
+    model: Optional[str] = None
+    bullet_points: Optional[int] = None
