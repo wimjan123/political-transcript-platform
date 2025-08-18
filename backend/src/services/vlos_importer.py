@@ -6,6 +6,7 @@ same patterns as the HTML ImportService (progress callback, async DB).
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
@@ -22,12 +23,16 @@ logger = logging.getLogger(__name__)
 
 
 class VLOSImportService:
-    def __init__(self) -> None:
+    def __init__(self, max_concurrent_files: int = 4) -> None:
         self.parser = VLOSXMLParser()
+        self.max_concurrent_files = max_concurrent_files
+        self.semaphore = asyncio.Semaphore(max_concurrent_files)
         self.engine = create_async_engine(
             settings.database_url.replace("postgresql://", "postgresql+asyncpg://"),
             echo=False,
             pool_pre_ping=True,
+            pool_size=max_concurrent_files + 5,  # Extra connections for safety
+            max_overflow=max_concurrent_files,
         )
         self.SessionLocal = async_sessionmaker(self.engine, class_=AsyncSession, expire_on_commit=False)
 
@@ -42,20 +47,38 @@ class VLOSImportService:
         processed = 0
         failed = 0
         errors: List[str] = []
-
-        for i, file_path in enumerate(xml_files):
-            if progress_callback:
-                progress_callback(i, total, str(file_path), errors)
-            try:
-                result = await self.import_xml_file(str(file_path), force_reimport=force_reimport)
-                if result.get("success"):
+        
+        # Process files in batches for better progress reporting
+        batch_size = self.max_concurrent_files * 3  # Process 3 batches worth at a time
+        
+        for batch_start in range(0, total, batch_size):
+            batch_end = min(batch_start + batch_size, total)
+            batch_files = xml_files[batch_start:batch_end]
+            
+            # Create tasks for concurrent processing
+            tasks = [
+                self._import_xml_file_with_semaphore(str(file_path), force_reimport)
+                for file_path in batch_files
+            ]
+            
+            # Execute batch concurrently
+            batch_results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            # Process results and update counters
+            for i, (file_path, result) in enumerate(zip(batch_files, batch_results)):
+                current_index = batch_start + i
+                
+                if progress_callback:
+                    progress_callback(current_index, total, str(file_path), errors)
+                
+                if isinstance(result, Exception):
+                    failed += 1
+                    errors.append(f"{Path(file_path).name}: {str(result)}")
+                elif result.get("success"):
                     processed += 1
                 else:
                     failed += 1
                     errors.append(f"{Path(file_path).name}: {result.get('error','Unknown error')}")
-            except Exception as e:
-                failed += 1
-                errors.append(f"{Path(file_path).name}: {e}")
 
         if progress_callback:
             progress_callback(total, total, "", errors)
@@ -66,6 +89,11 @@ class VLOSImportService:
             "total_failed": failed,
             "errors": errors,
         }
+
+    async def _import_xml_file_with_semaphore(self, file_path: str, force_reimport: bool = False) -> Dict[str, Any]:
+        """Import a single XML file with semaphore-based concurrency control"""
+        async with self.semaphore:
+            return await self.import_xml_file(file_path, force_reimport)
 
     async def import_xml_file(self, file_path: str, force_reimport: bool = False) -> Dict[str, Any]:
         try:

@@ -22,12 +22,16 @@ logger = logging.getLogger(__name__)
 class ImportService:
     """Service for importing HTML transcript files into the database"""
     
-    def __init__(self):
+    def __init__(self, max_concurrent_files: int = 4):
         self.parser = TranscriptHTMLParser()
+        self.max_concurrent_files = max_concurrent_files
+        self.semaphore = asyncio.Semaphore(max_concurrent_files)
         self.engine = create_async_engine(
             settings.database_url.replace("postgresql://", "postgresql+asyncpg://"),
             echo=False,
-            pool_pre_ping=True
+            pool_pre_ping=True,
+            pool_size=max_concurrent_files + 5,  # Extra connections for safety
+            max_overflow=max_concurrent_files,
         )
         self.SessionLocal = async_sessionmaker(
             self.engine,
@@ -60,25 +64,41 @@ class ImportService:
         failed_files = 0
         errors = []
         
-        logger.info(f"Starting import of {total_files} HTML files from {html_dir}")
+        logger.info(f"Starting import of {total_files} HTML files from {html_dir} with {self.max_concurrent_files} concurrent workers")
         
-        for i, file_path in enumerate(html_files):
-            try:
-                if progress_callback:
-                    progress_callback(i, total_files, str(file_path), errors)
+        # Process files in batches for better progress reporting
+        batch_size = self.max_concurrent_files * 3  # Process 3 batches worth at a time
+        
+        for batch_start in range(0, total_files, batch_size):
+            batch_end = min(batch_start + batch_size, total_files)
+            batch_files = html_files[batch_start:batch_end]
+            
+            # Create tasks for concurrent processing
+            tasks = [
+                self._import_html_file_with_semaphore(str(file_path), force_reimport)
+                for file_path in batch_files
+            ]
+            
+            # Execute batch concurrently
+            batch_results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            # Process results and update counters
+            for i, (file_path, result) in enumerate(zip(batch_files, batch_results)):
+                current_index = batch_start + i
                 
-                result = await self.import_html_file(str(file_path), force_reimport)
-                if result["success"]:
+                if progress_callback:
+                    progress_callback(current_index, total_files, str(file_path), errors)
+                
+                if isinstance(result, Exception):
+                    failed_files += 1
+                    error_msg = f"{file_path.name}: {str(result)}"
+                    errors.append(error_msg)
+                    logger.error(f"Error importing {file_path}: {str(result)}")
+                elif result.get("success"):
                     processed_files += 1
                 else:
                     failed_files += 1
                     errors.append(f"{file_path.name}: {result.get('error', 'Unknown error')}")
-                
-            except Exception as e:
-                failed_files += 1
-                error_msg = f"{file_path.name}: {str(e)}"
-                errors.append(error_msg)
-                logger.error(f"Error importing {file_path}: {str(e)}")
         
         # Final progress update
         if progress_callback:
@@ -108,6 +128,11 @@ class ImportService:
             "errors": errors,
             "embedding_stats": embedding_stats
         }
+
+    async def _import_html_file_with_semaphore(self, file_path: str, force_reimport: bool = False) -> Dict[str, Any]:
+        """Import a single HTML file with semaphore-based concurrency control"""
+        async with self.semaphore:
+            return await self.import_html_file(file_path, force_reimport)
     
     async def import_html_file(self, file_path: str, force_reimport: bool = False) -> Dict[str, Any]:
         """

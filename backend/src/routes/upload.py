@@ -38,6 +38,7 @@ async def start_html_import(
     background_tasks: BackgroundTasks,
     source_dir: Optional[str] = Query(None, description="Source directory (defaults to config)"),
     force_reimport: bool = Query(False, description="Force reimport of existing files"),
+    max_concurrent: int = Query(4, ge=1, le=10, description="Max concurrent file processing (1-10)"),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -71,7 +72,8 @@ async def start_html_import(
         background_tasks.add_task(
             run_html_import,
             html_dir,
-            force_reimport
+            force_reimport,
+            max_concurrent
         )
         
         return {
@@ -86,7 +88,7 @@ async def start_html_import(
         raise HTTPException(status_code=500, detail=f"Error starting import: {str(e)}")
 
 
-async def run_html_import(html_dir: str, force_reimport: bool = False):
+async def run_html_import(html_dir: str, force_reimport: bool = False, max_concurrent: int = 4):
     """
     Background task to import HTML files
     """
@@ -94,7 +96,7 @@ async def run_html_import(html_dir: str, force_reimport: bool = False):
         import_status["status"] = "running"
         
         # Create import service
-        import_service = ImportService()
+        import_service = ImportService(max_concurrent_files=max_concurrent)
         
         # Set up progress callback
         def progress_callback(current: int, total: int, current_file: str, errors: list):
@@ -135,6 +137,7 @@ async def start_vlos_xml_import(
     background_tasks: BackgroundTasks,
     source_dir: Optional[str] = Query(None, description="Source directory (defaults to XML_DATA_DIR)"),
     force_reimport: bool = Query(False, description="Force reimport of existing files"),
+    max_concurrent: int = Query(4, ge=1, le=10, description="Max concurrent file processing (1-10)"),
     db: AsyncSession = Depends(get_db),
 ):
     """Start importing Tweede Kamer VLOS XML files in the background"""
@@ -190,7 +193,7 @@ async def start_vlos_xml_import(
             "estimated_completion": None,
         })
 
-        background_tasks.add_task(run_vlos_import, xml_dir, force_reimport)
+        background_tasks.add_task(run_vlos_import, xml_dir, force_reimport, max_concurrent)
 
         return {"message": "VLOS XML import started", "status": "starting", "source_directory": xml_dir}
     except HTTPException:
@@ -199,11 +202,11 @@ async def start_vlos_xml_import(
         raise HTTPException(status_code=500, detail=f"Error starting VLOS XML import: {str(e)}")
 
 
-async def run_vlos_import(xml_dir: str, force_reimport: bool = False):
+async def run_vlos_import(xml_dir: str, force_reimport: bool = False, max_concurrent: int = 4):
     try:
         import_status["status"] = "running"
 
-        service = VLOSImportService()
+        service = VLOSImportService(max_concurrent_files=max_concurrent)
 
         def progress_callback(current: int, total: int, current_file: str, errors: list):
             import_status.update({
