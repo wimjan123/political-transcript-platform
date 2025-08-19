@@ -650,6 +650,43 @@ export const summaryAPI = {
     const response = await api.get('/api/summarization/models/info');
     return response.data;
   },
+
+  // Chat with video transcript
+  chatWithVideo: async (
+    videoId: number,
+    message: string,
+    provider?: AIProvider,
+    model?: string,
+    apiKey?: string,
+    conversationHistory?: Array<{ role: string; content: string }>,
+    includeTranscript: boolean = true
+  ): Promise<{
+    message: string;
+    conversation_id?: string;
+    metadata: {
+      video_id: number;
+      video_title: string;
+      provider_used: string;
+      model_used: string;
+      has_transcript_context: boolean;
+      transcript_length: number;
+      conversation_length: number;
+      generated_at: string;
+    };
+  }> => {
+    const payload: any = {
+      message,
+      include_transcript: includeTranscript,
+    };
+    
+    if (provider) payload.provider = provider;
+    if (model) payload.model = model;
+    if (apiKey) payload.api_key = apiKey;
+    if (conversationHistory) payload.conversation_history = conversationHistory;
+
+    const response = await api.post(`/api/summarization/video/${videoId}/chat`, payload);
+    return response.data;
+  },
 };
 
 // Convenience exports for commonly used functions

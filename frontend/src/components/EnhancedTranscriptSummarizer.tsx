@@ -136,6 +136,8 @@ const EnhancedTranscriptSummarizer: React.FC<EnhancedTranscriptSummarizerProps> 
     role: 'user' | 'assistant';
     content: string;
     timestamp: Date;
+    metadata?: any;
+    isError?: boolean;
   }>>([]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
@@ -359,24 +361,51 @@ const EnhancedTranscriptSummarizer: React.FC<EnhancedTranscriptSummarizerProps> 
       timestamp: new Date()
     };
 
+    const messageToSend = chatInput;
     setChatMessages(prev => [...prev, userMessage]);
     setChatInput('');
     setChatLoading(true);
 
     try {
-      // This would need to be implemented in the API
-      // For now, we'll simulate a response
-      setTimeout(() => {
-        const assistantMessage = {
-          role: 'assistant' as const,
-          content: `I understand you want to discuss "${chatInput}". While the chat feature is being developed, you can use the summary customization options to focus on specific topics or areas of interest.`,
-          timestamp: new Date()
-        };
-        setChatMessages(prev => [...prev, assistantMessage]);
-        setChatLoading(false);
-      }, 1000);
-    } catch (error) {
+      // Convert chat messages to API format
+      const conversationHistory = chatMessages.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+
+      // Get effective model
+      const effectiveModel = settings.model === 'custom' ? settings.customModel : settings.model;
+
+      const response = await summaryAPI.chatWithVideo(
+        videoId,
+        messageToSend,
+        settings.provider,
+        effectiveModel,
+        settings.apiKey,
+        conversationHistory,
+        true // include transcript context
+      );
+
+      const assistantMessage = {
+        role: 'assistant' as const,
+        content: response.message,
+        timestamp: new Date(),
+        metadata: response.metadata
+      };
+
+      setChatMessages(prev => [...prev, assistantMessage]);
+    } catch (error: any) {
       console.error('Chat error:', error);
+      
+      const errorMessage = {
+        role: 'assistant' as const,
+        content: `Sorry, I encountered an error: ${error.response?.data?.detail || error.message || 'Failed to process your message'}. Please check your API key and settings.`,
+        timestamp: new Date(),
+        isError: true
+      };
+      
+      setChatMessages(prev => [...prev, errorMessage]);
+    } finally {
       setChatLoading(false);
     }
   };
@@ -910,10 +939,20 @@ const EnhancedTranscriptSummarizer: React.FC<EnhancedTranscriptSummarizerProps> 
                   className={`max-w-xs px-3 py-2 rounded-lg text-sm ${
                     message.role === 'user'
                       ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-900 border border-gray-200 dark:bg-gray-600 dark:text-gray-100 dark:border-gray-500'
+                      : message.isError
+                        ? 'bg-red-50 text-red-900 border border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800'
+                        : 'bg-white text-gray-900 border border-gray-200 dark:bg-gray-600 dark:text-gray-100 dark:border-gray-500'
                   }`}
                 >
-                  {message.content}
+                  <div className="whitespace-pre-wrap">{message.content}</div>
+                  {message.metadata && !message.isError && (
+                    <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-500 text-xs text-gray-500 dark:text-gray-400">
+                      <div>Model: {message.metadata.model_used}</div>
+                      {message.metadata.has_transcript_context && (
+                        <div>Context: {Math.round(message.metadata.transcript_length / 1000)}k chars</div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

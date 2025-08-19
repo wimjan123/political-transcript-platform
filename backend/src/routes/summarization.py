@@ -34,6 +34,21 @@ class BatchSummaryRequest(BaseModel):
     bullet_points: int = Field(default=4, ge=3, le=5, description="Number of bullet points (3-5)")
 
 
+class ChatRequest(BaseModel):
+    message: str = Field(..., min_length=1, description="User message to send to AI")
+    provider: Optional[str] = Field(default="openai", description="AI provider (openai or openrouter)")
+    model: Optional[str] = Field(default="gpt-4o-mini", description="Model name/ID")
+    api_key: Optional[str] = Field(default=None, description="API key for the provider")
+    conversation_history: Optional[List[dict]] = Field(default=[], description="Previous conversation messages")
+    include_transcript: bool = Field(default=True, description="Whether to include transcript content in context")
+
+
+class ChatResponse(BaseModel):
+    message: str
+    conversation_id: Optional[str] = None
+    metadata: dict
+
+
 class SummaryResponse(BaseModel):
     video_id: int
     video_title: str
@@ -580,3 +595,41 @@ async def delete_video_summary(
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to delete summary: {str(e)}")
+
+
+@router.post("/video/{video_id}/chat", response_model=ChatResponse)
+async def chat_with_video_transcript(
+    video_id: int,
+    request: ChatRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Chat with AI about the video transcript content
+    
+    - **video_id**: ID of the video to chat about
+    - **message**: User message to send to AI
+    - **provider**: AI provider (openai or openrouter) 
+    - **model**: Model name/ID to use
+    - **api_key**: API key for the provider
+    - **conversation_history**: Previous conversation messages
+    - **include_transcript**: Whether to include transcript content in context
+    """
+    try:
+        result = await summarization_service.chat_with_transcript(
+            db=db,
+            video_id=video_id,
+            user_message=request.message,
+            provider=request.provider,
+            model=request.model,
+            api_key=request.api_key,
+            conversation_history=request.conversation_history or [],
+            include_transcript=request.include_transcript
+        )
+        return ChatResponse(**result)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        logger.error(f"Unexpected error in chat: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to process chat message: {str(e)}")

@@ -505,6 +505,158 @@ Please provide exactly {bullet_points} bullet points in this format:
         
         logger.info(f"Saved summary to cache for video {video_id}")
         return video_summary
+    
+    async def chat_with_transcript(
+        self,
+        db: AsyncSession,
+        video_id: int,
+        user_message: str,
+        provider: Optional[str] = None,
+        model: Optional[str] = None,
+        api_key: Optional[str] = None,
+        conversation_history: List[Dict[str, str]] = None,
+        include_transcript: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Chat with AI about the video transcript content
+        
+        Args:
+            db: Database session
+            video_id: ID of the video to chat about
+            user_message: User's message/question
+            provider: AI provider (openai or openrouter)
+            model: Model name/ID to use
+            api_key: API key for the provider
+            conversation_history: Previous conversation messages
+            include_transcript: Whether to include transcript content in context
+            
+        Returns:
+            Dictionary with AI response and metadata
+        """
+        if conversation_history is None:
+            conversation_history = []
+        
+        # Get video information
+        video_query = select(Video).where(Video.id == video_id)
+        video_result = await db.execute(video_query)
+        video = video_result.scalar_one_or_none()
+        
+        if not video:
+            raise ValueError(f"Video with ID {video_id} not found")
+        
+        # Get transcript content if requested
+        transcript_context = ""
+        if include_transcript:
+            segments_query = (
+                select(TranscriptSegment)
+                .where(TranscriptSegment.video_id == video_id)
+                .order_by(TranscriptSegment.video_seconds.asc().nulls_last())
+            )
+            segments_result = await db.execute(segments_query)
+            segments = segments_result.scalars().all()
+            
+            if segments:
+                transcript_context = self._combine_transcript_segments(segments)
+                # Truncate if too long to fit in context
+                if len(transcript_context) > 20000:  # Leave room for conversation and prompt
+                    transcript_context = transcript_context[:20000] + "\n\n[Transcript truncated for length]"
+        
+        # Create chat using OpenAI/OpenRouter
+        try:
+            ai_response = await self._generate_chat_response(
+                user_message, video, transcript_context, conversation_history, 
+                provider, model, api_key
+            )
+        except Exception as e:
+            logger.error(f"Failed to generate chat response for video {video_id}: {str(e)}")
+            raise
+        
+        # Create metadata
+        metadata = {
+            "video_id": video_id,
+            "video_title": video.title,
+            "provider_used": provider or "openai",
+            "model_used": model or self.model,
+            "has_transcript_context": include_transcript and bool(transcript_context),
+            "transcript_length": len(transcript_context) if transcript_context else 0,
+            "conversation_length": len(conversation_history),
+            "generated_at": datetime.utcnow().isoformat()
+        }
+        
+        return {
+            "message": ai_response,
+            "conversation_id": None,  # Could implement conversation persistence later
+            "metadata": metadata
+        }
+    
+    async def _generate_chat_response(
+        self,
+        user_message: str,
+        video: Video,
+        transcript_context: str,
+        conversation_history: List[Dict[str, str]],
+        provider: Optional[str] = None,
+        model: Optional[str] = None,
+        api_key: Optional[str] = None
+    ) -> str:
+        """Generate AI chat response"""
+        client = self._get_client(api_key, provider)
+        
+        # Build system context
+        system_content = f"""You are an AI assistant specialized in analyzing political transcripts. You have access to the full transcript of a video and can answer questions about its content.
+
+Video Information:
+- Title: {video.title}
+- Date: {video.date}
+- Format: {video.format}
+- Source: {video.source or 'Unknown'}
+
+Guidelines:
+- Answer questions based primarily on the transcript content provided
+- Be objective and factual in your responses
+- If asked about something not covered in the transcript, clearly state that
+- Provide specific quotes or references when relevant
+- Maintain a helpful and informative tone
+- If the transcript is truncated, mention this when relevant to the question"""
+
+        if transcript_context:
+            system_content += f"\n\nTranscript Content:\n{transcript_context}"
+        
+        # Build conversation messages
+        messages = [
+            {"role": "system", "content": system_content}
+        ]
+        
+        # Add conversation history
+        for msg in conversation_history:
+            if isinstance(msg, dict) and "role" in msg and "content" in msg:
+                messages.append({
+                    "role": msg["role"],
+                    "content": msg["content"]
+                })
+        
+        # Add current user message
+        messages.append({
+            "role": "user",
+            "content": user_message
+        })
+        
+        try:
+            effective_model = model or self.model
+            logger.info(f"Making chat API call with model: {effective_model}")
+            
+            response = await client.chat.completions.create(
+                model=effective_model,
+                messages=messages,
+                max_tokens=1000,  # Allow longer responses for chat
+                temperature=0.7   # Slightly higher temperature for more conversational responses
+            )
+            
+            return response.choices[0].message.content.strip()
+            
+        except Exception as e:
+            logger.error(f"API error during chat: {str(e)}")
+            raise
 
 
 # Global summarization service instance
