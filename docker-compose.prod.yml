@@ -68,7 +68,7 @@ services:
     container_name: political_transcripts_web_prod
     environment:
       REACT_APP_API_URL: ${REACT_APP_API_URL:-}
-      REACT_APP_TITLE: ${REACT_APP_TITLE:-Political Transcript Search}
+      REACT_APP_TITLE: ${REACT_APP_TITLE:-PoliBase}
     networks:
       - app_network
       - pangolin

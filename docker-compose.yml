@@ -89,7 +89,7 @@ services:
     environment:
       # Use relative URLs in dev; CRA proxy will route to the API container
       REACT_APP_API_URL: ${REACT_APP_API_URL:-}
-      REACT_APP_TITLE: ${REACT_APP_TITLE:-Political Transcript Search}
+      REACT_APP_TITLE: ${REACT_APP_TITLE:-PoliBase}
       DANGEROUSLY_DISABLE_HOST_CHECK: "true"
       HOST: "0.0.0.0"
     volumes:
