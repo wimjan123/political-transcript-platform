@@ -215,18 +215,18 @@ const IngestPage: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
                 YouTube URL *
               </label>
-              <div className="flex space-x-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="url"
                   value={youtubeUrl}
                   onChange={(e) => setYoutubeUrl(e.target.value)}
                   placeholder="https://www.youtube.com/watch?v=..."
-                  className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                  className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                 />
                 <button
                   onClick={handleGetVideoInfo}
                   disabled={!youtubeUrl.trim() || videoInfoLoading}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+                  className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 w-full sm:w-auto"
                 >
                   <Eye className={`h-4 w-4 mr-1 ${videoInfoLoading ? 'animate-spin' : ''}`} />
                   {videoInfoLoading ? 'Loading...' : 'Preview'}
@@ -241,7 +241,7 @@ const IngestPage: React.FC = () => {
             {videoInfo && (
               <div className="bg-gray-50 rounded-lg p-4 dark:bg-gray-800">
                 <h3 className="text-sm font-medium text-gray-900 mb-3 dark:text-gray-100">Video Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <div>
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Title:</span>
@@ -272,18 +272,18 @@ const IngestPage: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
                 OpenAI API Key *
               </label>
-              <div className="flex space-x-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="password"
                   value={openaiApiKey}
                   onChange={(e) => setOpenaiApiKey(e.target.value)}
                   placeholder="sk-..."
-                  className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                  className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                 />
                 <button
                   onClick={handleTestApiKey}
                   disabled={!openaiApiKey.trim() || apiKeyTesting}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+                  className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 w-full sm:w-auto"
                 >
                   <Key className={`h-4 w-4 mr-1 ${apiKeyTesting ? 'animate-spin' : ''}`} />
                   {apiKeyTesting ? 'Testing...' : 'Test'}
@@ -307,7 +307,7 @@ const IngestPage: React.FC = () => {
             </div>
 
             {/* Optional Overrides */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
                   Title Override (optional)
@@ -317,7 +317,7 @@ const IngestPage: React.FC = () => {
                   value={titleOverride}
                   onChange={(e) => setTitleOverride(e.target.value)}
                   placeholder="Custom title for the video"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                 />
               </div>
               
@@ -330,17 +330,17 @@ const IngestPage: React.FC = () => {
                   value={speakerOverride}
                   onChange={(e) => setSpeakerOverride(e.target.value)}
                   placeholder="Custom speaker name"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                 />
               </div>
             </div>
 
             {/* Submit Button */}
-            <div className="flex justify-end">
+            <div className="flex justify-center sm:justify-end">
               <button
                 onClick={handleStartIngestion}
                 disabled={!youtubeUrl.trim() || !openaiApiKey.trim() || loading || !apiKeyStatus?.valid}
-                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+                className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 w-full sm:w-auto"
               >
                 <Play className={`h-5 w-5 mr-2 ${loading ? 'animate-spin' : ''}`} />
                 {loading ? 'Starting Processing...' : 'Start Processing'}
@@ -351,9 +351,9 @@ const IngestPage: React.FC = () => {
 
         {/* Processing Status */}
         {Object.keys(processingStatuses).length > 0 && (
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-medium text-gray-900 flex items-center">
+          <div className="bg-white shadow rounded-lg dark:bg-gray-800 dark:border-gray-700">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-medium text-gray-900 flex items-center dark:text-gray-100">
                 <Database className="h-5 w-5 mr-2 text-blue-600" />
                 Processing Status
               </h2>
@@ -435,12 +435,12 @@ const IngestPage: React.FC = () => {
         )}
         
         {/* Info Panel */}
-        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6 dark:bg-blue-900/30 dark:border-blue-800">
           <div className="flex items-start">
             <Zap className="h-6 w-6 text-blue-600 mt-0.5 mr-3" />
             <div>
-              <h3 className="text-sm font-medium text-blue-900 mb-2">How it works</h3>
-              <ul className="text-sm text-blue-800 space-y-1">
+              <h3 className="text-sm font-medium text-blue-900 mb-2 dark:text-blue-200">How it works</h3>
+              <ul className="text-sm text-blue-800 space-y-1 dark:text-blue-300">
                 <li>• Paste a YouTube URL and we'll extract the video metadata</li>
                 <li>• Provide your OpenAI API key for transcription with Whisper</li>
                 <li>• The video will be downloaded, transcribed, and processed</li>

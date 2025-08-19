@@ -114,10 +114,10 @@ const AnalyticsPage: React.FC = () => {
         {/* Tab Navigation */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8 dark:bg-gray-800 dark:border-gray-700">
           <div className="border-b border-gray-200 dark:border-gray-700">
-            <nav className="flex space-x-8" aria-label="Tabs">
+            <nav className="flex flex-col sm:flex-row sm:space-x-8" aria-label="Tabs">
               <button
                 onClick={() => setActiveTab('content')}
-                className={`py-4 px-6 text-sm font-medium border-b-2 transition-colors ${
+                className={`py-4 px-4 sm:px-6 text-sm font-medium border-b-2 sm:border-r-0 transition-colors ${
                   activeTab === 'content'
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-300 dark:hover:text-gray-200 dark:hover:border-gray-600'
@@ -128,7 +128,7 @@ const AnalyticsPage: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveTab('conversational')}
-                className={`py-4 px-6 text-sm font-medium border-b-2 transition-colors ${
+                className={`py-4 px-4 sm:px-6 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === 'conversational'
                     ? 'border-purple-500 text-purple-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-300 dark:hover:text-gray-200 dark:hover:border-gray-600'
@@ -155,7 +155,7 @@ const AnalyticsPage: React.FC = () => {
 
             {/* KPI Stats */}
             {dashboardData && (
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
                 <div className="bg-white overflow-hidden shadow rounded-lg dark:bg-gray-800">
                   <div className="p-5">
                     <div className="flex items-center">
@@ -239,7 +239,7 @@ const AnalyticsPage: React.FC = () => {
             )}
 
             {/* Main Dashboard Widgets */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-8">
               {/* Sentiment Over Time */}
               <div className="lg:col-span-2">
                 <SentimentOverTimeChart
@@ -265,7 +265,7 @@ const AnalyticsPage: React.FC = () => {
             </div>
 
             {/* Bottom Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
               {/* Content Moderation */}
               <div className="lg:col-span-2">
                 <ContentModerationSummary
@@ -275,7 +275,7 @@ const AnalyticsPage: React.FC = () => {
               </div>
 
               {/* Sentiment by Speaker */}
-              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+              <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
                 <div className="flex items-center mb-4">
                   <TrendingUp className="h-5 w-5 text-gray-400 mr-2" />
                   <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Top Sentiment by Speaker</h3>
@@ -288,7 +288,7 @@ const AnalyticsPage: React.FC = () => {
                 ) : (
                   <div className="space-y-3">
                     {dashboardData?.sentiment_by_speaker.slice(0, 8).map((item, index) => (
-                      <div key={item.speaker} className="flex items-center justify-between">
+                      <div key={item.speaker} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">
                             {item.speaker}
@@ -297,7 +297,7 @@ const AnalyticsPage: React.FC = () => {
                             {item.segments} segments
                           </p>
                         </div>
-                        <div className="ml-4">
+                        <div className="sm:ml-4">
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                             item.sentiment > 0.1 
                               ? 'bg-green-100 text-green-800' 

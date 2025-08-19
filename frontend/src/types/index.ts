@@ -598,6 +598,31 @@ export interface AISettings {
   defaultSummaryLength: 'short' | 'medium' | 'long';
   defaultSummaryFormat: 'bullet_points' | 'paragraph';
   defaultCustomPrompt: string;
+  // Enhanced customization options
+  temperature?: number;
+  maxTokens?: number;
+  topP?: number;
+  frequencyPenalty?: number;
+  presencePenalty?: number;
+  customBulletPoints?: number;
+  includeTimestamps?: boolean;
+  includeSpeakers?: boolean;
+  focusAreas?: string[];
+  excludeAreas?: string[];
+  tone?: 'neutral' | 'formal' | 'casual' | 'analytical' | 'journalistic';
+  perspective?: 'objective' | 'critical' | 'supportive' | 'balanced';
+  detailLevel?: 'high' | 'medium' | 'low';
+  language?: string;
+}
+
+export interface AIPreset {
+  id: string;
+  name: string;
+  description: string;
+  settings: Partial<AISettings>;
+  isBuiltIn?: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ModelOption {

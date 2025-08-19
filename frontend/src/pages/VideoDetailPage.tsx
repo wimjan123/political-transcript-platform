@@ -7,7 +7,7 @@ import {
 import { playlist } from '../services/playlist';
 import { videosAPI, formatDate, formatTimestamp, getSentimentColor, getSentimentLabel, downloadFile } from '../services/api';
 import VimeoEmbed from '../components/VimeoEmbed';
-import TranscriptSummarizer from '../components/TranscriptSummarizer';
+import EnhancedTranscriptSummarizer from '../components/EnhancedTranscriptSummarizer';
 import SimilarSegmentsModal from '../components/SimilarSegmentsModal';
 import type { Video as VideoType, TranscriptSegment, VideoStats } from '../types';
 
@@ -403,7 +403,7 @@ const VideoDetailPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center dark:bg-gray-900">
         <div className="text-center">
-          <p className="text-red-600 mb-4">{error || 'Video not found'}</p>
+          <p className="text-red-600 mb-4 dark:text-red-400">{error || 'Video not found'}</p>
           <Link to="/videos" className="btn btn-primary">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Videos
@@ -420,7 +420,7 @@ const VideoDetailPage: React.FC = () => {
         <div className="mb-6">
           <Link
             to="/videos"
-            className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 transition-colors"
+            className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 transition-colors dark:text-gray-400 dark:hover:text-gray-300"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Videos
@@ -428,8 +428,8 @@ const VideoDetailPage: React.FC = () => {
         </div>
 
         {/* Video Header */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-8 dark:bg-gray-800 dark:border-gray-700">
-          <div className="flex items-start justify-between">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 lg:p-8 mb-8 dark:bg-gray-800 dark:border-gray-700">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between space-y-6 lg:space-y-0">
             <div className="flex-1 min-w-0">
               {/* Vimeo Video Embed */}
               <div className="mb-6">
@@ -485,31 +485,31 @@ const VideoDetailPage: React.FC = () => {
 
               {/* Event Metadata */}
               {(video.format || video.candidate || video.place || video.record_type) && (
-                <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                  <h3 className="text-sm font-medium text-gray-900 mb-3">Event Metadata</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="bg-gray-50 rounded-lg p-4 mb-6 dark:bg-gray-700">
+                  <h3 className="text-sm font-medium text-gray-900 mb-3 dark:text-gray-100">Event Metadata</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     {video.format && (
                       <div>
                       <span className="text-gray-500 dark:text-gray-400">Format:</span>
-                        <span className="ml-2 font-medium">{video.format}</span>
+                        <span className="ml-2 font-medium dark:text-gray-200">{video.format}</span>
                       </div>
                     )}
                     {video.candidate && (
                       <div>
                       <span className="text-gray-500 dark:text-gray-400">Candidate:</span>
-                        <span className="ml-2 font-medium">{video.candidate}</span>
+                        <span className="ml-2 font-medium dark:text-gray-200">{video.candidate}</span>
                       </div>
                     )}
                     {video.place && (
                       <div>
                       <span className="text-gray-500 dark:text-gray-400">Place:</span>
-                        <span className="ml-2 font-medium">{video.place}</span>
+                        <span className="ml-2 font-medium dark:text-gray-200">{video.place}</span>
                       </div>
                     )}
                     {video.record_type && (
                       <div>
                       <span className="text-gray-500 dark:text-gray-400">Record Type:</span>
-                        <span className="ml-2 font-medium">{video.record_type}</span>
+                        <span className="ml-2 font-medium dark:text-gray-200">{video.record_type}</span>
                       </div>
                     )}
                   </div>
@@ -518,13 +518,13 @@ const VideoDetailPage: React.FC = () => {
 
               {/* Description */}
               {video.description && (
-                <p className="text-gray-700 mb-6 leading-relaxed">
+                <p className="text-gray-700 mb-6 leading-relaxed dark:text-gray-300">
                   {video.description}
                 </p>
               )}
 
               {/* Actions */}
-              <div className="flex items-center space-x-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                 <Link
                   to={`/search?video_id=${video.id}`}
                   className="btn btn-primary"
@@ -551,7 +551,7 @@ const VideoDetailPage: React.FC = () => {
                       href={vimeoWatchUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="btn btn-primary mr-4"
+                      className="btn btn-primary"
                     >
                       <Play className="h-4 w-4 mr-2" />
                       Watch Video
@@ -573,8 +573,8 @@ const VideoDetailPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex-shrink-0 ml-8">
-              <div className="text-right text-sm text-gray-500 dark:text-gray-400">
+            <div className="flex-shrink-0 lg:ml-8">
+              <div className="text-left lg:text-right text-sm text-gray-500 dark:text-gray-400">
                 <p>Added {formatDate(video.created_at)}</p>
                 <p className="mt-1">ID: {video.id}</p>
               </div>
@@ -584,7 +584,7 @@ const VideoDetailPage: React.FC = () => {
 
         {/* Statistics Cards */}
         {stats && (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         <div className="bg-white overflow-hidden shadow rounded-lg dark:bg-gray-800">
               <div className="p-5">
                 <div className="flex items-center">
@@ -674,7 +674,7 @@ const VideoDetailPage: React.FC = () => {
               <Sparkles className="h-5 w-5 mr-2" />
               AI Transcript Summarization
             </h2>
-            <TranscriptSummarizer videoId={parseInt(videoId!)} />
+            <EnhancedTranscriptSummarizer videoId={parseInt(videoId!)} />
           </div>
         )}
 
@@ -683,8 +683,8 @@ const VideoDetailPage: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8 dark:bg-gray-800 dark:border-gray-700">
             <h2 className="text-lg font-medium text-gray-900 mb-4">Speaker Breakdown</h2>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
                       Speaker
@@ -743,13 +743,13 @@ const VideoDetailPage: React.FC = () => {
         )}
 
         {/* Transcript Segments */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-medium text-gray-900">Transcript Segments</h2>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 dark:bg-gray-800 dark:border-gray-700">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Transcript Segments</h2>
             
             {/* Selection + Speaker Filter */}
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2">
                 <button
                   onClick={() => {
                     setSelectionMode((prev) => {
@@ -764,71 +764,73 @@ const VideoDetailPage: React.FC = () => {
                 </button>
 
                 {selectionMode && (
-                  <>
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <button
                       onClick={exportSelectedTxt}
                       disabled={selectedSegmentIds.size === 0}
-                      className={`btn btn-primary ${selectedSegmentIds.size === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`btn btn-primary text-sm ${selectedSegmentIds.size === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                      Export Selected (.txt)
+                      Export (.txt)
                     </button>
                     <button
                       onClick={exportSelectedClips}
                       disabled={selectedSegmentIds.size === 0}
-                      className={`btn btn-primary ${selectedSegmentIds.size === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`btn btn-primary text-sm ${selectedSegmentIds.size === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                      Export Selected (clips)
+                      Export (clips)
                     </button>
                     <button
                       onClick={exportSelectedVimeoLinks}
                       disabled={selectedSegmentIds.size === 0}
-                      className={`btn btn-outline ${selectedSegmentIds.size === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`btn btn-outline text-sm ${selectedSegmentIds.size === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                      Export Selected (Vimeo links)
+                      Export (links)
                     </button>
-                    <button onClick={selectAllVisible} className="btn btn-outline">Select Visible</button>
+                    <button onClick={selectAllVisible} className="btn btn-outline text-sm">Select Visible</button>
                     {selectedSegmentIds.size > 0 && (
                       <button onClick={clearSelection} className="text-sm text-gray-500 hover:text-gray-700">Clear ({selectedSegmentIds.size})</button>
                     )}
-                  </>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  value={speakerFilter}
+                  onChange={(e) => setSpeakerFilter(e.target.value)}
+                  placeholder="Filter by speaker..."
+                  className="text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md px-3 py-2 w-full sm:w-48 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                />
+                <input
+                  type="text"
+                  value={keywordFilter}
+                  onChange={(e) => setKeywordFilter(e.target.value)}
+                  placeholder="Filter by keyword..."
+                  className="text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md px-3 py-2 w-full sm:w-64 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                />
+                
+                {(speakerFilter || keywordFilter) && (
+                  <button
+                    onClick={() => { setSpeakerFilter(''); setKeywordFilter(''); }}
+                    className="text-sm text-gray-500 hover:text-gray-700 transition-colors self-start"
+                  >
+                    Clear
+                  </button>
                 )}
               </div>
 
               {(speakerFilter || keywordFilter) && (
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
                   Filtered by: {speakerFilter && (<><strong>{speakerFilter}</strong> (speaker)</>)} {speakerFilter && keywordFilter && '•'} {keywordFilter && (<><strong>{keywordFilter}</strong> (keyword)</>)}
                 </span>
               )}
-              
-              <input
-                type="text"
-                value={speakerFilter}
-                onChange={(e) => setSpeakerFilter(e.target.value)}
-                placeholder="Filter by speaker..."
-                className="text-sm border border-gray-300 rounded-md px-3 py-2 w-48 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
-              />
-              <input
-                type="text"
-                value={keywordFilter}
-                onChange={(e) => setKeywordFilter(e.target.value)}
-                placeholder="Filter by keyword..."
-                className="ml-2 text-sm border border-gray-300 rounded-md px-3 py-2 w-64 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
-              />
-              
-              {(speakerFilter || keywordFilter) && (
-                <button
-                  onClick={() => { setSpeakerFilter(''); setKeywordFilter(''); }}
-                  className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
-                >
-                  Clear
-                </button>
-              )}
 
               {selectionMode && (
-                <>
-                  <button onClick={addSelectedSegmentsToPlaylist} className="btn btn-outline ml-2">Add Selected (segments)</button>
-                  <button onClick={addSelectedClipsToPlaylist} className="btn btn-outline ml-2">Add Selected (clips)</button>
-                </>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button onClick={addSelectedSegmentsToPlaylist} className="btn btn-outline text-sm">Add Selected (segments)</button>
+                  <button onClick={addSelectedClipsToPlaylist} className="btn btn-outline text-sm">Add Selected (clips)</button>
+                </div>
               )}
             </div>
           </div>
@@ -839,15 +841,15 @@ const VideoDetailPage: React.FC = () => {
               <div
                 key={segment.id}
                 id={`segment-${segment.id}`}
-                className={`border rounded-lg p-4 transition-colors ${
+                className={`border rounded-lg p-3 sm:p-4 transition-colors ${
                   highlightSegmentId === segment.id
                     ? 'border-amber-300 bg-amber-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
                 {/* Segment Header */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                  <div className="flex items-center space-x-2 sm:space-x-4">
                     {selectionMode && (
                       <input
                         type="checkbox"
@@ -859,10 +861,10 @@ const VideoDetailPage: React.FC = () => {
                     )}
                     <div className="flex items-center space-x-2">
                       <User className="h-4 w-4 text-gray-400" />
-                      <span className="font-medium text-gray-900">{segment.speaker_name}</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{segment.speaker_name}</span>
                     </div>
                     
-                    <div className="flex items-center space-x-2 text-sm text-gray-500">
+                    <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
                       <Clock className="h-4 w-4" />
                       <span>{formatTimestamp(segment.video_seconds)}</span>
                       {segment.timestamp_start && segment.timestamp_end && (
@@ -871,51 +873,53 @@ const VideoDetailPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {(() => {
-                    const href = buildWatchUrlAt(segment.video_seconds);
-                    return href ? (
-                      <a
-                        href={href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary-600 hover:text-primary-700 transition-colors"
-                        title="Open video at timestamp"
-                      >
-                        <Play className="h-4 w-4" />
-                      </a>
-                    ) : (
-                      <button className="text-gray-400 cursor-not-allowed" disabled>
-                        <Play className="h-4 w-4" />
-                      </button>
-                    );
-                  })()}
-                  <button
-                    onClick={() => playlist.addSegment(segment as any)}
-                    className="p-2 text-primary-600 hover:text-primary-700 transition-colors ml-1"
-                    title="Add segment to playlist"
-                    aria-label="Add segment to playlist"
-                  >
-                    <Plus className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={() => handleFindSimilarSegments(segment)}
-                    className="p-2 text-purple-600 hover:text-purple-700 transition-colors ml-1"
-                    title="Find similar segments"
-                    aria-label="Find similar segments"
-                  >
-                    <Sparkles className="h-5 w-5" />
-                  </button>
+                  <div className="flex items-center space-x-1">
+                    {(() => {
+                      const href = buildWatchUrlAt(segment.video_seconds);
+                      return href ? (
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 text-primary-600 hover:text-primary-700 transition-colors"
+                          title="Open video at timestamp"
+                        >
+                          <Play className="h-4 w-4" />
+                        </a>
+                      ) : (
+                        <button className="p-2 text-gray-400 cursor-not-allowed" disabled>
+                          <Play className="h-4 w-4" />
+                        </button>
+                      );
+                    })()}
+                    <button
+                      onClick={() => playlist.addSegment(segment as any)}
+                      className="p-2 text-primary-600 hover:text-primary-700 transition-colors"
+                      title="Add segment to playlist"
+                      aria-label="Add segment to playlist"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleFindSimilarSegments(segment)}
+                      className="p-2 text-purple-600 hover:text-purple-700 transition-colors"
+                      title="Find similar segments"
+                      aria-label="Find similar segments"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Transcript Text */}
-                <div className="text-gray-900 mb-3 leading-relaxed">
+                <div className="text-gray-900 dark:text-gray-100 mb-3 leading-relaxed">
                   {keywordFilter ? highlightText(segment.transcript_text, keywordFilter) : segment.transcript_text}
                 </div>
 
                 {/* Enhanced Segment Metadata */}
                 <div className="space-y-3">
                   {/* Basic Info Row */}
-                  <div className="flex items-center space-x-4 text-sm text-gray-500">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-gray-500 dark:text-gray-400">
                     <span>{segment.word_count} words</span>
                     
                     {typeof segment.sentiment_loughran_score === 'number' && (

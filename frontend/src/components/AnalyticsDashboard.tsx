@@ -69,14 +69,14 @@ const AnalyticsDashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Search Analytics</h2>
           <p className="text-gray-500 dark:text-gray-400">Conversational search usage and insights</p>
         </div>
         <button
           onClick={loadData}
-          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
+          className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
         >
           <RefreshCw className="h-4 w-4 mr-2" />
           Refresh
@@ -85,8 +85,8 @@ const AnalyticsDashboard: React.FC = () => {
 
       {/* Stats Cards */}
       {currentAnalytics && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          <div className="bg-white p-4 sm:p-6 rounded-lg shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
             <div className="flex items-center">
               <MessageSquare className="h-8 w-8 text-blue-600" />
               <div className="ml-4">
@@ -96,7 +96,7 @@ const AnalyticsDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+          <div className="bg-white p-4 sm:p-6 rounded-lg shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
             <div className="flex items-center">
               <Clock className="h-8 w-8 text-green-600" />
               <div className="ml-4">
@@ -106,7 +106,7 @@ const AnalyticsDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+          <div className="bg-white p-4 sm:p-6 rounded-lg shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
             <div className="flex items-center">
               <Search className="h-8 w-8 text-purple-600" />
               <div className="ml-4">
@@ -118,7 +118,7 @@ const AnalyticsDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+          <div className="bg-white p-4 sm:p-6 rounded-lg shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
             <div className="flex items-center">
               <Globe className="h-8 w-8 text-orange-600" />
               <div className="ml-4">
@@ -132,16 +132,16 @@ const AnalyticsDashboard: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {/* Top Queries */}
         {currentAnalytics && currentAnalytics.topQueries.length > 0 && (
-          <div className="bg-white p-6 rounded-lg shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+          <div className="bg-white p-4 sm:p-6 rounded-lg shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
             <h3 className="text-lg font-medium text-gray-900 mb-4 dark:text-gray-100">Top Queries</h3>
             <div className="space-y-3">
               {currentAnalytics.topQueries.slice(0, 10).map((item, index) => (
-                <div key={index} className="flex items-center justify-between">
+                <div key={index} className="flex items-center justify-between gap-2">
                   <span className="text-sm text-gray-700 truncate flex-1 dark:text-gray-300">{item.query}</span>
-                  <span className="text-sm font-medium text-gray-900 ml-2 dark:text-gray-100">{item.count}</span>
+                  <span className="text-sm font-medium text-gray-900 flex-shrink-0 dark:text-gray-100">{item.count}</span>
                 </div>
               ))}
             </div>
@@ -150,7 +150,7 @@ const AnalyticsDashboard: React.FC = () => {
 
         {/* Search Mode Distribution */}
         {currentAnalytics && (
-          <div className="bg-white p-6 rounded-lg shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+          <div className="bg-white p-4 sm:p-6 rounded-lg shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
             <h3 className="text-lg font-medium text-gray-900 mb-4 dark:text-gray-100">Search Mode Usage</h3>
             <div className="space-y-3">
               {Object.entries(currentAnalytics.searchModeDistribution).map(([mode, count]) => (
@@ -171,10 +171,10 @@ const AnalyticsDashboard: React.FC = () => {
       </div>
 
       {/* Recent Queries */}
-      <div className="bg-white rounded-lg shadow border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Recent Conversational Queries</h3>
-          <p className="text-sm text-gray-500">
+      <div className="bg-white rounded-lg shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Recent Conversational Queries</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Last updated: {lastRefresh.toLocaleTimeString()}
           </p>
         </div>
@@ -219,13 +219,13 @@ const AnalyticsDashboard: React.FC = () => {
                       {query.searchMode}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                     {query.resultCount}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                     {query.responseTime}ms
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     {new Date(query.timestamp).toLocaleString()}
                   </td>
                 </tr>
@@ -236,8 +236,8 @@ const AnalyticsDashboard: React.FC = () => {
           {recentQueries.length === 0 && (
             <div className="text-center py-8">
               <MessageSquare className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No queries yet</h3>
-              <p className="mt-1 text-sm text-gray-500">
+              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No queries yet</h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 Start using the conversational search to see analytics here.
               </p>
             </div>

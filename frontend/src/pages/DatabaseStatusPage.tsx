@@ -323,7 +323,7 @@ const DatabaseStatusPage: React.FC = () => {
             <p className="text-sm text-gray-600 mt-1 dark:text-gray-300">Manage HTML imports and embedding generation</p>
           </div>
           <div className="p-4 sm:p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
               {/* HTML Import Controls */}
               <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 sm:p-5 rounded-xl border border-green-100 dark:from-green-900/20 dark:to-emerald-900/20 dark:border-green-900/30">
                 <div className="flex items-center mb-4">
@@ -460,7 +460,7 @@ const DatabaseStatusPage: React.FC = () => {
               </div>
 
               {/* Status Summary */}
-              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-4 sm:p-5 rounded-xl border border-blue-100">
+              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-4 sm:p-5 rounded-xl border border-blue-100 md:col-span-2 lg:col-span-1">
                 <div className="flex items-center mb-4">
                   <div className="bg-blue-100 p-2 rounded-lg mr-3">
                     <BarChart3 className="h-5 w-5 text-blue-600" />
@@ -499,10 +499,10 @@ const DatabaseStatusPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-8">
+        <div className="grid grid-cols-1 gap-6 lg:gap-8">
           {/* Import Status */}
           {importStatus && (
-            <div className="bg-white shadow rounded-lg">
+            <div className="bg-white shadow rounded-lg dark:bg-gray-800">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h2 className="text-lg font-medium text-gray-900 flex items-center">
                   {getStatusIcon(importStatus.status)}
@@ -540,7 +540,7 @@ const DatabaseStatusPage: React.FC = () => {
                   )}
 
                   {/* File Statistics */}
-                  <div className="grid grid-cols-3 gap-4 text-center">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
                     <div className="bg-gray-50 rounded-lg p-3">
                       <div className="text-2xl font-bold text-gray-900">
                         {importStatus.total_files.toLocaleString()}
@@ -640,7 +640,7 @@ const DatabaseStatusPage: React.FC = () => {
                   </div>
 
                   {/* Statistics */}
-                  <div className="grid grid-cols-3 gap-4 text-center">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
                     <div className="bg-gray-50 rounded-lg p-3">
                       <div className="text-xl font-bold text-gray-900">
                         {embeddingStatus.total_segments.toLocaleString()}
@@ -712,7 +712,7 @@ const DatabaseStatusPage: React.FC = () => {
         </div>
 
         {/* Database Statistics and other sections */}
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {/* Database Statistics */}
           {databaseStats && (
             <div className="bg-white shadow rounded-lg">
@@ -723,7 +723,7 @@ const DatabaseStatusPage: React.FC = () => {
                 </h2>
               </div>
               <div className="p-6">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Videos */}
                   <div className="bg-blue-50 rounded-lg p-4 flex items-center">
                     <div className="flex-shrink-0">
@@ -802,7 +802,7 @@ const DatabaseStatusPage: React.FC = () => {
 
         {/* Top Statistics */}
         {databaseStats && (
-          <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
             {/* Top Speakers */}
             {databaseStats.top_speakers && databaseStats.top_speakers.length > 0 && (
               <div className="bg-white shadow rounded-lg">

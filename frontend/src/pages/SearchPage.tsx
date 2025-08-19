@@ -3,13 +3,12 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { 
   Search, Filter, Download, ChevronDown, ChevronRight, 
   Calendar, User, Tag, TrendingUp, AlertCircle, Clock,
-  ExternalLink, Play, Plus, MessageSquare, Bot
+  ExternalLink, Play, Plus, MessageSquare
 } from 'lucide-react';
 import { playlist } from '../services/playlist';
 import { searchAPI, downloadFile, formatTimestamp, getSentimentColor, getSentimentLabel } from '../services/api';
 import useDebounce from '../hooks/useDebounce';
 import LanguageSelector, { SUPPORTED_LANGUAGES } from '../components/LanguageSelector';
-import ChatSearchModal from '../components/ChatSearchModal';
 import type { SearchResponse, SearchParams, FilterState, TranscriptSegment } from '../types';
 
 const SearchPage: React.FC = () => {
@@ -77,8 +76,6 @@ const SearchPage: React.FC = () => {
   const debouncedQuery = useDebounce(query, 300);
   const [isTyping, setIsTyping] = useState(false);
   
-  // Chat search modal
-  const [chatModalOpen, setChatModalOpen] = useState(false);
 
   const vimeoTimeFragment = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
@@ -696,23 +693,14 @@ const SearchPage: React.FC = () => {
                   setQuery(e.target.value);
                   setIsTyping(true);
                 }}
-                className="block w-full pl-12 pr-44 py-4 border border-gray-300/50 rounded-xl text-base placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 dark:bg-gray-800/70 dark:border-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
+                className="block w-full pl-12 pr-24 py-4 border border-gray-300/50 rounded-xl text-base placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 dark:bg-gray-800/70 dark:border-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
                 placeholder="Search transcripts, speakers, topics..."
               />
-              <div className="absolute inset-y-0 right-0 flex items-center pr-2 space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setChatModalOpen(true)}
-                  className="inline-flex items-center px-4 py-2.5 border border-purple-300 text-sm font-medium rounded-lg text-purple-700 bg-purple-50 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-200 shadow-sm hover:shadow-md"
-                  title="AI Chat Search"
-                >
-                  <Bot className="h-4 w-4 mr-1" />
-                  Chat
-                </button>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2">
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="inline-flex items-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl"
+                  className="inline-flex items-center px-3 sm:px-6 py-2.5 border border-transparent text-xs sm:text-sm font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
                   {isLoading ? (
                     <>
@@ -720,7 +708,7 @@ const SearchPage: React.FC = () => {
                       Searching...
                     </>
                   ) : (
-                    'Search'
+                    <span className="hidden sm:inline">Search</span>
                   )}
                 </button>
               </div>
@@ -795,7 +783,7 @@ const SearchPage: React.FC = () => {
               </button>
 
               {/* Quick Actions */}
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:space-x-2">
                 <select
                   value={pageSize}
                   onChange={(e) => setPageSize(parseInt(e.target.value))}
@@ -808,7 +796,7 @@ const SearchPage: React.FC = () => {
                 </select>
                 
                 {searchResults && searchResults.results.length > 0 && (
-                  <div className="flex items-center space-x-2">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:space-x-2">
                     <button
                       type="button"
                       onClick={() => setSelectionMode(!selectionMode)}
@@ -817,28 +805,32 @@ const SearchPage: React.FC = () => {
                       {selectionMode ? 'Exit Selection' : 'Select Segments'}
                     </button>
                     {selectionMode && (
-                      <>
-                        <button type="button" onClick={selectAllVisible} className="btn btn-outline">Select Page</button>
-                        <button type="button" onClick={clearSelection} className="btn btn-outline">Clear</button>
-                        <button type="button" onClick={exportSelectedTxt} className="btn btn-primary">Export Text</button>
-                        <button type="button" onClick={exportSelectedWithLinks} className="btn btn-primary">Export + Links</button>
-                      </>
+                      <div className="flex flex-wrap gap-2">
+                        <button type="button" onClick={selectAllVisible} className="btn btn-outline text-xs sm:text-sm px-2 sm:px-3">Select Page</button>
+                        <button type="button" onClick={clearSelection} className="btn btn-outline text-xs sm:text-sm px-2 sm:px-3">Clear</button>
+                        <button type="button" onClick={exportSelectedTxt} className="btn btn-primary text-xs sm:text-sm px-2 sm:px-3">Export Text</button>
+                        <button type="button" onClick={exportSelectedWithLinks} className="btn btn-primary text-xs sm:text-sm px-2 sm:px-3">Export + Links</button>
+                      </div>
                     )}
-                    <button
-                      onClick={() => handleExport('csv')}
-                      disabled={isExporting}
-                      className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 transition-colors dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      {isExporting ? 'Exporting...' : 'Export CSV'}
-                    </button>
-                    <button
-                      onClick={() => handleExport('json')}
-                      disabled={isExporting}
-                      className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 transition-colors dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
-                    >
-                      Export JSON
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleExport('csv')}
+                        disabled={isExporting}
+                        className="inline-flex items-center px-2 sm:px-3 py-2 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 transition-colors dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
+                      >
+                        <Download className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export CSV'}</span>
+                        <span className="sm:hidden">CSV</span>
+                      </button>
+                      <button
+                        onClick={() => handleExport('json')}
+                        disabled={isExporting}
+                        className="inline-flex items-center px-2 sm:px-3 py-2 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 transition-colors dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
+                      >
+                        <span className="hidden sm:inline">Export JSON</span>
+                        <span className="sm:hidden">JSON</span>
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1221,22 +1213,22 @@ const SearchPage: React.FC = () => {
 
             {/* Pagination */}
             {searchResults.total_pages > 1 && (
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="text-sm text-gray-500">
                   Page {searchResults.page} of {searchResults.total_pages}
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className="px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
                   >
                     Previous
                   </button>
                   <button
                     onClick={() => setCurrentPage(Math.min(searchResults.total_pages, currentPage + 1))}
                     disabled={currentPage === searchResults.total_pages}
-                    className="px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
                   >
                     Next
                   </button>
@@ -1269,11 +1261,6 @@ const SearchPage: React.FC = () => {
         )}
       </div>
 
-      {/* Chat Search Modal */}
-      <ChatSearchModal
-        isOpen={chatModalOpen}
-        onClose={() => setChatModalOpen(false)}
-      />
     </div>
   );
 };

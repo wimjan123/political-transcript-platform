@@ -116,7 +116,7 @@ const AISettingsPage: React.FC = () => {
               <Settings className="h-5 w-5 mr-2" />
               Summarization Service Status
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-gray-500 dark:text-gray-400">OpenAI Available:</span>
                 <span className={`ml-2 font-medium ${modelInfo.openai_available ? 'text-green-600' : 'text-red-600'}`}>
@@ -155,7 +155,7 @@ const AISettingsPage: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 mb-3 dark:text-gray-300">
               AI Provider
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {(Object.entries(PROVIDER_INFO) as [AIProvider, typeof PROVIDER_INFO[AIProvider]][]).map(([provider, info]) => (
                 <div
                   key={provider}
@@ -205,7 +205,7 @@ const AISettingsPage: React.FC = () => {
               id="model"
               value={settings.model}
               onChange={(e) => handleSettingChange('model', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+              className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
             >
               {availableModels.map((model) => (
                 <option key={model.id} value={model.id}>
@@ -233,7 +233,7 @@ const AISettingsPage: React.FC = () => {
                     value={settings.customModel}
                     onChange={(e) => handleSettingChange('customModel', e.target.value)}
                     placeholder="e.g., anthropic/claude-3-opus, meta-llama/llama-3.2-90b-instruct"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                   />
                   <p className="mt-1 text-xs text-gray-500">
                     Enter the exact model ID as shown on OpenRouter. Examples: anthropic/claude-3-opus, meta-llama/llama-3.2-90b-instruct
@@ -279,7 +279,7 @@ const AISettingsPage: React.FC = () => {
                 value={settings.apiKey}
                 onChange={(e) => handleSettingChange('apiKey', e.target.value)}
                 placeholder={`Enter your ${currentProviderInfo.name} API key`}
-                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-3 py-2 pr-10 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
               />
               <button
                 type="button"
@@ -381,7 +381,7 @@ const AISettingsPage: React.FC = () => {
               onChange={(e) => handleSettingChange('defaultCustomPrompt', e.target.value)}
               rows={4}
               placeholder="Enter default instructions for the AI summarization..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+              className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
             />
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               This prompt will guide the AI in generating summaries. You can override this for individual summaries.
@@ -432,7 +432,7 @@ const AISettingsPage: React.FC = () => {
               value={testVideoId}
               onChange={(e) => setTestVideoId(e.target.value)}
               placeholder="Enter a video ID to test summarization"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+              className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
             />
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Test the summarization feature with a specific video ID

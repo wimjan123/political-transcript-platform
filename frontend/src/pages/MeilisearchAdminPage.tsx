@@ -228,8 +228,8 @@ const MeilisearchAdminPage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-6 mb-8 dark:bg-gray-800/70 dark:border-gray-700">
-          <div className="flex items-center justify-between">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-4 sm:p-6 mb-8 dark:bg-gray-800/70 dark:border-gray-700">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg flex items-center justify-center">
                 <Database className="h-6 w-6 text-white" />
@@ -239,10 +239,10 @@ const MeilisearchAdminPage: React.FC = () => {
                 <p className="text-gray-600 dark:text-gray-300">Manage search indexes and monitor status</p>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
               <button
                 onClick={toggleAutoRefresh}
-                className={`inline-flex items-center px-3 py-2 border text-sm font-medium rounded-md transition-colors ${
+                className={`inline-flex items-center justify-center px-3 py-2 border text-sm font-medium rounded-md transition-colors ${
                   autoRefresh 
                     ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700' 
                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700'
@@ -253,14 +253,14 @@ const MeilisearchAdminPage: React.FC = () => {
               </button>
               <button
                 onClick={fetchData}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
+                className="inline-flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
               </button>
               <button
                 onClick={triggerSync}
-                className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+                className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
               >
                 <Play className="h-4 w-4 mr-2" />
                 Trigger Sync
@@ -281,8 +281,8 @@ const MeilisearchAdminPage: React.FC = () => {
 
         {/* Stats Overview */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-6 dark:bg-gray-800/70 dark:border-gray-700">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-4 sm:p-6 dark:bg-gray-800/70 dark:border-gray-700">
               <div className="flex items-center">
                 <Server className="h-8 w-8 text-blue-500" />
                 <div className="ml-4">
@@ -291,7 +291,7 @@ const MeilisearchAdminPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-6 dark:bg-gray-800/70 dark:border-gray-700">
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-4 sm:p-6 dark:bg-gray-800/70 dark:border-gray-700">
               <div className="flex items-center">
                 <Database className="h-8 w-8 text-green-500" />
                 <div className="ml-4">
@@ -300,7 +300,7 @@ const MeilisearchAdminPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-6 dark:bg-gray-800/70 dark:border-gray-700">
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-4 sm:p-6 dark:bg-gray-800/70 dark:border-gray-700">
               <div className="flex items-center">
                 <BarChart3 className="h-8 w-8 text-purple-500" />
                 <div className="ml-4">
@@ -311,7 +311,7 @@ const MeilisearchAdminPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-6 dark:bg-gray-800/70 dark:border-gray-700">
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-4 sm:p-6 dark:bg-gray-800/70 dark:border-gray-700">
               <div className="flex items-center">
                 <CheckCircle className="h-8 w-8 text-blue-500" />
                 <div className="ml-4">
@@ -330,12 +330,12 @@ const MeilisearchAdminPage: React.FC = () => {
         )}
 
         {/* Indexes */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-6 mb-8 dark:bg-gray-800/70 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-6">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-4 sm:p-6 mb-8 dark:bg-gray-800/70 dark:border-gray-700">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Search Indexes</h2>
             <button
               onClick={createIndex}
-              className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors"
+              className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors"
             >
               <Database className="h-4 w-4 mr-2" />
               Create Index
@@ -411,31 +411,31 @@ const MeilisearchAdminPage: React.FC = () => {
         </div>
 
         {/* Recent Tasks */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-6">Recent Tasks</h2>
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-4 sm:p-6 dark:bg-gray-800/70 dark:border-gray-700">
+          <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-6">Recent Tasks</h2>
           
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Index</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Enqueued</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Task ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Index</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Duration</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Enqueued</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
                 {tasks.map((task) => (
                   <tr key={task.uid}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                       #{task.uid}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {task.indexUid}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                       {task.type}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -446,10 +446,10 @@ const MeilisearchAdminPage: React.FC = () => {
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {task.duration || 'N/A'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {new Date(task.enqueuedAt).toLocaleString()}
                     </td>
                   </tr>

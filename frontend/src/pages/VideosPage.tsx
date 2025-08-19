@@ -98,19 +98,19 @@ const VideosPage: React.FC = () => {
   };
 
   const getSourceColor = (source?: string) => {
-    if (!source) return 'bg-gray-100 text-gray-800';
+    if (!source) return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     
     const colors: { [key: string]: string } = {
-      'Fox News': 'bg-red-100 text-red-800',
-      'CNN': 'bg-blue-100 text-blue-800',
-      'NBC': 'bg-purple-100 text-purple-800',
-      'ABC': 'bg-green-100 text-green-800',
-      'CBS': 'bg-indigo-100 text-indigo-800',
-      'Newsmax': 'bg-orange-100 text-orange-800',
-      'White House': 'bg-blue-100 text-blue-800',
+      'Fox News': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+      'CNN': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+      'NBC': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+      'ABC': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+      'CBS': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300',
+      'Newsmax': 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+      'White House': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
     };
     
-    return colors[source] || 'bg-gray-100 text-gray-800';
+    return colors[source] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
   };
 
   // Selection functions
@@ -207,7 +207,7 @@ const VideosPage: React.FC = () => {
               {!selectionMode ? (
                 <button
                   onClick={() => setSelectionMode(true)}
-                  className="inline-flex items-center px-3 py-2 border border-purple-300 text-sm font-medium rounded-md text-purple-700 bg-purple-50 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
+                  className="inline-flex items-center px-3 py-2 border border-purple-300 text-sm font-medium rounded-md text-purple-700 bg-purple-50 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors dark:border-purple-600 dark:text-purple-300 dark:bg-purple-900/30 dark:hover:bg-purple-800/40"
                 >
                   <Bot className="h-4 w-4 mr-2" />
                   Batch Summarize
@@ -219,7 +219,7 @@ const VideosPage: React.FC = () => {
                   </span>
                   <button
                     onClick={selectAllVisible}
-                    className="text-sm text-blue-600 hover:text-blue-700"
+                    className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                   >
                     Select All
                   </button>
@@ -251,7 +251,7 @@ const VideosPage: React.FC = () => {
                       setSelectionMode(false);
                       clearSelection();
                     }}
-                    className="text-sm text-gray-600 hover:text-gray-700"
+                    className="text-sm text-gray-600 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200"
                   >
                     Cancel
                   </button>
@@ -376,26 +376,26 @@ const VideosPage: React.FC = () => {
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-red-700">{error}</p>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 dark:bg-red-900/30 dark:border-red-800">
+            <p className="text-red-700 dark:text-red-300">{error}</p>
           </div>
         )}
 
         {/* Batch Summary Results */}
         {batchSummaryResults && (
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-6 mb-8">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-6 mb-8 dark:bg-gray-800/70 dark:border-gray-700">
             <div className="mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Batch Summarization Results</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2 dark:text-gray-100">Batch Summarization Results</h3>
               <div className="flex items-center space-x-4 text-sm">
-                <span className="text-green-600">
+                <span className="text-green-600 dark:text-green-400">
                   ✅ {batchSummaryResults.successful_count} successful
                 </span>
                 {batchSummaryResults.failed_count > 0 && (
-                  <span className="text-red-600">
+                  <span className="text-red-600 dark:text-red-400">
                     ❌ {batchSummaryResults.failed_count} failed
                   </span>
                 )}
-                <span className="text-gray-500">
+                <span className="text-gray-500 dark:text-gray-400">
                   Total: {batchSummaryResults.total_requested}
                 </span>
               </div>
@@ -403,17 +403,17 @@ const VideosPage: React.FC = () => {
 
             {batchSummaryResults.successful.length > 0 && (
               <div className="mb-4">
-                <h4 className="font-medium text-gray-900 mb-2">Successful Summaries:</h4>
+                <h4 className="font-medium text-gray-900 mb-2 dark:text-gray-100">Successful Summaries:</h4>
                 <div className="space-y-2">
                   {batchSummaryResults.successful.map((summary: any) => (
-                    <div key={summary.video_id} className="text-sm bg-green-50 rounded p-2">
+                    <div key={summary.video_id} className="text-sm bg-green-50 rounded p-2 dark:bg-green-900/30">
                       <Link
                         to={`/videos/${summary.video_id}`}
-                        className="font-medium text-green-700 hover:text-green-800"
+                        className="font-medium text-green-700 hover:text-green-800 dark:text-green-300 dark:hover:text-green-200"
                       >
                         {summary.video_title}
                       </Link>
-                      <span className="text-gray-600 ml-2">- {summary.bullet_points} bullet points</span>
+                      <span className="text-gray-600 ml-2 dark:text-gray-300">- {summary.bullet_points} bullet points</span>
                     </div>
                   ))}
                 </div>
@@ -422,12 +422,12 @@ const VideosPage: React.FC = () => {
 
             {batchSummaryResults.failed.length > 0 && (
               <div className="mb-4">
-                <h4 className="font-medium text-gray-900 mb-2">Failed Summaries:</h4>
+                <h4 className="font-medium text-gray-900 mb-2 dark:text-gray-100">Failed Summaries:</h4>
                 <div className="space-y-2">
                   {batchSummaryResults.failed.map((failure: any) => (
-                    <div key={failure.video_id} className="text-sm bg-red-50 rounded p-2">
-                      <span className="font-medium text-red-700">Video ID {failure.video_id}</span>
-                      <span className="text-gray-600 ml-2">- {failure.error}</span>
+                    <div key={failure.video_id} className="text-sm bg-red-50 rounded p-2 dark:bg-red-900/30">
+                      <span className="font-medium text-red-700 dark:text-red-300">Video ID {failure.video_id}</span>
+                      <span className="text-gray-600 ml-2 dark:text-gray-300">- {failure.error}</span>
                     </div>
                   ))}
                 </div>
@@ -436,7 +436,7 @@ const VideosPage: React.FC = () => {
 
             <button
               onClick={() => setBatchSummaryResults(null)}
-              className="text-sm text-gray-500 hover:text-gray-700"
+              className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
             >
               Dismiss
             </button>
@@ -449,7 +449,7 @@ const VideosPage: React.FC = () => {
             {videos.map((video) => (
               <div
                 key={video.id}
-                className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-6 hover:shadow-2xl hover:border-blue-300/50 transition-all duration-300 transform hover:-translate-y-1"
+                className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-6 hover:shadow-2xl hover:border-blue-300/50 transition-all duration-300 transform hover:-translate-y-1 dark:bg-gray-800/70 dark:border-gray-700 dark:hover:border-blue-400/30"
               >
                 <div className="flex flex-col lg:flex-row items-start gap-6">
                   {/* Selection Checkbox */}
@@ -457,7 +457,7 @@ const VideosPage: React.FC = () => {
                     <div className="flex-shrink-0">
                       <button
                         onClick={() => toggleVideoSelection(video.id)}
-                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors dark:hover:bg-gray-700"
                       >
                         {selectedVideoIds.has(video.id) ? (
                           <CheckSquare className="h-5 w-5 text-blue-600" />
@@ -486,7 +486,7 @@ const VideosPage: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     {/* Video Header */}
                     <div className="flex items-start justify-between mb-4">
-                      <h3 className="text-xl font-bold text-gray-900 mb-2 leading-tight">
+                      <h3 className="text-xl font-bold text-gray-900 mb-2 leading-tight dark:text-gray-100">
                         <Link
                           to={`/videos/${video.id}`}
                           className="hover:bg-gradient-to-r hover:from-blue-600 hover:to-purple-600 hover:bg-clip-text hover:text-transparent transition-all duration-200"
@@ -497,7 +497,7 @@ const VideosPage: React.FC = () => {
                     </div>
 
                     {/* Video Metadata */}
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-3">
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-3 dark:text-gray-400">
                       {video.date && (
                         <div className="flex items-center">
                           <Calendar className="h-4 w-4 mr-1" />
@@ -535,29 +535,29 @@ const VideosPage: React.FC = () => {
 
                     {/* Event Metadata */}
                     {(video.format || video.candidate || video.place || video.record_type) && (
-                      <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                        <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="bg-gray-50 rounded-lg p-3 mb-3 dark:bg-gray-700">
+                        <div className="grid grid-cols-2 gap-2 text-sm dark:text-gray-200">
                           {video.format && (
                             <div>
-                              <span className="text-gray-500">Format:</span>
+                              <span className="text-gray-500 dark:text-gray-400">Format:</span>
                               <span className="ml-1 font-medium">{video.format}</span>
                             </div>
                           )}
                           {video.candidate && (
                             <div>
-                              <span className="text-gray-500">Candidate:</span>
+                              <span className="text-gray-500 dark:text-gray-400">Candidate:</span>
                               <span className="ml-1 font-medium">{video.candidate}</span>
                             </div>
                           )}
                           {video.place && (
                             <div>
-                              <span className="text-gray-500">Place:</span>
+                              <span className="text-gray-500 dark:text-gray-400">Place:</span>
                               <span className="ml-1 font-medium">{video.place}</span>
                             </div>
                           )}
                           {video.record_type && (
                             <div>
-                              <span className="text-gray-500">Type:</span>
+                              <span className="text-gray-500 dark:text-gray-400">Type:</span>
                               <span className="ml-1 font-medium">{video.record_type}</span>
                             </div>
                           )}
@@ -567,7 +567,7 @@ const VideosPage: React.FC = () => {
 
                     {/* Description */}
                     {video.description && (
-                      <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                      <p className="text-sm text-gray-600 mb-4 line-clamp-2 dark:text-gray-300">
                         {video.description}
                       </p>
                     )}
@@ -579,7 +579,7 @@ const VideosPage: React.FC = () => {
                           href={video.video_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                          className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors dark:text-primary-400 dark:hover:text-primary-300"
                         >
                           <Play className="h-4 w-4 mr-1" />
                           Watch Video
@@ -607,7 +607,7 @@ const VideosPage: React.FC = () => {
                   {/* Video Info */}
                   <div className="flex-shrink-0 ml-6">
                     <div className="text-right">
-                      <div className="text-sm text-gray-500 mb-2">
+                      <div className="text-sm text-gray-500 mb-2 dark:text-gray-400">
                         Added {formatDate(video.created_at)}
                       </div>
                       
@@ -617,7 +617,7 @@ const VideosPage: React.FC = () => {
                             href={video.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="block text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                            className="block text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors dark:text-primary-400 dark:hover:text-primary-300"
                           >
                             <ExternalLink className="h-3 w-3 inline mr-1" />
                             Transcript Source
@@ -632,9 +632,9 @@ const VideosPage: React.FC = () => {
           </div>
         ) : (
           <div className="text-center py-12">
-            <Video className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No videos found</h3>
-            <p className="mt-1 text-sm text-gray-500">
+            <Video className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No videos found</h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               {filters.search || filters.source || filters.dateFrom || filters.dateTo
                 ? 'Try adjusting your filters'
                 : 'No videos have been imported yet'
@@ -671,7 +671,7 @@ const VideosPage: React.FC = () => {
         {/* Loading Indicator */}
         {isLoading && videos.length > 0 && (
           <div className="text-center py-4">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mx-auto"></div>
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mx-auto dark:border-primary-400"></div>
           </div>
         )}
       </div>
