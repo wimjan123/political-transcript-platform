@@ -391,40 +391,39 @@ class TranscriptHTMLParser:
         """Extract sentiment analysis data"""
         sentiment_data = {}
         
-        # Look for sentiment sections
+        # Look for sentiment sections with the correct HTML structure
         sentiment_divs = details_div.find_all('div', class_='mb-4 flex gap-2')
         
         for div in sentiment_divs:
-            text_content = div.get_text(strip=True)
-            
-            # Loughran McDonald sentiment
-            if 'Loughran McDonald' in text_content:
-                parts = text_content.split()
-                if len(parts) >= 3:
+            # Get all child divs with class 'mb-2'
+            child_divs = div.find_all('div', class_='mb-2')
+            if len(child_divs) >= 3:
+                name_text = child_divs[0].get_text(strip=True)
+                score_text = child_divs[1].get_text(strip=True)
+                label_text = child_divs[2].get_text(strip=True)
+                
+                # Loughran McDonald sentiment (prefer Relative version)
+                if 'Loughran McDonald' in name_text and 'Relative' in name_text:
                     try:
-                        sentiment_data['sentiment_loughran_score'] = float(parts[-2])
-                        sentiment_data['sentiment_loughran_label'] = parts[-1]
-                    except (ValueError, IndexError):
+                        sentiment_data['sentiment_loughran_score'] = float(score_text)
+                        sentiment_data['sentiment_loughran_label'] = label_text if label_text else 'Neutral'
+                    except (ValueError, TypeError):
                         pass
-            
-            # Harvard-IV sentiment (if present)
-            elif 'Harvard' in text_content:
-                parts = text_content.split()
-                if len(parts) >= 3:
+                
+                # Harvard-IV sentiment (prefer Relative version)
+                elif 'Harvard' in name_text and 'Relative' in name_text:
                     try:
-                        sentiment_data['sentiment_harvard_score'] = float(parts[-2])
-                        sentiment_data['sentiment_harvard_label'] = parts[-1]
-                    except (ValueError, IndexError):
+                        sentiment_data['sentiment_harvard_score'] = float(score_text)
+                        sentiment_data['sentiment_harvard_label'] = label_text if label_text else 'Neutral'
+                    except (ValueError, TypeError):
                         pass
-            
-            # VADER sentiment (if present)
-            elif 'VADER' in text_content:
-                parts = text_content.split()
-                if len(parts) >= 3:
+                
+                # VADER sentiment
+                elif 'VADER' in name_text:
                     try:
-                        sentiment_data['sentiment_vader_score'] = float(parts[-2])
-                        sentiment_data['sentiment_vader_label'] = parts[-1]
-                    except (ValueError, IndexError):
+                        sentiment_data['sentiment_vader_score'] = float(score_text)
+                        sentiment_data['sentiment_vader_label'] = label_text if label_text else 'Neutral'
+                    except (ValueError, TypeError):
                         pass
         
         return sentiment_data
