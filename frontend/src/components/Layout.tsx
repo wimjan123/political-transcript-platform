@@ -62,17 +62,20 @@ const Layout: React.FC = () => {
                   <div className="h-8 w-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center group-hover:shadow-lg transition-all duration-300">
                     <Search className="h-5 w-5 text-white" />
                   </div>
-                  <span className="ml-3 text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent hidden sm:block dark:from-white dark:to-gray-300">
+                  <span className="ml-3 text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent hidden xl:block dark:from-white dark:to-gray-300">
                     Political Transcript Search
                   </span>
-                  <span className="ml-3 text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent sm:hidden dark:from-white dark:to-gray-300">
+                  <span className="ml-3 text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent hidden lg:block xl:hidden dark:from-white dark:to-gray-300">
+                    Political Search
+                  </span>
+                  <span className="ml-3 text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent lg:hidden dark:from-white dark:to-gray-300">
                     PTS
                   </span>
                 </div>
               </Link>
 
               {/* Desktop Navigation */}
-              <div className="hidden md:ml-6 md:flex md:space-x-2">
+              <div className="hidden md:ml-8 md:flex md:space-x-2 lg:ml-12">
                 {navigation.map((item) => {
                   const Icon = item.icon;
                   return (

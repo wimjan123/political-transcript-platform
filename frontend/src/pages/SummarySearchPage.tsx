@@ -124,9 +124,9 @@ const SummarySearchPage: React.FC = () => {
     const regex = new RegExp(`(${searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
     const parts = text.split(regex);
     
-    return parts.map((part, i) => 
+    return parts.map((part, i) =>
       regex.test(part) ? (
-        <mark key={i} className="bg-yellow-200 px-1 rounded">{part}</mark>
+        <mark key={i} className="bg-yellow-200 dark:bg-yellow-700/40 px-1 rounded">{part}</mark>
       ) : part
     );
   };
@@ -241,7 +241,7 @@ const SummarySearchPage: React.FC = () => {
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(parseInt(e.target.value))}
-                className="text-sm border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                className="text-sm border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
               >
                 <option value="10">10 per page</option>
                 <option value="25">25 per page</option>
@@ -282,10 +282,10 @@ const SummarySearchPage: React.FC = () => {
             {/* Results Header */}
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-lg font-medium text-gray-900">
+                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
                   {results.query ? 'Search Results' : 'All Summaries'}
                 </h2>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   {results.query ? (
                     <>
                       {results.total.toLocaleString()} summaries found for "{results.query}"
@@ -353,7 +353,7 @@ const SummarySearchPage: React.FC = () => {
                   {/* Summary Content */}
                   <div className="prose prose-sm max-w-none">
                     <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-                      <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                      <div className="text-gray-700 dark:text-gray-200 whitespace-pre-wrap leading-relaxed">
                         {highlightText(summary.summary_text, query)}
                       </div>
                     </div>
@@ -372,7 +372,7 @@ const SummarySearchPage: React.FC = () => {
                   <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
                   >
                     <ChevronLeft className="h-4 w-4 mr-1" />
                     Previous
@@ -380,7 +380,7 @@ const SummarySearchPage: React.FC = () => {
                   <button
                     onClick={() => setCurrentPage(Math.min(results.total_pages, currentPage + 1))}
                     disabled={currentPage === results.total_pages}
-                    className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
                   >
                     Next
                     <ChevronRight className="h-4 w-4 ml-1" />
@@ -395,10 +395,10 @@ const SummarySearchPage: React.FC = () => {
         {results && results.results.length === 0 && (
           <div className="text-center py-12">
             <Search className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">
+            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">
               {results.query ? 'No summaries found' : 'No summaries available'}
             </h3>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               {results.query
                 ? 'Try adjusting your search terms or check if summaries have been generated for videos'
                 : 'No video summaries have been generated yet. Visit the Videos page to create summaries.'
@@ -411,7 +411,7 @@ const SummarySearchPage: React.FC = () => {
         {!results && isLoading && (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">
+            <p className="mt-4 text-gray-600 dark:text-gray-300">
               {query ? 'Searching summaries...' : 'Loading summaries...'}
             </p>
           </div>

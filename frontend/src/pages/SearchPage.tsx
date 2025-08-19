@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { 
   Search, Filter, Download, ChevronDown, ChevronRight, 
@@ -8,15 +8,15 @@ import {
 import { playlist } from '../services/playlist';
 import { searchAPI, downloadFile, formatTimestamp, getSentimentColor, getSentimentLabel } from '../services/api';
 import useDebounce from '../hooks/useDebounce';
+import { useSmartSearch } from '../hooks/useSearch';
 import LanguageSelector, { SUPPORTED_LANGUAGES } from '../components/LanguageSelector';
+import { SearchResultsSkeleton } from '../components/SkeletonLoader';
+import VirtualizedSearchResults from '../components/VirtualizedSearchResults';
 import type { SearchResponse, SearchParams, FilterState, TranscriptSegment } from '../types';
 
 const SearchPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [searchResults, setSearchResults] = useState<SearchResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [expandedSegments, setExpandedSegments] = useState<Set<number>>(new Set());
   
@@ -72,9 +72,69 @@ const SearchPage: React.FC = () => {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedSegmentIds, setSelectedSegmentIds] = useState<Set<number>>(new Set());
 
-  // Search-as-you-type with debouncing
-  const debouncedQuery = useDebounce(query, 300);
+  // Search-as-you-type with debouncing - optimized to 200ms for snappier UX
+  const debouncedQuery = useDebounce(query, 200);
   const [isTyping, setIsTyping] = useState(false);
+  
+  // Prepare search parameters for TanStack Query
+  const searchParameters = React.useMemo((): SearchParams & {
+    engine?: 'postgres' | 'meili';
+    mode?: 'lexical' | 'hybrid' | 'semantic';
+    index?: 'segments' | 'events';
+    similarity_threshold?: number;
+    locales?: string[];
+  } => {
+    const mappedFilters: Record<string, any> = {};
+    const add = (k: string, v: any) => { if (v !== '' && v !== undefined) mappedFilters[k] = v; };
+    
+    add('speaker', filters.speaker);
+    add('source', filters.source);
+    if (filters.dataset && filters.dataset !== 'all') add('dataset', filters.dataset);
+    add('topic', filters.topic);
+    add('date_from', filters.dateFrom);
+    add('date_to', filters.dateTo);
+    add('sentiment', filters.sentiment);
+    add('min_readability', filters.minReadability);
+    add('max_readability', filters.maxReadability);
+    add('format', filters.format);
+    add('candidate', filters.candidate);
+    add('place', filters.place);
+    add('record_type', filters.recordType);
+    add('min_stresslens', filters.minStresslens);
+    add('max_stresslens', filters.maxStresslens);
+    add('stresslens_rank', filters.stresslensRank);
+    add('has_harassment', filters.hasHarassment ? true : undefined);
+    add('has_hate', filters.hasHate ? true : undefined);
+    add('has_violence', filters.hasViolence ? true : undefined);
+    add('has_sexual', filters.hasSexual ? true : undefined);
+    add('has_selfharm', filters.hasSelfharm ? true : undefined);
+
+    return {
+      q: debouncedQuery,
+      page: currentPage,
+      page_size: pageSize,
+      search_type: filters.searchType,
+      sort_by: filters.sortBy,
+      sort_order: filters.sortOrder,
+      engine: searchEngine,
+      mode: meiliMode,
+      index: meiliIndex,
+      similarity_threshold: filters.similarityThreshold !== '' ? Number(filters.similarityThreshold) : undefined,
+      locales: selectedLanguage !== 'auto' ? [selectedLanguage] : undefined,
+      ...mappedFilters,
+    };
+  }, [
+    debouncedQuery, currentPage, pageSize, filters, searchEngine, meiliMode, 
+    meiliIndex, selectedLanguage
+  ]);
+
+  // Use the smart search hook with TanStack Query
+  const {
+    data: searchResults,
+    isLoading,
+    error,
+    isFetching,
+  } = useSmartSearch(searchParameters, !!debouncedQuery.trim());
   
 
   const vimeoTimeFragment = (seconds: number) => {
@@ -98,13 +158,13 @@ const SearchPage: React.FC = () => {
     return base;
   };
 
-  const toggleSelectSegment = (id: number) => {
+  const toggleSelectSegment = useCallback((id: number) => {
     setSelectedSegmentIds(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
-  };
+  }, []);
 
   const selectAllVisible = () => {
     if (!searchResults) return;
@@ -117,11 +177,37 @@ const SearchPage: React.FC = () => {
 
   const clearSelection = () => setSelectedSegmentIds(new Set());
 
+  // Memoize selected segments filtering for performance
+  const selectedSegments = useMemo(() => {
+    if (!searchResults) return [];
+    return searchResults.results.filter(s => selectedSegmentIds.has(s.id));
+  }, [searchResults, selectedSegmentIds]);
+
+  // Memoize search type display text for performance
+  const searchTypeDisplay = useMemo(() => {
+    if (filters.searchType === 'semantic') return '🧠 Semantic';
+    if (filters.searchType === 'fulltext') return '🔍 Full-text';
+    if (filters.searchType === 'exact') return '🎯 Exact';
+    return '🔄 Fuzzy';
+  }, [filters.searchType]);
+
+  // Memoize results summary for performance
+  const resultsSummary = useMemo(() => {
+    if (!searchResults) return '';
+    return `${searchResults.total.toLocaleString()} results for "${searchResults.query}"`;
+  }, [searchResults]);
+
+  // Memoize pagination display for performance
+  const paginationDisplay = useMemo(() => {
+    if (!searchResults || searchResults.total === 0) return null;
+    const start = ((searchResults.page - 1) * searchResults.page_size) + 1;
+    const end = Math.min(searchResults.page * searchResults.page_size, searchResults.total);
+    return `• Showing ${start}-${end}`;
+  }, [searchResults]);
+
   const exportSelectedTxt = () => {
-    if (!searchResults) return;
-    const selected = searchResults.results.filter(s => selectedSegmentIds.has(s.id));
-    if (selected.length === 0) return;
-    const lines = selected.map(s => {
+    if (selectedSegments.length === 0) return;
+    const lines = selectedSegments.map(s => {
       const ts = typeof s.video_seconds === 'number' ? formatTimestamp(s.video_seconds) : '';
       const start = ts ? `[${ts}]` : '';
       const dateStr = s.video?.date ? `[${new Date(s.video.date).toISOString().slice(0,10)}]` : '';
@@ -137,10 +223,8 @@ const SearchPage: React.FC = () => {
   };
 
   const exportSelectedWithLinks = () => {
-    if (!searchResults) return;
-    const selected = searchResults.results.filter(s => selectedSegmentIds.has(s.id));
-    if (selected.length === 0) return;
-    const lines = selected.map(s => {
+    if (selectedSegments.length === 0) return;
+    const lines = selectedSegments.map(s => {
       const start = typeof s.video_seconds === 'number' ? formatTimestamp(s.video_seconds) : '';
       const end = (typeof s.video_seconds === 'number' && typeof s.duration_seconds === 'number') 
         ? formatTimestamp(s.video_seconds + s.duration_seconds) : undefined;
@@ -158,142 +242,20 @@ const SearchPage: React.FC = () => {
     downloadFile(blob as unknown as Blob, filename);
   };
 
-  useEffect(() => {
-    if (query.trim()) {
-      performSearch();
-    }
-  }, [currentPage, pageSize]);
 
+  // Handle initial query from URL
   useEffect(() => {
     const initialQuery = searchParams.get('q');
     if (initialQuery && initialQuery !== query) {
       setQuery(initialQuery);
-      performSearch();
     }
   }, [searchParams]);
 
-  // Search-as-you-type: trigger search when debounced query changes
-  useEffect(() => {
-    if (debouncedQuery.trim() && !isTyping) {
-      setCurrentPage(1); // Reset to first page for new search
-      performSearch();
-    } else if (!debouncedQuery.trim()) {
-      setSearchResults(null); // Clear results when query is empty
-    }
-    setIsTyping(false);
-  }, [debouncedQuery]);
 
-  const performSearch = async () => {
-    const searchQuery = debouncedQuery.trim() || query.trim();
-    if (!searchQuery) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Map UI filter keys (camelCase) to API params (snake_case)
-      const mappedFilters: Record<string, any> = {};
-      const add = (k: string, v: any) => { if (v !== '' && v !== undefined) mappedFilters[k] = v; };
-      add('speaker', filters.speaker);
-      add('source', filters.source);
-      if (filters.dataset && filters.dataset !== 'all') add('dataset', filters.dataset);
-      add('topic', filters.topic);
-      add('date_from', filters.dateFrom);
-      add('date_to', filters.dateTo);
-      add('sentiment', filters.sentiment);
-      add('min_readability', filters.minReadability);
-      add('max_readability', filters.maxReadability);
-      add('format', filters.format);
-      add('candidate', filters.candidate);
-      add('place', filters.place);
-      add('record_type', filters.recordType);
-      add('min_stresslens', filters.minStresslens);
-      add('max_stresslens', filters.maxStresslens);
-      add('stresslens_rank', filters.stresslensRank);
-      add('has_harassment', filters.hasHarassment ? true : undefined);
-      add('has_hate', filters.hasHate ? true : undefined);
-      add('has_violence', filters.hasViolence ? true : undefined);
-      add('has_sexual', filters.hasSexual ? true : undefined);
-      add('has_selfharm', filters.hasSelfharm ? true : undefined);
-
-      const searchParameters: SearchParams = {
-        q: searchQuery,
-        page: currentPage,
-        page_size: pageSize,
-        search_type: filters.searchType,
-        sort_by: filters.sortBy,
-        sort_order: filters.sortOrder,
-        ...mappedFilters,
-      };
-
-      let results: SearchResponse;
-      if (searchEngine === 'meili') {
-        const meiliParams: any = {
-          ...searchParameters,
-          mode: meiliMode,
-          index: meiliIndex,
-        };
-        
-        // Add locales parameter if a specific language is selected
-        if (selectedLanguage !== 'auto') {
-          const lang = SUPPORTED_LANGUAGES.find(l => l.code === selectedLanguage);
-          if (lang && lang.iso639) {
-            meiliParams.locales = lang.iso639;
-          }
-        }
-        
-        try {
-          results = await searchAPI.searchMeili(meiliParams);
-        } catch (err: any) {
-          // Graceful fallback: if Meilisearch semantic fails, try DB semantic endpoint
-          if (meiliMode === 'semantic') {
-            results = await searchAPI.semanticSearch({
-              ...searchParameters,
-              similarity_threshold: typeof filters.similarityThreshold === 'number' ? filters.similarityThreshold : 0.5,
-            });
-          } else {
-            throw err;
-          }
-        }
-      } else if (filters.searchType === 'semantic') {
-        results = await searchAPI.semanticSearch({
-          ...searchParameters,
-          similarity_threshold: typeof filters.similarityThreshold === 'number' ? filters.similarityThreshold : 0.5,
-        });
-      } else {
-        results = await searchAPI.search(searchParameters);
-      }
-      setSearchResults(results);
-
-      // Update URL
-      const newParams = new URLSearchParams();
-      Object.entries(searchParameters).forEach(([key, value]) => {
-        if (value !== '' && value !== undefined) {
-          newParams.set(key, value.toString());
-        }
-      });
-      newParams.set('engine', searchEngine);
-      if (searchEngine === 'meili') {
-        newParams.set('mode', meiliMode);
-        newParams.set('index', meiliIndex);
-      }
-      if (selectedLanguage !== 'auto') {
-        newParams.set('language', selectedLanguage);
-      }
-      setSearchParams(newParams);
-
-    } catch (error) {
-      console.error('Search failed:', error);
-      setError('Failed to perform search. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setCurrentPage(1);
-    performSearch();
   };
 
   const handleFilterChange = (key: keyof FilterState, value: any) => {
@@ -357,13 +319,13 @@ const SearchPage: React.FC = () => {
       downloadFile(blob, `search-results-${timestamp}.${format}`);
     } catch (error) {
       console.error('Export failed:', error);
-      setError('Failed to export results. Please try again.');
+      // TODO: Show user-friendly error notification
     } finally {
       setIsExporting(false);
     }
   };
 
-  const toggleSegmentExpansion = (segmentId: number) => {
+  const toggleSegmentExpansion = useCallback((segmentId: number) => {
     setExpandedSegments(prev => {
       const newSet = new Set(prev);
       if (newSet.has(segmentId)) {
@@ -373,306 +335,9 @@ const SearchPage: React.FC = () => {
       }
       return newSet;
     });
-  };
+  }, []);
 
-  const highlightText = (text: string, searchQuery: string) => {
-    if (!searchQuery.trim()) return text;
-    
-    const regex = new RegExp(`(${searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-    const parts = text.split(regex);
-    
-    return parts.map((part, i) => 
-      regex.test(part) ? (
-        <mark key={i} className="bg-yellow-200 px-1 rounded">{part}</mark>
-      ) : part
-    );
-  };
 
-  const renderSegment = (segment: TranscriptSegment) => {
-    const isExpanded = expandedSegments.has(segment.id);
-    const sentimentColor = getSentimentColor(segment.sentiment_loughran_score);
-    const sentimentLabel = getSentimentLabel(segment.sentiment_loughran_score);
-
-    return (
-      <div key={segment.id} className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-6 hover:shadow-xl hover:border-blue-300/50 transition-all duration-300 transform hover:-translate-y-1 dark:bg-gray-800/70 dark:border-gray-700 dark:hover:border-blue-400/30">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            {/* Header */}
-            <div className="flex flex-wrap items-center gap-3 mb-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <User className="h-4 w-4 text-white" />
-                </div>
-                <span className="font-semibold text-gray-900 dark:text-gray-100">{segment.speaker_name}</span>
-              </div>
-              
-              {segment.video && (
-                <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
-                  <Calendar className="h-4 w-4" />
-                  <span>{segment.video.date}</span>
-                </div>
-              )}
-              
-              <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
-                <Clock className="h-4 w-4" />
-                <span>{formatTimestamp(segment.video_seconds)}</span>
-                {segment.timestamp_start && segment.timestamp_end && (
-                  <span>({segment.timestamp_start}-{segment.timestamp_end})</span>
-                )}
-              </div>
-            </div>
-
-            {/* Video Info */}
-            {segment.video && (
-              <div className="text-sm text-gray-600 mb-2 dark:text-gray-300">
-                <Link
-                  to={`/videos/${segment.video.id}?t=${segment.video_seconds}&segment_id=${segment.id}`}
-                  className="font-medium text-primary-600 hover:text-primary-700 hover:underline"
-                >
-                  {segment.video.title}
-                </Link>
-                {segment.video.source && (
-                  <span className="ml-2 badge badge-blue">{segment.video.source}</span>
-                )}
-              </div>
-            )}
-
-            {/* Transcript Text */}
-            <div className="text-gray-900 mb-4 leading-relaxed dark:text-gray-100">
-              {selectionMode && (
-                <label className="inline-flex items-center mr-3 align-top">
-                  <input
-                    type="checkbox"
-                    className="mr-2"
-                    checked={selectedSegmentIds.has(segment.id)}
-                    onChange={() => toggleSelectSegment(segment.id)}
-                  />
-                </label>
-              )}
-              {highlightText(segment.transcript_text, query)}
-            </div>
-
-            {/* Metadata Row */}
-            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 mb-3 dark:text-gray-400">
-              <span>{segment.word_count} words</span>
-              
-              {typeof segment.similarity_score === 'number' && (
-                <div className="flex items-center space-x-1">
-                  <Search className="h-4 w-4" />
-                  <span className="font-medium text-blue-600">
-                    {(segment.similarity_score * 100).toFixed(1)}% match
-                  </span>
-                </div>
-              )}
-              
-              {typeof segment.sentiment_loughran_score === 'number' && (
-                <div className="flex items-center space-x-1">
-                  <TrendingUp className="h-4 w-4" />
-                  <span className={sentimentColor}>{sentimentLabel}</span>
-                </div>
-              )}
-              
-              {typeof segment.flesch_kincaid_grade === 'number' && (
-                <span>Grade: {segment.flesch_kincaid_grade.toFixed(1)}</span>
-              )}
-              
-              {typeof segment.stresslens_score === 'number' && (
-                <div className="flex items-center space-x-1">
-                  <TrendingUp className="h-4 w-4" />
-                  <span>Stress: {segment.stresslens_score.toFixed(3)}</span>
-                  {typeof segment.stresslens_rank === 'number' && (
-                    <span className="text-gray-400">(#{segment.stresslens_rank})</span>
-                  )}
-                </div>
-              )}
-
-              {/* Match info chips */}
-              {segment.segment_topics && segment.segment_topics.length > 0 && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  Top topic: {segment.segment_topics[0].topic.name}
-                </span>
-              )}
-              {typeof segment.moderation_overall_score === 'number' && segment.moderation_overall_score > 0 && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                  Mod: {(segment.moderation_overall_score * 100).toFixed(0)}%
-                </span>
-              )}
-              {segment.video?.dataset && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                  {segment.video.dataset === 'tweede_kamer' ? 'Tweede Kamer' : segment.video.dataset}
-                </span>
-              )}
-            </div>
-
-            {/* Topics */}
-            {segment.segment_topics.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-3">
-                {segment.segment_topics.map((segmentTopic) => (
-                  <span 
-                    key={segmentTopic.topic.id}
-                    className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
-                  >
-                    <Tag className="h-3 w-3 mr-1" />
-                    {segmentTopic.topic.name}
-                    {segmentTopic.score && (
-                      <span className="ml-1 text-green-600">({segmentTopic.score.toFixed(2)})</span>
-                    )}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Expand/Collapse Button */}
-          <button
-            onClick={() => toggleSegmentExpansion(segment.id)}
-            className="ml-4 p-2 text-gray-400 hover:text-gray-600 transition-colors dark:text-gray-500 dark:hover:text-gray-300"
-          >
-            {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-          </button>
-        </div>
-
-        {/* Right-side actions: expand and quick add */}
-        <div className="flex items-center ml-4 space-x-1">
-          {segment.video && (
-            <button
-              type="button"
-              onClick={() => playlist.addSegment(segment as any)}
-              className="p-2 text-primary-600 hover:text-primary-700"
-              aria-label="Add segment to playlist"
-              title="Add to Playlist"
-            >
-              <Plus className="h-5 w-5" />
-            </button>
-          )}
-          {/* Expand/Collapse Button */}
-          <button
-            onClick={() => toggleSegmentExpansion(segment.id)}
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors dark:text-gray-500 dark:hover:text-gray-300"
-            aria-label={isExpanded ? 'Collapse' : 'Expand'}
-          >
-            {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-          </button>
-        </div>
-
-        {/* Expanded Details */}
-        {isExpanded && (
-              <div className="mt-4 pt-4 border-t border-gray-200 space-y-4 dark:border-gray-700">
-            {/* Detailed Sentiment Analysis */}
-            {(typeof segment.sentiment_loughran_score === 'number' || 
-              typeof segment.sentiment_harvard_score === 'number' || 
-              typeof segment.sentiment_vader_score === 'number') && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-2 dark:text-gray-100">Sentiment Analysis</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                  {typeof segment.sentiment_loughran_score === 'number' && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-300">Loughran-McDonald:</span>
-                      <span className={getSentimentColor(segment.sentiment_loughran_score)}>
-                        {segment.sentiment_loughran_score.toFixed(3)}
-                      </span>
-                    </div>
-                  )}
-                  {typeof segment.sentiment_harvard_score === 'number' && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-300">Harvard-IV:</span>
-                      <span className={getSentimentColor(segment.sentiment_harvard_score)}>
-                        {segment.sentiment_harvard_score.toFixed(3)}
-                      </span>
-                    </div>
-                  )}
-                  {typeof segment.sentiment_vader_score === 'number' && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-300">VADER:</span>
-                      <span className={getSentimentColor(segment.sentiment_vader_score)}>
-                        {segment.sentiment_vader_score.toFixed(3)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Readability Metrics */}
-            {(typeof segment.flesch_kincaid_grade === 'number' || 
-              typeof segment.flesch_reading_ease === 'number' ||
-              typeof segment.gunning_fog_index === 'number') && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-2 dark:text-gray-100">Readability Metrics</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                  {typeof segment.flesch_kincaid_grade === 'number' && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-300">Flesch-Kincaid Grade:</span>
-                      <span className="text-gray-900">{segment.flesch_kincaid_grade.toFixed(1)}</span>
-                    </div>
-                  )}
-                  {typeof segment.flesch_reading_ease === 'number' && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-300">Reading Ease:</span>
-                      <span className="text-gray-900">{segment.flesch_reading_ease.toFixed(1)}</span>
-                    </div>
-                  )}
-                  {typeof segment.gunning_fog_index === 'number' && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-300">Gunning Fog:</span>
-                      <span className="text-gray-900">{segment.gunning_fog_index.toFixed(1)}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Content Moderation */}
-            {segment.moderation_overall_score !== undefined && segment.moderation_overall_score !== null && segment.moderation_overall_score > 0.1 && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-2">Content Moderation</h4>
-                <div className="flex items-center space-x-2 text-sm">
-                  <AlertCircle className="h-4 w-4 text-amber-500" />
-                  <span className="text-gray-600">Overall Score:</span>
-                  <span className="text-amber-600 font-medium">
-                    {((segment.moderation_overall_score || 0) * 100).toFixed(1)}%
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex items-center space-x-4">
-              {segment.video && (
-                <Link
-                  to={`/videos/${segment.video.id}?t=${segment.video_seconds}&segment_id=${segment.id}`}
-                  className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 transition-colors"
-                >
-                  <Play className="h-4 w-4 mr-1" />
-                  Play Clip
-                </Link>
-              )}
-              {segment.video && (
-                <Link
-                  to={`/videos/${segment.video.id}?t=${segment.video_seconds}&segment_id=${segment.id}`}
-                  className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 transition-colors"
-                >
-                  <ExternalLink className="h-4 w-4 mr-1" />
-                  View Context
-                </Link>
-              )}
-              {segment.video && (
-                <button
-                  type="button"
-                  onClick={() => playlist.addSegment(segment as any)}
-                  className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 transition-colors"
-                  title="Add segment to playlist"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add to Playlist
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-950">
@@ -693,10 +358,10 @@ const SearchPage: React.FC = () => {
                   setQuery(e.target.value);
                   setIsTyping(true);
                 }}
-                className="block w-full pl-12 pr-24 py-4 border border-gray-300/50 rounded-xl text-base placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 dark:bg-gray-800/70 dark:border-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
+                className="block w-full pl-12 pr-28 py-4 border border-gray-300/50 rounded-xl text-base placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 dark:bg-gray-800/70 dark:border-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
                 placeholder="Search transcripts, speakers, topics..."
               />
-              <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                 <button
                   type="submit"
                   disabled={isLoading}
@@ -1175,7 +840,7 @@ const SearchPage: React.FC = () => {
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
             <div className="flex items-center">
               <AlertCircle className="h-5 w-5 text-red-400 mr-3" />
-              <span className="text-red-700">{error}</span>
+              <span className="text-red-700">{error.message}</span>
             </div>
           </div>
         )}
@@ -1190,25 +855,31 @@ const SearchPage: React.FC = () => {
                   Search Results
                 </h2>
                 <p className="text-sm text-gray-500">
-                  {searchResults.total.toLocaleString()} results for "{searchResults.query}"
+                  {resultsSummary}
                   <span className="ml-2 inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
-                    {filters.searchType === 'semantic' ? '🧠 Semantic' : 
-                     filters.searchType === 'fulltext' ? '🔍 Full-text' :
-                     filters.searchType === 'exact' ? '🎯 Exact' : '🔄 Fuzzy'}
+                    {searchTypeDisplay}
                   </span>
-                  {searchResults.total > 0 && (
+                  {paginationDisplay && (
                     <span>
-                      {' '}• Showing {((searchResults.page - 1) * searchResults.page_size) + 1}-
-                      {Math.min(searchResults.page * searchResults.page_size, searchResults.total)}
+                      {' '}{paginationDisplay}
                     </span>
                   )}
                 </p>
               </div>
             </div>
 
-            {/* Results List */}
-            <div className="space-y-4 mb-8">
-              {searchResults.results.map(renderSegment)}
+            {/* Results List - Virtualized for Performance */}
+            <div className="mb-8">
+              <VirtualizedSearchResults
+                results={searchResults.results}
+                query={query}
+                expandedSegments={expandedSegments}
+                onToggleExpansion={toggleSegmentExpansion}
+                selectedSegmentIds={selectedSegmentIds}
+                onToggleSelect={toggleSelectSegment}
+                selectionMode={selectionMode}
+                containerHeight={800} // Adjust based on your design needs
+              />
             </div>
 
             {/* Pagination */}
