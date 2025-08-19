@@ -60,6 +60,8 @@ export interface TranscriptSegment {
   id: number;
   segment_id: string;
   speaker_name: string;
+  speaker_party?: string;
+  segment_type?: string;
   transcript_text: string;
   video_seconds: number;
   timestamp_start?: string;

@@ -113,6 +113,8 @@ class TranscriptSegment(Base):
     
     # Core transcript data
     speaker_name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
+    speaker_party: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, index=True)  # For Tweede Kamer transcripts
+    segment_type: Mapped[str] = mapped_column(String(20), default="spoken", index=True)  # "spoken" or "announcement"
     transcript_text: Mapped[str] = mapped_column(Text, nullable=False)
     video_seconds: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
     timestamp_start: Mapped[Optional[str]] = mapped_column(String(20))  # e.g., "00:07:02"

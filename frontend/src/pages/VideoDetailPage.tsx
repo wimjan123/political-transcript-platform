@@ -742,10 +742,37 @@ const VideoDetailPage: React.FC = () => {
           </div>
         )}
 
+        {/* Session Announcements - Only for Tweede Kamer videos */}
+        {video?.dataset === 'tweede_kamer' && segments.some(s => s.segment_type === 'announcement') && (
+          <div className="bg-amber-50 rounded-lg shadow-sm border border-amber-200 p-4 sm:p-6 mb-8 dark:bg-amber-900/20 dark:border-amber-800">
+            <h2 className="text-lg font-medium text-amber-800 mb-4 dark:text-amber-300">Sessie-aankondigingen</h2>
+            <div className="space-y-2">
+              {segments.filter(s => s.segment_type === 'announcement').map((announcement) => (
+                <div
+                  key={announcement.id}
+                  className="border-l-4 border-amber-300 pl-4 py-2 text-sm text-amber-800 dark:text-amber-300"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-amber-600 dark:text-amber-400">
+                      {formatTimestamp(announcement.video_seconds)}
+                    </span>
+                  </div>
+                  <p className="leading-relaxed">{announcement.transcript_text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Transcript Segments */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 dark:bg-gray-800 dark:border-gray-700">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Transcript Segments</h2>
+            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+              Transcript Segments
+              {video?.dataset === 'tweede_kamer' && (
+                <span className="ml-2 text-sm text-gray-500">(Gesproken content)</span>
+              )}
+            </h2>
             
             {/* Selection + Speaker Filter */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
@@ -837,7 +864,7 @@ const VideoDetailPage: React.FC = () => {
 
           {/* Segments List */}
           <div className="space-y-4">
-            {segments.map((segment) => (
+            {segments.filter(s => s.segment_type !== 'announcement').map((segment) => (
               <div
                 key={segment.id}
                 id={`segment-${segment.id}`}
@@ -861,7 +888,14 @@ const VideoDetailPage: React.FC = () => {
                     )}
                     <div className="flex items-center space-x-2">
                       <User className="h-4 w-4 text-gray-400" />
-                      <span className="font-medium text-gray-900 dark:text-gray-100">{segment.speaker_name}</span>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-900 dark:text-gray-100">{segment.speaker_name}</span>
+                        {segment.speaker_party && video?.dataset === 'tweede_kamer' && (
+                          <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full font-medium">
+                            {segment.speaker_party}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     
                     <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
@@ -1115,7 +1149,7 @@ const VideoDetailPage: React.FC = () => {
           )}
 
           {/* No Segments Message */}
-          {segments.length === 0 && !loadingSegments && (
+          {segments.filter(s => s.segment_type !== 'announcement').length === 0 && !loadingSegments && (
             <div className="text-center py-8">
               <MessageSquare className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">No segments found</h3>

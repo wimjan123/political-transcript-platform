@@ -109,13 +109,24 @@ const DatabaseStatusPage: React.FC = () => {
     return () => clearInterval(interval);
   }, [importStatus?.status, embeddingStatus?.completion_percentage, embeddingStatus, loading, fetchData]);
 
-  const handleStartImport = async (forceReimport: boolean = false) => {
+  const handleStartImport = async (importType: 'html' | 'vlos' | 'both', forceReimport: boolean = false) => {
     try {
       setActionLoading('import');
       setActionMessage(null);
       
-      const result = await uploadAPI.startHtmlImport(undefined, forceReimport);
-      setActionMessage(`Import started: ${result.message}`);
+      let results = [];
+      
+      if (importType === 'html' || importType === 'both') {
+        const htmlResult = await uploadAPI.startHtmlImport(undefined, forceReimport);
+        results.push(`HTML: ${htmlResult.message}`);
+      }
+      
+      if (importType === 'vlos' || importType === 'both') {
+        const vlosResult = await uploadAPI.startVlosXmlImport(undefined, forceReimport);
+        results.push(`Tweede Kamer: ${vlosResult.message}`);
+      }
+      
+      setActionMessage(`Import started - ${results.join(', ')}`);
       
       // Refresh data after starting import
       setTimeout(() => {
@@ -124,21 +135,6 @@ const DatabaseStatusPage: React.FC = () => {
     } catch (err) {
       console.error('Failed to start import:', err);
       setActionMessage(`Failed to start import: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleStartVlosImport = async (forceReimport: boolean = false) => {
-    try {
-      setActionLoading('vlos');
-      setActionMessage(null);
-      const result = await uploadAPI.startVlosXmlImport(undefined, forceReimport);
-      setActionMessage(`VLOS XML import started: ${result.message}`);
-      setTimeout(() => fetchData(), 1000);
-    } catch (err) {
-      console.error('Failed to start VLOS import:', err);
-      setActionMessage(`Failed to start VLOS import: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setActionLoading(null);
     }
@@ -324,20 +320,20 @@ const DatabaseStatusPage: React.FC = () => {
           </div>
           <div className="p-4 sm:p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
-              {/* HTML Import Controls */}
+              {/* Unified Import Controls */}
               <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 sm:p-5 rounded-xl border border-green-100 dark:from-green-900/20 dark:to-emerald-900/20 dark:border-green-900/30">
                 <div className="flex items-center mb-4">
                   <div className="bg-green-100 p-2 rounded-lg mr-3">
                     <Upload className="h-5 w-5 text-green-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">HTML Import</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">Data Import</h3>
                     <p className="text-xs text-gray-600 dark:text-gray-400">Process transcript files</p>
                   </div>
                 </div>
                 <div className="space-y-3">
                   <button
-                    onClick={() => handleStartImport(false)}
+                    onClick={() => handleStartImport('both', false)}
                     disabled={actionLoading === 'import' || importStatus?.status === 'running'}
                     className="w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
                   >
@@ -346,27 +342,31 @@ const DatabaseStatusPage: React.FC = () => {
                     ) : (
                       <Play className="h-4 w-4 mr-2" />
                     )}
-                    Start Import
+                    Start All Imports
                   </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleStartImport('html', false)}
+                      disabled={actionLoading === 'import' || importStatus?.status === 'running'}
+                      className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
+                    >
+                      HTML Only
+                    </button>
+                    <button
+                      onClick={() => handleStartImport('vlos', false)}
+                      disabled={actionLoading === 'import' || importStatus?.status === 'running'}
+                      className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
+                    >
+                      Tweede Kamer Only
+                    </button>
+                  </div>
                   <button
-                    onClick={() => handleStartVlosImport(false)}
-                    disabled={actionLoading === 'vlos' || importStatus?.status === 'running'}
-                    className="w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
-                  >
-                    {actionLoading === 'vlos' ? (
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Play className="h-4 w-4 mr-2" />
-                    )}
-                    Start Tweede Kamer Import
-                  </button>
-                  <button
-                    onClick={() => handleStartImport(true)}
+                    onClick={() => handleStartImport('both', true)}
                     disabled={actionLoading === 'import' || importStatus?.status === 'running'}
                     className="w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
                   >
                     <Download className="h-4 w-4 mr-2" />
-                    Force Reimport
+                    Force Reimport All
                   </button>
                   {importStatus?.status === 'running' && (
                     <button
@@ -385,30 +385,18 @@ const DatabaseStatusPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Tweede Kamer Controls */}
+              {/* Tweede Kamer Management */}
               <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-4 sm:p-5 rounded-xl border border-indigo-100 dark:from-indigo-900/20 dark:to-blue-900/20 dark:border-indigo-900/30">
                 <div className="flex items-center mb-4">
                   <div className="bg-indigo-100 p-2 rounded-lg mr-3">
                     <FileText className="h-5 w-5 text-indigo-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">Tweede Kamer (VLOS XML)</h3>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">Manage Dutch Parliament imports</p>
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">Tweede Kamer Management</h3>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Manage Dutch Parliament data</p>
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <button
-                    onClick={() => handleStartVlosImport(false)}
-                    disabled={actionLoading === 'vlos' || importStatus?.status === 'running'}
-                    className="w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
-                  >
-                    {actionLoading === 'vlos' ? (
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Play className="h-4 w-4 mr-2" />
-                    )}
-                    Start Import
-                  </button>
                   <button
                     onClick={handleClearTweedeKamer}
                     disabled={actionLoading === 'clear-tk'}
@@ -419,7 +407,7 @@ const DatabaseStatusPage: React.FC = () => {
                     ) : (
                       <Square className="h-4 w-4 mr-2" />
                     )}
-                    Delete Tweede Kamer Imports
+                    Delete Tweede Kamer Data
                   </button>
                 </div>
               </div>
