@@ -18,15 +18,18 @@ from ..config import settings
 from ..database import Base
 from ..models import SegmentTopic, Speaker, Topic, TranscriptSegment, Video
 from ..parsers.vlos_parser import VLOSXMLParser
+from .import_progress_tracker import ImportProgressTracker
 
 logger = logging.getLogger(__name__)
 
 
 class VLOSImportService:
-    def __init__(self, max_concurrent_files: int = 4) -> None:
+    def __init__(self, max_concurrent_files: int = 2) -> None:  # Reduced from 4 to 2
         self.parser = VLOSXMLParser()
         self.max_concurrent_files = max_concurrent_files
         self.semaphore = asyncio.Semaphore(max_concurrent_files)
+        self.chunk_size = 50  # Process files in chunks of 50
+        self.progress_update_interval = 10  # Update progress every 10 files
         self.engine = create_async_engine(
             settings.database_url.replace("postgresql://", "postgresql+asyncpg://"),
             echo=False,
@@ -48,42 +51,102 @@ class VLOSImportService:
         failed = 0
         errors: List[str] = []
         
-        # Process files in batches for better progress reporting
-        batch_size = self.max_concurrent_files * 3  # Process 3 batches worth at a time
+        logger.info(f"Starting VLOS XML import: {total} files found in {xml_dir}")
         
-        for batch_start in range(0, total, batch_size):
-            batch_end = min(batch_start + batch_size, total)
-            batch_files = xml_files[batch_start:batch_end]
+        # Initialize progress tracker
+        async with self.SessionLocal() as tracker_session:
+            progress_tracker = ImportProgressTracker(tracker_session)
+            job_id = await progress_tracker.start_job("vlos_xml_import", total)
+        
+        # Process files in smaller chunks to avoid overwhelming the system
+        for chunk_start in range(0, total, self.chunk_size):
+            # Check for cancellation before each chunk
+            async with self.SessionLocal() as check_session:
+                check_status = await ImportProgressTracker.get_latest_job_status(check_session)
+                if check_status and check_status["status"] == "cancelled":
+                    logger.info(f"Import job {job_id} was cancelled, stopping processing")
+                    return {
+                        "job_id": job_id,
+                        "total_files": total,
+                        "total_processed": processed,
+                        "total_failed": failed,
+                        "errors": errors + ["Import was cancelled by user"],
+                    }
             
-            # Create tasks for concurrent processing
-            tasks = [
-                self._import_xml_file_with_semaphore(str(file_path), force_reimport)
-                for file_path in batch_files
-            ]
+            chunk_end = min(chunk_start + self.chunk_size, total)
+            chunk_files = xml_files[chunk_start:chunk_end]
             
-            # Execute batch concurrently
-            batch_results = await asyncio.gather(*tasks, return_exceptions=True)
+            logger.info(f"Processing chunk {chunk_start//self.chunk_size + 1}/{(total + self.chunk_size - 1)//self.chunk_size}: files {chunk_start+1}-{chunk_end}")
             
-            # Process results and update counters
-            for i, (file_path, result) in enumerate(zip(batch_files, batch_results)):
-                current_index = batch_start + i
+            # Process each chunk with limited concurrency
+            chunk_tasks = []
+            for i in range(0, len(chunk_files), self.max_concurrent_files):
+                batch = chunk_files[i:i + self.max_concurrent_files]
+                batch_tasks = [
+                    self._import_xml_file_with_semaphore(str(file_path), force_reimport)
+                    for file_path in batch
+                ]
                 
+                # Execute batch and collect results
+                batch_results = await asyncio.gather(*batch_tasks, return_exceptions=True)
+                
+                # Process results
+                for file_path, result in zip(batch, batch_results):
+                    current_index = chunk_start + len(chunk_tasks)
+                    
+                    if isinstance(result, Exception):
+                        failed += 1
+                        error_msg = f"{Path(file_path).name}: {str(result)}"
+                        errors.append(error_msg)
+                        logger.error(f"Import failed for {file_path}: {result}")
+                    elif result.get("success"):
+                        processed += 1
+                        if processed % 20 == 0:  # Log every 20 successful imports
+                            logger.info(f"Progress: {processed}/{total} files processed successfully")
+                    else:
+                        failed += 1
+                        error_msg = f"{Path(file_path).name}: {result.get('error','Unknown error')}"
+                        errors.append(error_msg)
+                        logger.warning(f"Import failed for {file_path}: {error_msg}")
+                    
+                    chunk_tasks.append(result)
+                    
+                # Update progress tracker after each batch
+                async with self.SessionLocal() as tracker_session:
+                    tracker = ImportProgressTracker(tracker_session)
+                    tracker.job_id = job_id
+                    await tracker.update_progress(
+                        processed_files=processed,
+                        failed_files=failed,
+                        current_file=str(file_path) if 'file_path' in locals() else None,
+                        errors=errors[-10:]  # Keep only last 10 errors for database efficiency
+                    )
+                    
+                # Update progress callback if provided
                 if progress_callback:
-                    progress_callback(current_index, total, str(file_path), errors)
-                
-                if isinstance(result, Exception):
-                    failed += 1
-                    errors.append(f"{Path(file_path).name}: {str(result)}")
-                elif result.get("success"):
-                    processed += 1
-                else:
-                    failed += 1
-                    errors.append(f"{Path(file_path).name}: {result.get('error','Unknown error')}")
+                    progress_callback(processed + failed, total, str(file_path) if 'file_path' in locals() else "", errors)
+            
+            # Small delay between chunks to prevent system overload
+            if chunk_end < total:
+                await asyncio.sleep(2)
+
+        # Mark job as completed in progress tracker
+        try:
+            async with self.SessionLocal() as tracker_session:
+                tracker = ImportProgressTracker(tracker_session)
+                tracker.job_id = job_id
+                status = "completed" if failed == 0 else ("completed" if processed > 0 else "failed")
+                await tracker.complete_job(status=status, final_errors=errors[-20:])  # Keep last 20 errors
+        except Exception as e:
+            logger.error(f"Failed to update progress tracker completion: {e}")
 
         if progress_callback:
             progress_callback(total, total, "", errors)
 
+        logger.info(f"VLOS XML import completed: {processed} successful, {failed} failed out of {total} total files")
+        
         return {
+            "job_id": job_id,
             "total_files": total,
             "total_processed": processed,
             "total_failed": failed,

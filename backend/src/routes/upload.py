@@ -234,23 +234,67 @@ async def run_vlos_import(xml_dir: str, force_reimport: bool = False, max_concur
 
 
 @router.get("/import-status", response_model=ImportStatusResponse)
-async def get_import_status():
+async def get_import_status(db: AsyncSession = Depends(get_async_session)):
     """
-    Get the current status of the HTML import process
+    Get the current status of the import process (supports both HTML and VLOS XML imports)
     """
+    from ..services.import_progress_tracker import ImportProgressTracker
+    
+    # Try to get status from persistent progress tracker first
+    try:
+        persistent_status = await ImportProgressTracker.get_latest_job_status(db)
+        
+        if persistent_status and persistent_status["status"] == "running":
+            # Use persistent status if we have an active import
+            return ImportStatusResponse(
+                status=persistent_status["status"],
+                progress=persistent_status["progress"],
+                total_files=persistent_status["total_files"],
+                processed_files=persistent_status["processed_files"],
+                failed_files=persistent_status["failed_files"],
+                current_file=persistent_status["current_file"] or "",
+                errors=persistent_status["errors"] or [],
+                job_type=persistent_status["job_type"]
+            )
+        elif persistent_status and persistent_status["status"] in ["completed", "failed", "cancelled"]:
+            # Recently completed job
+            return ImportStatusResponse(
+                status=persistent_status["status"],
+                progress=100.0 if persistent_status["status"] == "completed" else persistent_status["progress"],
+                total_files=persistent_status["total_files"],
+                processed_files=persistent_status["processed_files"],
+                failed_files=persistent_status["failed_files"],
+                current_file="",
+                errors=persistent_status["errors"] or [],
+                job_type=persistent_status["job_type"]
+            )
+    except Exception as e:
+        logger.warning(f"Error getting persistent import status: {e}")
+    
+    # Fallback to in-memory status (for backwards compatibility)
     return ImportStatusResponse(**import_status)
 
 
 @router.post("/import-cancel")
-async def cancel_import():
+async def cancel_import(db: AsyncSession = Depends(get_async_session)):
     """
     Cancel the current import process
     """
-    if import_status["status"] not in ["running", "starting"]:
-        raise HTTPException(status_code=400, detail="No import process is currently running")
+    from ..services.import_progress_tracker import ImportProgressTracker
     
-    import_status["status"] = "cancelled"
-    return {"message": "Import process cancelled"}
+    # Check both persistent and in-memory status
+    persistent_status = await ImportProgressTracker.get_latest_job_status(db)
+    
+    if persistent_status and persistent_status["status"] == "running":
+        # Cancel persistent job
+        await ImportProgressTracker.cancel_running_jobs(db)
+        return {"message": "Import process has been cancelled"}
+    elif import_status["status"] in ["running", "starting"]:
+        # Cancel in-memory job (legacy)
+        import_status["status"] = "cancelled"
+        return {"message": "Import process has been cancelled"}
+    else:
+        raise HTTPException(status_code=400, detail="No import process is currently running")
 
 
 @router.websocket("/ws/import-status")

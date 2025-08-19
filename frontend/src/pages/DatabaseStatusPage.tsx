@@ -85,26 +85,36 @@ const DatabaseStatusPage: React.FC = () => {
   }, [fetchData]); // Only run once on mount
 
   useEffect(() => {
-    // Safety timeout to prevent infinite loading
+    // Safety timeout to prevent infinite loading - increased for large imports
     const safetyTimeout = setTimeout(() => {
       if (loading) {
-        console.warn('Force stopping loading after 10 seconds');
+        console.warn('Force stopping loading after 30 seconds');
         setLoading(false);
-        setError('Loading timed out. Please try refreshing the page.');
+        setError('Loading timed out. If an import is running, it will continue in the background. Try refreshing in a few minutes.');
       }
-    }, 10000);
+    }, 30000);  // Increased from 10s to 30s
 
     return () => clearTimeout(safetyTimeout);
   }, [loading]);
 
   useEffect(() => {
-    // Auto-refresh every 30 seconds if import is running or embeddings are being generated
+    // Auto-refresh with adaptive intervals based on import status
+    const getRefreshInterval = () => {
+      if (importStatus?.status === 'running') {
+        // More frequent updates during active imports
+        return 10000; // 10 seconds
+      } else if (embeddingStatus && embeddingStatus.completion_percentage < 100) {
+        return 15000; // 15 seconds for embeddings
+      }
+      return 60000; // 60 seconds for idle state
+    };
+
     const interval = setInterval(() => {
       if (!loading && (importStatus?.status === 'running' || 
           (embeddingStatus && embeddingStatus.completion_percentage < 100))) {
         fetchData();
       }
-    }, 30000);
+    }, getRefreshInterval());
 
     return () => clearInterval(interval);
   }, [importStatus?.status, embeddingStatus?.completion_percentage, embeddingStatus, loading, fetchData]);
@@ -518,11 +528,29 @@ const DatabaseStatusPage: React.FC = () => {
                         <span>Progress</span>
                         <span>{importStatus.progress.toFixed(1)}%</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
                         <div
-                          className="bg-primary-600 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${importStatus.progress}%` }}
-                        />
+                          className="bg-blue-600 h-3 rounded-full transition-all duration-500 flex items-center justify-end pr-2"
+                          style={{ width: `${Math.max(importStatus.progress, 2)}%` }}
+                        >
+                          {importStatus.progress > 10 && (
+                            <div className="w-2 h-2 bg-blue-200 rounded-full animate-pulse"></div>
+                          )}
+                        </div>
+                      </div>
+                      {importStatus.total_files > 1000 && (
+                        <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded mb-2">
+                          ⚠️ Large import in progress ({importStatus.total_files.toLocaleString()} files). 
+                          This may take several hours to complete. The process will continue even if you close this page.
+                        </div>
+                      )}
+                      <div className="text-xs text-gray-500">
+                        Processing: {importStatus.processed_files.toLocaleString()} of {importStatus.total_files.toLocaleString()} files
+                        {importStatus.job_type && (
+                          <span className="ml-2 px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                            {importStatus.job_type === 'vlos_xml_import' ? 'Tweede Kamer' : 'HTML'}
+                          </span>
+                        )}
                       </div>
                     </div>
                   )}
