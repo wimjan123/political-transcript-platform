@@ -28,23 +28,38 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-political_transcripts}
       API_HOST: 0.0.0.0
       API_PORT: 8000
-      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-["https://yourdomain.com"]}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-["https://polibase.ai.thewillonline.nl"]}
       HTML_DATA_DIR: /data/html
+      XML_DATA_DIR: ${XML_DATA_DIR:-/root/tweedekamer_scrape/tweede-kamer-scraper/output/xml/}
+      MEILI_HOST: ${MEILI_HOST:-http://meilisearch:7700}
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-change-me}
       DEBUG: false
       LOG_LEVEL: INFO
     volumes:
       - ./data:/data
       - /root/polibase/out/html:/data/html:ro
+      - /root/tweedekamer_scrape/tweede-kamer-scraper/output/raw_xml:${XML_DATA_DIR:-/root/tweedekamer_scrape/tweede-kamer-scraper/output/xml/}:ro
     networks:
       - app_network
+      - pangolin
     depends_on:
       db:
         condition: service_healthy
+      meilisearch:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=10)"]
       interval: 30s
-      timeout: 10s
-      retries: 5
+      timeout: 15s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=pangolin"
+      - "traefik.http.routers.polibase-api.rule=Host(`polibase.ai.thewillonline.nl`) && PathPrefix(`/api`, `/health`, `/docs`, `/redoc`)"
+      - "traefik.http.routers.polibase-api.tls=true"
+      - "traefik.http.routers.polibase-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.polibase-api.loadbalancer.server.port=8000"
 
   web:
     build:
@@ -52,31 +67,64 @@ services:
       dockerfile: Dockerfile.prod
     container_name: political_transcripts_web_prod
     environment:
-      REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:8000}
+      REACT_APP_API_URL: ${REACT_APP_API_URL:-}
       REACT_APP_TITLE: ${REACT_APP_TITLE:-Political Transcript Search}
     networks:
       - app_network
+      - pangolin
     depends_on:
       - api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 60s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=pangolin"
+      - "traefik.http.routers.polibase-web.rule=Host(`polibase.ai.thewillonline.nl`)"
+      - "traefik.http.routers.polibase-web.tls=true"
+      - "traefik.http.routers.polibase-web.tls.certresolver=letsencrypt"
+      - "traefik.http.services.polibase-web.loadbalancer.server.port=80"
 
-  nginx:
-    image: nginx:alpine
-    container_name: political_transcripts_nginx_prod
-    ports:
-      - "80:80"
-      - "443:443"
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    container_name: political_transcripts_meilisearch_prod
+    environment:
+      MEILI_ENV: "production"
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-change-me}
+      MEILI_HTTP_ADDR: "0.0.0.0:7700"
+      MEILI_EXPERIMENTAL_ENABLE_VECTOR_STORE: "true"
+      MEILI_EXPERIMENTAL_ENABLE_METRICS: "true"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./nginx/ssl:/etc/nginx/ssl
+      - meili_data_prod:/meili_data
     networks:
       - app_network
-    depends_on:
-      - web
-      - api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+
 
 volumes:
   postgres_data_prod:
+  meili_data_prod:
 
 networks:
   app_network:
     driver: bridge
+  pangolin:
+    external: true
