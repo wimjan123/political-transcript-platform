@@ -115,7 +115,7 @@ class ImportProgressTracker:
                    current_file, error_messages, started_at, updated_at, completed_at,
                    CASE 
                        WHEN total_files = 0 THEN 0 
-                       ELSE ROUND((processed_files::float / total_files::float) * 100, 2)
+                       ELSE ROUND((processed_files::numeric / total_files::numeric) * 100, 2)
                    END as progress_percentage
             FROM import_progress 
             ORDER BY started_at DESC 
