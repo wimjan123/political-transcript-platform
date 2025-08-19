@@ -432,36 +432,36 @@ class TranscriptHTMLParser:
         """Extract content moderation scores"""
         moderation_data = {}
         
-        # Look for moderation sections
+        # Look for moderation sections with the correct HTML structure
         moderation_divs = details_div.find_all('div', class_='mb-4')
         
         for div in moderation_divs:
-            text_content = div.get_text(strip=True)
-            
-            if 'Harassment' in text_content:
-                score_match = re.search(r'Harassment\s+([\d.]+)', text_content)
-                if score_match:
-                    moderation_data['moderation_harassment'] = float(score_match.group(1))
-            
-            elif 'Hate' in text_content:
-                score_match = re.search(r'Hate\s+([\d.]+)', text_content)
-                if score_match:
-                    moderation_data['moderation_hate'] = float(score_match.group(1))
-            
-            elif 'Self-harm' in text_content or 'Self harm' in text_content:
-                score_match = re.search(r'Self-?harm\s+([\d.]+)', text_content)
-                if score_match:
-                    moderation_data['moderation_self_harm'] = float(score_match.group(1))
-            
-            elif 'Sexual' in text_content:
-                score_match = re.search(r'Sexual\s+([\d.]+)', text_content)
-                if score_match:
-                    moderation_data['moderation_sexual'] = float(score_match.group(1))
-            
-            elif 'Violence' in text_content:
-                score_match = re.search(r'Violence\s+([\d.]+)', text_content)
-                if score_match:
-                    moderation_data['moderation_violence'] = float(score_match.group(1))
+            # Get all child divs with class 'mb-2'
+            child_divs = div.find_all('div', class_='mb-2')
+            if len(child_divs) >= 3:
+                name_text = child_divs[0].get_text(strip=True)
+                score_text = child_divs[1].get_text(strip=True)
+                
+                # Only process basic moderation categories (not subcategories like "Violence > Graphic")
+                if '>' in name_text:
+                    continue
+                    
+                try:
+                    score = float(score_text)
+                    
+                    if name_text == 'Harassment':
+                        moderation_data['moderation_harassment'] = score
+                    elif name_text == 'Hate':
+                        moderation_data['moderation_hate'] = score
+                    elif name_text in ['Self-harm', 'Self harm']:
+                        moderation_data['moderation_self_harm'] = score
+                    elif name_text == 'Sexual':
+                        moderation_data['moderation_sexual'] = score
+                    elif name_text == 'Violence':
+                        moderation_data['moderation_violence'] = score
+                        
+                except (ValueError, TypeError):
+                    pass
         
         # Calculate overall moderation score
         scores = [v for k, v in moderation_data.items() if k.startswith('moderation_') and not k.endswith('_flag')]
@@ -482,16 +482,44 @@ class TranscriptHTMLParser:
         """Extract topic classification data"""
         topic_data = {}
         
-        # Look for topic sections
+        # Look for topic sections with the correct HTML structure
         topic_divs = details_div.find_all('div', class_='flex gap-2 py-2 border-b')
         
+        current_topic = {}
         for div in topic_divs:
-            text_content = div.get_text(strip=True)
-            if 'Topic:' in text_content:
-                topic_parts = text_content.split('Topic:')
-                if len(topic_parts) > 1:
-                    topic_data['primary_topic'] = topic_parts[1].strip()
-                break
+            # Get child divs with class 'w-1/2'
+            child_divs = div.find_all('div', class_='w-1/2')
+            if len(child_divs) >= 2:
+                key_text = child_divs[0].get_text(strip=True).rstrip(':')
+                value_text = child_divs[1].get_text(strip=True)
+                
+                if key_text == 'Topic':
+                    current_topic['name'] = value_text
+                elif key_text == 'Score':
+                    try:
+                        current_topic['score'] = float(value_text)
+                    except (ValueError, TypeError):
+                        pass
+                elif key_text == 'Magnitude':
+                    try:
+                        current_topic['magnitude'] = int(value_text)
+                    except (ValueError, TypeError):
+                        pass
+                elif key_text == 'Code':
+                    current_topic['code'] = value_text
+                elif key_text == 'Source':
+                    current_topic['source'] = value_text
+                    # When we reach Source, we have a complete topic
+                    if 'name' in current_topic:
+                        if 'primary_topic' not in topic_data:
+                            topic_data['primary_topic'] = current_topic['name']
+                        if 'topic_score' not in topic_data and 'score' in current_topic:
+                            topic_data['topic_score'] = current_topic['score']
+                        if 'topic_magnitude' not in topic_data and 'magnitude' in current_topic:
+                            topic_data['topic_magnitude'] = current_topic['magnitude']
+                        if 'topic_code' not in topic_data and 'code' in current_topic:
+                            topic_data['topic_code'] = current_topic['code']
+                    current_topic = {}  # Reset for next topic
         
         return topic_data
     
