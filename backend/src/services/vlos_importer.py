@@ -8,9 +8,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
+import aiofiles
+from aiomultiprocess import Pool as AioPool
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -23,13 +26,62 @@ from .import_progress_tracker import ImportProgressTracker
 logger = logging.getLogger(__name__)
 
 
+# Standalone function for multiprocessing (must be at module level)
+async def parse_xml_file_async(file_path: str) -> Dict[str, Any]:
+    """Parse a single XML file asynchronously using aiofiles and return structured data."""
+    try:
+        # Use async file I/O for reading
+        async with aiofiles.open(file_path, 'rb') as f:
+            raw = await f.read()
+        
+        # Parse using optimized approach
+        from ..parsers.vlos_parser import VLOSXMLParser
+        parser = VLOSXMLParser()
+        
+        # Use the new parse_content method if available, fallback to file-based parsing
+        if hasattr(parser, 'parse_content'):
+            result = parser.parse_content(raw, file_path)
+        else:
+            # Convert bytes to string for parser
+            try:
+                text = raw.decode("utf-8")
+            except Exception:
+                text = raw.decode("latin-1")
+                
+            # Create temporary file for parser (it expects file path)
+            import tempfile
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.xml', delete=False) as tmp:
+                tmp.write(text)
+                temp_path = tmp.name
+            
+            try:
+                result = parser.parse_file(temp_path)
+            finally:
+                # Clean up temp file
+                try:
+                    os.unlink(temp_path)
+                except Exception:
+                    pass
+        
+        result['original_file_path'] = file_path
+        return {"success": True, "data": result, "file_path": file_path}
+                
+    except Exception as e:
+        return {"success": False, "error": str(e), "file_path": file_path}
+
+
 class VLOSImportService:
-    def __init__(self, max_concurrent_files: int = 2) -> None:  # Reduced from 4 to 2
+    def __init__(self, max_concurrent_files: int = 8) -> None:  # Increased from 2 to 8
         self.parser = VLOSXMLParser()
         self.max_concurrent_files = max_concurrent_files
         self.semaphore = asyncio.Semaphore(max_concurrent_files)
-        self.chunk_size = 50  # Process files in chunks of 50
-        self.progress_update_interval = 10  # Update progress every 10 files
+        self.chunk_size = 100  # Increased from 50 to 100
+        self.progress_update_interval = 20  # Update progress every 20 files
+        
+        # Determine optimal CPU count for multiprocessing
+        cpu_count = os.cpu_count() or 4
+        self.process_pool_size = min(max_concurrent_files, max(2, cpu_count - 1))
+        
         self.engine = create_async_engine(
             settings.database_url.replace("postgresql://", "postgresql+asyncpg://"),
             echo=False,
@@ -58,77 +110,76 @@ class VLOSImportService:
             progress_tracker = ImportProgressTracker(tracker_session)
             job_id = await progress_tracker.start_job("vlos_xml_import", total)
         
-        # Process files in smaller chunks to avoid overwhelming the system
-        for chunk_start in range(0, total, self.chunk_size):
-            # Check for cancellation before each chunk
-            async with self.SessionLocal() as check_session:
-                check_status = await ImportProgressTracker.get_latest_job_status(check_session)
-                if check_status and check_status["status"] == "cancelled":
-                    logger.info(f"Import job {job_id} was cancelled, stopping processing")
-                    return {
-                        "job_id": job_id,
-                        "total_files": total,
-                        "total_processed": processed,
-                        "total_failed": failed,
-                        "errors": errors + ["Import was cancelled by user"],
-                    }
-            
-            chunk_end = min(chunk_start + self.chunk_size, total)
-            chunk_files = xml_files[chunk_start:chunk_end]
-            
-            logger.info(f"Processing chunk {chunk_start//self.chunk_size + 1}/{(total + self.chunk_size - 1)//self.chunk_size}: files {chunk_start+1}-{chunk_end}")
-            
-            # Process each chunk with limited concurrency
-            chunk_tasks = []
-            for i in range(0, len(chunk_files), self.max_concurrent_files):
-                batch = chunk_files[i:i + self.max_concurrent_files]
-                batch_tasks = [
-                    self._import_xml_file_with_semaphore(str(file_path), force_reimport)
-                    for file_path in batch
-                ]
+        # Use aiomultiprocess for high-performance XML parsing
+        async with AioPool(processes=self.process_pool_size, childconcurrency=2) as process_pool:
+            # Process files in chunks using multiprocessing
+            for chunk_start in range(0, total, self.chunk_size):
+                # Check for cancellation before each chunk
+                async with self.SessionLocal() as check_session:
+                    check_status = await ImportProgressTracker.get_latest_job_status(check_session)
+                    if check_status and check_status["status"] == "cancelled":
+                        logger.info(f"Import job {job_id} was cancelled, stopping processing")
+                        return {
+                            "job_id": job_id,
+                            "total_files": total,
+                            "total_processed": processed,
+                            "total_failed": failed,
+                            "errors": errors + ["Import was cancelled by user"],
+                        }
                 
-                # Execute batch and collect results
-                batch_results = await asyncio.gather(*batch_tasks, return_exceptions=True)
+                chunk_end = min(chunk_start + self.chunk_size, total)
+                chunk_files = xml_files[chunk_start:chunk_end]
                 
-                # Process results
-                for file_path, result in zip(batch, batch_results):
-                    current_index = chunk_start + len(chunk_tasks)
+                logger.info(f"Processing chunk {chunk_start//self.chunk_size + 1}/{(total + self.chunk_size - 1)//self.chunk_size}: files {chunk_start+1}-{chunk_end} using {self.process_pool_size} processes")
+                
+                # Parse files using multiprocessing pool
+                parse_results = []
+                async for parse_result in process_pool.map(parse_xml_file_async, [str(f) for f in chunk_files]):
+                    parse_results.append(parse_result)
+                
+                # Now process parsed data and save to database
+                for parse_result in parse_results:
+                    file_path = parse_result["file_path"]
                     
-                    if isinstance(result, Exception):
+                    if not parse_result.get("success"):
                         failed += 1
-                        error_msg = f"{Path(file_path).name}: {str(result)}"
+                        error_msg = f"{Path(file_path).name}: {parse_result.get('error', 'Unknown error')}"
                         errors.append(error_msg)
-                        logger.error(f"Import failed for {file_path}: {result}")
-                    elif result.get("success"):
-                        processed += 1
-                        if processed % 20 == 0:  # Log every 20 successful imports
-                            logger.info(f"Progress: {processed}/{total} files processed successfully")
-                    else:
+                        logger.error(f"Parse failed for {file_path}: {parse_result.get('error')}")
+                        continue
+                    
+                    # Save parsed data to database
+                    try:
+                        import_result = await self._save_parsed_data_to_db(parse_result["data"], force_reimport)
+                        if import_result.get("success"):
+                            processed += 1
+                            if processed % 20 == 0:  # Log every 20 successful imports
+                                logger.info(f"Progress: {processed}/{total} files processed successfully")
+                        else:
+                            failed += 1
+                            error_msg = f"{Path(file_path).name}: {import_result.get('error', 'Database save failed')}"
+                            errors.append(error_msg)
+                            logger.error(f"Database save failed for {file_path}: {import_result.get('error')}")
+                    except Exception as e:
                         failed += 1
-                        error_msg = f"{Path(file_path).name}: {result.get('error','Unknown error')}"
+                        error_msg = f"{Path(file_path).name}: Database save exception: {str(e)}"
                         errors.append(error_msg)
-                        logger.warning(f"Import failed for {file_path}: {error_msg}")
-                    
-                    chunk_tasks.append(result)
-                    
-                # Update progress tracker after each batch
+                        logger.exception(f"Database save exception for {file_path}")
+                
+                # Update progress tracker after each chunk
                 async with self.SessionLocal() as tracker_session:
                     tracker = ImportProgressTracker(tracker_session)
                     tracker.job_id = job_id
                     await tracker.update_progress(
                         processed_files=processed,
                         failed_files=failed,
-                        current_file=str(file_path) if 'file_path' in locals() else None,
+                        current_file=None,  # No current file when processing in chunks
                         errors=errors[-10:]  # Keep only last 10 errors for database efficiency
                     )
                     
                 # Update progress callback if provided
                 if progress_callback:
-                    progress_callback(processed + failed, total, str(file_path) if 'file_path' in locals() else "", errors)
-            
-            # Small delay between chunks to prevent system overload
-            if chunk_end < total:
-                await asyncio.sleep(2)
+                    progress_callback(processed + failed, total, "", errors)
 
         # Mark job as completed in progress tracker
         try:
@@ -215,4 +266,41 @@ class VLOSImportService:
             await db.flush()
         cache[norm] = sp
         return sp
+    
+    async def _save_parsed_data_to_db(self, parsed_data: Dict[str, Any], force_reimport: bool = False) -> Dict[str, Any]:
+        """Save parsed XML data to database efficiently."""
+        try:
+            filename = Path(parsed_data["video_metadata"]["filename"]).name
+            
+            async with self.SessionLocal() as db:
+                # Check if video already exists
+                existing_q = select(Video).where(Video.filename == filename)
+                res = await db.execute(existing_q)
+                existing = res.scalar_one_or_none()
+                
+                if existing and not force_reimport:
+                    return {"success": True, "message": "Video already exists, skipping", "video_id": existing.id}
+                
+                if existing and force_reimport:
+                    # Delete existing segments
+                    await db.execute(select(TranscriptSegment).where(TranscriptSegment.video_id == existing.id))
+                    await db.commit()
+                    video = existing
+                else:
+                    # Create new video
+                    vm = {**parsed_data["video_metadata"], "dataset": "tweede_kamer", "source_type": "xml"}
+                    video = Video(**vm)
+                    db.add(video)
+                    await db.commit()
+                    await db.refresh(video)
+
+                # Save segments
+                await self._process_segments(db, video, parsed_data["segments"])
+                await db.commit()
+                
+                return {"success": True, "video_id": video.id, "segments_imported": len(parsed_data["segments"])}
+                
+        except Exception as e:
+            logger.exception("Failed to save parsed data to database")
+            return {"success": False, "error": str(e)}
 

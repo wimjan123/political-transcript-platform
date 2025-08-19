@@ -145,6 +145,10 @@ political-transcript-platform/
 └── API.md                 # API documentation
 ```
 
+### Scaling API Workers (Dev)
+
+The dev API container runs via Uvicorn and supports multi-core workers. Set `API_WORKERS` in `.env` to control concurrency, e.g. `API_WORKERS=4`. For hot reload during local manual runs, prefer `uvicorn src.main:app --reload` (single worker).
+
 ## 🔧 Configuration
 
 ### Environment Variables

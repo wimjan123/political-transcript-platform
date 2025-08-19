@@ -171,8 +171,8 @@ class SummarizationService:
         # Get video duration
         duration_seconds = None
         if segments:
-            max_seconds = max((seg.video_seconds for seg in segments if seg.video_seconds), default=None)
-            if max_seconds:
+            max_seconds = max((seg.video_seconds for seg in segments if seg.video_seconds is not None), default=None)
+            if max_seconds is not None:
                 duration_seconds = max_seconds
         
         # Determine effective model used

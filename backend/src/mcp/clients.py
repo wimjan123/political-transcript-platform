@@ -104,7 +104,7 @@ If you cannot find relevant information to answer the user's question, politely 
             video_seconds = segment.get("video_seconds")
             segment_id = segment.get("id", "")
             
-            timestamp = f"{video_seconds//60:02d}:{video_seconds%60:02d}" if video_seconds else "Unknown"
+            timestamp = f"{video_seconds//60:02d}:{video_seconds%60:02d}" if video_seconds is not None else "Unknown"
             
             context_part = f"""
 Segment {i}:

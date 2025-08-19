@@ -38,7 +38,7 @@ async def start_html_import(
     background_tasks: BackgroundTasks,
     source_dir: Optional[str] = Query(None, description="Source directory (defaults to config)"),
     force_reimport: bool = Query(False, description="Force reimport of existing files"),
-    max_concurrent: int = Query(4, ge=1, le=10, description="Max concurrent file processing (1-10)"),
+    max_concurrent: int = Query(8, ge=1, le=16, description="Max concurrent file processing (1-16)"),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -137,7 +137,7 @@ async def start_vlos_xml_import(
     background_tasks: BackgroundTasks,
     source_dir: Optional[str] = Query(None, description="Source directory (defaults to XML_DATA_DIR)"),
     force_reimport: bool = Query(False, description="Force reimport of existing files"),
-    max_concurrent: int = Query(4, ge=1, le=10, description="Max concurrent file processing (1-10)"),
+    max_concurrent: int = Query(8, ge=1, le=16, description="Max concurrent file processing (1-16)"),
     db: AsyncSession = Depends(get_db),
 ):
     """Start importing Tweede Kamer VLOS XML files in the background"""
@@ -234,7 +234,7 @@ async def run_vlos_import(xml_dir: str, force_reimport: bool = False, max_concur
 
 
 @router.get("/import-status", response_model=ImportStatusResponse)
-async def get_import_status(db: AsyncSession = Depends(get_async_session)):
+async def get_import_status(db: AsyncSession = Depends(get_db)):
     """
     Get the current status of the import process (supports both HTML and VLOS XML imports)
     """
@@ -276,7 +276,7 @@ async def get_import_status(db: AsyncSession = Depends(get_async_session)):
 
 
 @router.post("/import-cancel")
-async def cancel_import(db: AsyncSession = Depends(get_async_session)):
+async def cancel_import(db: AsyncSession = Depends(get_db)):
     """
     Cancel the current import process
     """

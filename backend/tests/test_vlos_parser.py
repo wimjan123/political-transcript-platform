@@ -122,7 +122,7 @@ class TestVLOSParser(unittest.TestCase):
                 self.assertEqual(result, expected_seconds)
 
     def test_parse_datetime_to_seconds_invalid_format(self):
-        """Test parsing invalid datetime formats returns 0."""
+        """Test parsing invalid datetime formats returns None (unknown timing)."""
         invalid_formats = [
             "invalid-datetime",
             "2018-11-08",  # No time part
@@ -137,7 +137,7 @@ class TestVLOSParser(unittest.TestCase):
         for invalid_format in invalid_formats:
             with self.subTest(invalid_format=invalid_format):
                 result = self.parser._parse_datetime_to_seconds(invalid_format)
-                self.assertEqual(result, 0)
+                self.assertIsNone(result)
 
     def test_extract_speaker_name_de_heer_pattern(self):
         """Test extracting speaker names with 'De heer' pattern."""

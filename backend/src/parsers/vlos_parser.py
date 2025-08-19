@@ -192,14 +192,14 @@ class VLOSXMLParser:
         
         return ""
 
-    def parse_file(self, file_path: str) -> Dict[str, Any]:
-        # Read and sanitize XML content (remove scraper comment, stray BOMs)
-        raw = Path(file_path).read_bytes()
+    def parse_content(self, raw_content: bytes, file_path: str) -> Dict[str, Any]:
+        """Parse XML content directly from bytes without file I/O."""
         try:
-            text = raw.decode("utf-8")
+            text = raw_content.decode("utf-8")
         except Exception:
             # Fall back to latin-1 then convert
-            text = raw.decode("latin-1")
+            text = raw_content.decode("latin-1")
+        
         # Drop leading scraper metadata comment if present
         text = re.sub(r"^\s*<!--\s*scraper-metadata:base64:[\s\S]*?-->\s*", "", text)
         # Remove any BOM characters and common double-encoded BOM glyphs
@@ -209,6 +209,16 @@ class VLOSXMLParser:
         root = ET.fromstring(text)
 
         filename = Path(file_path).name
+        return self._parse_xml_root(root, filename)
+
+    def parse_file(self, file_path: str) -> Dict[str, Any]:
+        # Read and sanitize XML content (remove scraper comment, stray BOMs)
+        raw = Path(file_path).read_bytes()
+        filename = Path(file_path).name
+        return self.parse_content(raw, file_path)
+    
+    def _parse_xml_root(self, root: ET.Element, filename: str) -> Dict[str, Any]:
+        """Parse XML root element into structured data."""
 
         title = self._find_text(root, ["titel", "sessionTitle", "title", "VergaderingTitel", "vergadering_titel"]) or filename
         date_value = self._find_text(root, ["datum", "date", "Datum", "vergadering_datum"]) or root.attrib.get("date")
@@ -242,18 +252,14 @@ class VLOSXMLParser:
             t = el.tag
             return t.split('}')[-1] if '}' in t else t
     
-        # Helper to find parent Elements (ElementTree Elements do not have parent pointers)
-        import gc
+        # Build parent map for efficient parent lookups (replaces catastrophic gc.get_objects())
+        parent_map = {}
+        for parent in root.iter():
+            for child in parent:
+                parent_map[child] = parent
+        
         def _find_parent(node):
-            for obj in gc.get_objects():
-                if isinstance(obj, ET.Element):
-                    try:
-                        for child in list(obj):
-                            if child is node:
-                                return obj
-                    except Exception:
-                        continue
-            return None
+            return parent_map.get(node)
     
         # Extract session start/end times if available
         start_time = self._find_text(root, ["aanvangstijd", "start_time"]) or None
@@ -423,22 +429,20 @@ class VLOSXMLParser:
         if start_time is None or end_time is None:
             current = woordvoerder
 
-            # ElementTree Elements do not provide parent pointers. Use a
-            # conservative search over existing Element instances to find a
-            # parent node (works in the unit-test environment and small docs).
-            import gc
+            # Build parent map for efficient parent lookups (replaces catastrophic gc.get_objects())
+            # Since we don't have access to root here, create a local parent map from the current subtree
+            parent_map = {}
+            
+            # Traverse the woordvoerder subtree to build parent relationships
+            def build_parent_map(element):
+                for child in element:
+                    parent_map[child] = element
+                    build_parent_map(child)
+            
+            build_parent_map(woordvoerder)
 
             def _find_parent(node):
-                for obj in gc.get_objects():
-                    # Fast check: only inspect xml Elements
-                    if isinstance(obj, ET.Element):
-                        try:
-                            for child in list(obj):
-                                if child is node:
-                                    return obj
-                        except Exception:
-                            continue
-                return None
+                return parent_map.get(node)
 
             for _ in range(5):  # Search up to 5 levels up
                 parent = _find_parent(current)
