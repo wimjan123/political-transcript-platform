@@ -1,7 +1,7 @@
 {
-  "name": "political-transcript-frontend",
+  "name": "polibase-frontend",
   "version": "1.0.0",
-  "description": "Political Transcript Search Platform - Frontend",
+  "description": "PoliBase - Political Research Platform Frontend",
   "private": true,
   "dependencies": {
     "@tanstack/react-query": "^5.85.5",

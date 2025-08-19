@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Search, BarChart3, Video, Database, Upload, Menu, X, ListMusic, Settings, Bot, ChevronDown, Shield, FileText } from 'lucide-react';
 import { playlist, usePlaylistCount } from '../services/playlist';
 import ThemeToggle from './ThemeToggle';
+import polibaseLogo from '../assets/polibase-logo.png';
 
 const Layout: React.FC = () => {
   const location = useLocation();
@@ -12,6 +13,7 @@ const Layout: React.FC = () => {
 
   const navigation = [
     { name: 'Search', href: '/search', icon: Search },
+    { name: 'Tweede Kamer', href: '/tweede-kamer', icon: Shield },
     { name: 'Summaries', href: '/summaries', icon: FileText },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
     { name: 'Videos', href: '/videos', icon: Video },
@@ -59,17 +61,13 @@ const Layout: React.FC = () => {
               {/* Logo */}
               <Link to="/" className="flex items-center px-4 group">
                 <div className="flex-shrink-0 flex items-center">
-                  <div className="h-8 w-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center group-hover:shadow-lg transition-all duration-300">
-                    <Search className="h-5 w-5 text-white" />
-                  </div>
-                  <span className="ml-3 text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent hidden xl:block dark:from-white dark:to-gray-300">
-                    Political Transcript Search
-                  </span>
-                  <span className="ml-3 text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent hidden lg:block xl:hidden dark:from-white dark:to-gray-300">
-                    Political Search
-                  </span>
-                  <span className="ml-3 text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent lg:hidden dark:from-white dark:to-gray-300">
-                    PTS
+                  <img 
+                    src={polibaseLogo} 
+                    alt="PoliBase" 
+                    className="h-8 w-auto group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <span className="ml-3 text-xl font-bold text-gray-900 hidden sm:block dark:text-white">
+                    PoliBase
                   </span>
                 </div>
               </Link>
