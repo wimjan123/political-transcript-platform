@@ -110,8 +110,9 @@ services:
       start_period: 60s
     stdin_open: true
     tty: true
-    external_links:
-      - traefik:traefik
+    networks:
+      - default
+      - pangolin
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.polibase-web.rule=Host(`polibase.nl`)"
@@ -203,3 +204,5 @@ networks:
     ipam:
       config:
         - subnet: 172.20.0.0/16
+  pangolin:
+    external: true
