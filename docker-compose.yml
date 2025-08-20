@@ -112,6 +112,12 @@ services:
     tty: true
     external_links:
       - traefik:traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.polibase-web.rule=Host(`polibase.nl`)"
+      - "traefik.http.routers.polibase-web.entrypoints=websecure"
+      - "traefik.http.routers.polibase-web.tls.certresolver=myresolver"
+      - "traefik.http.services.polibase-web.loadbalancer.server.port=3000"
 
   elasticsearch:
     image: elasticsearch:8.11.0
