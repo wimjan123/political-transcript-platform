@@ -35,24 +35,56 @@ def _parse_time_to_seconds(value: Optional[str]) -> Optional[int]:
 
 # Precompiled regex for speaker detection (used by _extract_speaker_name and _strip_preamble)
 SPEAKER_FULL_RE = re.compile(
-    r"^\s*(?P<prefix>(De\s+(?:heer|mevrouw)|Mevrouw|Minister|Staatssecretaris|De))?\s*"
+    r"^\s*(?P<prefix>(De\s+(?:heer|mevrouw)|Mevrouw|Minister|Staatssecretaris|De|Voorzitter))?\s*"
     r"(?P<name>[^:<>()\n]+?)(?:\s*\([^)]+\))?\s*:",
     re.IGNORECASE,
 )
 
-# Tighten party extraction to plausible short party codes (letters and digits, 1-6 chars)
-_PARTY_RE = re.compile(r"\(([A-Z0-9]{1,6})\)")
+# Enhanced party extraction to handle various party code formats
+_PARTY_RE = re.compile(r"\(([A-Z0-9]{1,8}(?:[-/][A-Z0-9]{1,4})?)\)")
+
+# Common speaker patterns for better detection
+COMMON_SPEAKER_PATTERNS = [
+    re.compile(r"^\s*(De\s+)?voorzitter\s*:", re.IGNORECASE),
+    re.compile(r"^\s*(Minister|Staatssecretaris)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s*:", re.IGNORECASE),
+    re.compile(r"^\s*(De\s+heer|Mevrouw)\s+([A-Z][a-z]+(?:\s+[a-z]+\s+[A-Z][a-z]+)*)\s*:", re.IGNORECASE),
+    re.compile(r"^\s*([A-Z][a-z]+(?:\s+[a-z]+\s+[A-Z][a-z]+)*)\s*\([A-Z0-9]{1,8}\)\s*:", re.IGNORECASE),
+]
 
 # Patterns to identify announcements vs. spoken content
 ANNOUNCEMENT_PATTERNS = [
+    # Meeting administration
     re.compile(r"^Aanwezig zijn \d+ leden der Kamer", re.IGNORECASE),
     re.compile(r"^en (mevrouw|de heer)", re.IGNORECASE),  # continuation of attendance list
     re.compile(r"^alsmede", re.IGNORECASE),  # "also present"
     re.compile(r"^De vergadering wordt", re.IGNORECASE),  # meeting start/end
     re.compile(r"^Aan de orde", re.IGNORECASE),  # agenda items
+    re.compile(r"^Aanvang \d+\.\d+ uur", re.IGNORECASE),  # meeting start time
+    re.compile(r"^Sluiting \d+\.\d+ uur", re.IGNORECASE),  # meeting end time
+    re.compile(r"^De beraadslaging wordt", re.IGNORECASE),  # deliberation status
+    re.compile(r"^De behandeling", re.IGNORECASE),  # treatment/handling
+    
+    # Document references and procedural items
+    re.compile(r"^Verslag van een", re.IGNORECASE),  # report of...
+    re.compile(r"^Kamerstuk", re.IGNORECASE),  # parliamentary document
+    re.compile(r"^TK \d+", re.IGNORECASE),  # parliamentary document number
+    re.compile(r"^De griffier", re.IGNORECASE),  # clerk statements
+    
+    # Participant lists and roles
+    re.compile(r"^[A-Z][a-z]+, [A-Z][a-z]+, [A-Z][a-z]+,", re.IGNORECASE),  # name lists
+    re.compile(r"^De voorzitter van de", re.IGNORECASE),  # chairperson of...
+    re.compile(r"^en de heer [A-Z]", re.IGNORECASE),  # and mr...
+    re.compile(r"^en mevrouw [A-Z]", re.IGNORECASE),  # and mrs...
+    
+    # System/metadata indicators
     re.compile(r"^\d+ words?$", re.IGNORECASE),  # word count indicators
     re.compile(r"^\d+:\d+$"),  # time stamps alone
-    re.compile(r"^[A-Z][a-z]+ [A-Z][a-z]+, [A-Z][a-z]+,", re.IGNORECASE),  # name lists
+    re.compile(r"^$"),  # empty lines
+    
+    # Meeting procedures and voting
+    re.compile(r"^Stemming", re.IGNORECASE),  # voting
+    re.compile(r"^Ingekomen", re.IGNORECASE),  # received items
+    re.compile(r"^Procedurepunten", re.IGNORECASE),  # procedural points
 ]
 
 # Pattern to detect false speakers (non-speaker statements)
@@ -110,6 +142,26 @@ class VLOSXMLParser:
             if name_count / len(words) > 0.7:  # 70% names
                 return True
         
+        # Check for document references
+        if re.search(r"\b(kst|kamerstuk|tk)\s*\d+", text, re.IGNORECASE):
+            return True
+            
+        # Check for time-only announcements (like "14:30:08")
+        if re.match(r"^\s*\d{1,2}:\d{2}(:\d{2})?\s*$", text):
+            return True
+            
+        # Check for word count indicators
+        if re.match(r"^\s*\d+\s+words?\s*$", text, re.IGNORECASE):
+            return True
+            
+        # Check for very short procedural statements
+        if len(text) < 20 and any(word in text.lower() for word in ["aanvang", "sluiting", "pauze", "einde", "schorsing"]):
+            return True
+        
+        # Check for role announcements without spoken content
+        if re.search(r"^(De\s+)?(voorzitter|griffier|secretaris)\s*$", text, re.IGNORECASE):
+            return True
+            
         return False
     
     def _is_false_speaker(self, candidate_text: str) -> bool:
@@ -146,8 +198,7 @@ class VLOSXMLParser:
     def _extract_speaker_name(self, text: str) -> str:
         """Extract clean speaker name from speaker line text.
  
-        Uses the shared SPEAKER_FULL_RE for detection to keep logic consistent
-        with _strip_preamble.
+        Uses enhanced speaker detection patterns and better fallback logic.
         """
         if not text:
             return "Onbekend"
@@ -160,25 +211,36 @@ class VLOSXMLParser:
         if m_voor:
             return "De voorzitter" if m_voor.group(1) else "Voorzitter"
  
+        # Try the original pattern
         m = SPEAKER_FULL_RE.match(clean_text)
-        if not m:
-            return "Onbekend"
+        if m:
+            prefix = (m.group("prefix") or "").strip()
+            name = (m.group("name") or "").strip()
  
-        prefix = (m.group("prefix") or "").strip()
-        name = (m.group("name") or "").strip()
+            # If no recognized prefix, try some heuristics
+            if not prefix:
+                if name.lower() == "voorzitter":
+                    return "Voorzitter"
+                # Check if this looks like a valid name (starts with capital letter, reasonable length, no common words)
+                if name and len(name.split()) <= 4 and re.match(r"^[A-Z]", name) and not any(word.lower() in ['speaker', 'pattern', 'text', 'content', 'here', 'random', 'just', 'some'] for word in name.split()):
+                    # Could be a speaker name without prefix - accept it
+                    return name
+                return "Onbekend"
  
-        # If no recognized prefix and the name is not 'voorzitter', treat as unknown
-        if not prefix:
-            if name.lower() == "voorzitter":
-                return "Voorzitter"
-            return "Onbekend"
+            # Preserve Minister and Staatssecretaris prefixes (they are part of the speaker name)
+            if prefix.lower().startswith("minister") or prefix.lower().startswith("staatssecretaris"):
+                return f"{prefix} {name}".strip()
  
-        # Preserve Minister and Staatssecretaris prefixes (they are part of the speaker name)
-        if prefix.lower().startswith("minister") or prefix.lower().startswith("staatssecretaris") or prefix.lower() == "de":
-            return f"{prefix} {name}".strip()
- 
-        # For 'De heer' and 'Mevrouw' prefixes, return only the name
-        return name or "Onbekend"
+            # For 'De heer' and 'Mevrouw' prefixes, return only the name
+            return name or "Onbekend"
+        
+        # Final fallback: check if it looks like a simple name pattern (no colon)
+        if ':' not in clean_text:
+            simple_name_match = re.match(r"^\s*([A-Z][a-z]+(?:\s+[a-z]+\s+[A-Z][a-z]+)*)\s*$", clean_text)
+            if simple_name_match:
+                return simple_name_match.group(1).strip()
+            
+        return "Onbekend"
 
     def _extract_party(self, text: str) -> str:
         """Extract political party code from speaker line text."""

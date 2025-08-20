@@ -866,7 +866,7 @@ const SearchPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Results List - Virtualized for Performance */}
+            {/* Results List - Integrated with Page Scrolling */}
             <div className="mb-8">
               <VirtualizedSearchResults
                 results={searchResults.results}
@@ -876,7 +876,6 @@ const SearchPage: React.FC = () => {
                 selectedSegmentIds={selectedSegmentIds}
                 onToggleSelect={toggleSelectSegment}
                 selectionMode={selectionMode}
-                containerHeight={800} // Adjust based on your design needs
               />
             </div>
 

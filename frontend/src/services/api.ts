@@ -439,6 +439,47 @@ export const formatTimestamp = (seconds: number): string => {
     .padStart(2, '0')}`;
 };
 
+// Helper function to extract time from ISO datetime strings
+export const extractTimeFromISO = (isoString: string): string => {
+  if (!isoString) return '';
+  
+  try {
+    // Extract time portion from ISO string (YYYY-MM-DDTHH:MM:SS format)
+    const timeMatch = isoString.match(/T(\d{2}:\d{2}:\d{2})/);
+    if (timeMatch) {
+      return timeMatch[1];
+    }
+    
+    // Fallback: try to extract time from any HH:MM:SS pattern
+    const timePattern = isoString.match(/(\d{2}:\d{2}:\d{2})/);
+    if (timePattern) {
+      return timePattern[1];
+    }
+    
+    return isoString;
+  } catch (e) {
+    return isoString;
+  }
+};
+
+// Format timestamp range from start and end ISO strings
+export const formatTimestampRange = (startISO?: string, endISO?: string): string => {
+  if (!startISO && !endISO) return '';
+  
+  const startTime = startISO ? extractTimeFromISO(startISO) : '';
+  const endTime = endISO ? extractTimeFromISO(endISO) : '';
+  
+  if (startTime && endTime) {
+    return `${startTime} - ${endTime}`;
+  } else if (startTime) {
+    return startTime;
+  } else if (endTime) {
+    return endTime;
+  }
+  
+  return '';
+};
+
 export const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
   return date.toLocaleDateString('en-US', {

@@ -5,7 +5,7 @@ import {
   BarChart3, Search, Play, ExternalLink, Shield, AlertTriangle, Eye, Plus, Sparkles
 } from 'lucide-react';
 import { playlist } from '../services/playlist';
-import { videosAPI, formatDate, formatTimestamp, getSentimentColor, getSentimentLabel, downloadFile } from '../services/api';
+import { videosAPI, formatDate, formatTimestamp, formatTimestampRange, getSentimentColor, getSentimentLabel, downloadFile } from '../services/api';
 import VimeoEmbed from '../components/VimeoEmbed';
 import EnhancedTranscriptSummarizer from '../components/EnhancedTranscriptSummarizer';
 import SimilarSegmentsModal from '../components/SimilarSegmentsModal';
@@ -745,21 +745,70 @@ const VideoDetailPage: React.FC = () => {
         {/* Session Announcements - Only for Tweede Kamer videos */}
         {video?.dataset === 'tweede_kamer' && segments.some(s => s.segment_type === 'announcement') && (
           <div className="bg-amber-50 rounded-lg shadow-sm border border-amber-200 p-4 sm:p-6 mb-8 dark:bg-amber-900/20 dark:border-amber-800">
-            <h2 className="text-lg font-medium text-amber-800 mb-4 dark:text-amber-300">Sessie-aankondigingen</h2>
-            <div className="space-y-2">
-              {segments.filter(s => s.segment_type === 'announcement').map((announcement) => (
-                <div
-                  key={announcement.id}
-                  className="border-l-4 border-amber-300 pl-4 py-2 text-sm text-amber-800 dark:text-amber-300"
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-amber-600 dark:text-amber-400">
-                      {formatTimestamp(announcement.video_seconds)}
-                    </span>
+            <h2 className="text-lg font-medium text-amber-800 mb-4 dark:text-amber-300">
+              Sessie-aankondigingen
+              <span className="ml-2 text-sm font-normal">
+                ({segments.filter(s => s.segment_type === 'announcement').length} items)
+              </span>
+            </h2>
+            <div className="space-y-3">
+              {segments.filter(s => s.segment_type === 'announcement').map((announcement) => {
+                // Categorize announcement type for better visual distinction
+                const getAnnouncementCategory = (text: string) => {
+                  if (/aanwezig zijn|en (mevrouw|de heer)|alsmede/i.test(text)) return 'attendance';
+                  if (/vergadering wordt|aanvang|sluiting/i.test(text)) return 'session';
+                  if (/verslag van|kamerstuk|tk \d+/i.test(text)) return 'document';
+                  if (/voorzitter|griffier/i.test(text)) return 'role';
+                  if (/stemming|procedurepunten/i.test(text)) return 'procedure';
+                  return 'general';
+                };
+                
+                const category = getAnnouncementCategory(announcement.transcript_text);
+                const categoryStyles = {
+                  attendance: 'border-blue-300 bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300',
+                  session: 'border-green-300 bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-300',
+                  document: 'border-purple-300 bg-purple-50 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300',
+                  role: 'border-indigo-300 bg-indigo-50 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-300',
+                  procedure: 'border-red-300 bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-300',
+                  general: 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300'
+                };
+                
+                const categoryLabels = {
+                  attendance: 'Aanwezigheid',
+                  session: 'Sessie status',
+                  document: 'Document',
+                  role: 'Functie',
+                  procedure: 'Procedure',
+                  general: 'Algemeen'
+                };
+                
+                return (
+                  <div
+                    key={announcement.id}
+                    className={`border-l-4 pl-4 py-3 rounded-r-md text-sm ${categoryStyles[category]}`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs px-2 py-1 rounded-full bg-opacity-50 bg-white font-medium">
+                          {categoryLabels[category]}
+                        </span>
+                        <span className="text-xs opacity-75">
+                          {announcement.video_seconds ? formatTimestamp(announcement.video_seconds) : ''}
+                          {announcement.timestamp_start && announcement.timestamp_end && (
+                            <span className="ml-2">({formatTimestampRange(announcement.timestamp_start, announcement.timestamp_end)})</span>
+                          )}
+                        </span>
+                      </div>
+                      {announcement.word_count && (
+                        <span className="text-xs opacity-75">
+                          {announcement.word_count} woorden
+                        </span>
+                      )}
+                    </div>
+                    <p className="leading-relaxed">{announcement.transcript_text}</p>
                   </div>
-                  <p className="leading-relaxed">{announcement.transcript_text}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -902,7 +951,7 @@ const VideoDetailPage: React.FC = () => {
                       <Clock className="h-4 w-4" />
                       <span>{formatTimestamp(segment.video_seconds)}</span>
                       {segment.timestamp_start && segment.timestamp_end && (
-                        <span>({segment.timestamp_start}-{segment.timestamp_end})</span>
+                        <span>({formatTimestampRange(segment.timestamp_start, segment.timestamp_end)})</span>
                       )}
                     </div>
                   </div>

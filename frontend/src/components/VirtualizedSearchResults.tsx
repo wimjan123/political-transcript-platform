@@ -64,7 +64,7 @@ const VirtualizedSearchResults = memo<VirtualizedSearchResultsProps>(({
   selectedSegmentIds, 
   onToggleSelect, 
   selectionMode,
-  containerHeight = 600 
+  containerHeight 
 }) => {
   // Memoize the data object to prevent unnecessary re-renders
   const itemData: ItemData = useMemo(() => ({
@@ -99,11 +99,11 @@ const VirtualizedSearchResults = memo<VirtualizedSearchResultsProps>(({
     );
   }
 
-  // For small result sets (< 20) or mobile, use regular rendering for better UX
-  // Check for mobile width (assuming typical mobile breakpoint)
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  // For smaller result sets (< 50) or when containerHeight is not provided, use regular rendering for better UX
+  // This provides a more seamless scrolling experience that integrates with the main page
+  const useRegularRendering = results.length < 50 || !containerHeight;
   
-  if (results.length < 20 || isMobile) {
+  if (useRegularRendering) {
     return (
       <div className="search-results-container space-y-4">
         {results.map(segment => (
@@ -122,9 +122,13 @@ const VirtualizedSearchResults = memo<VirtualizedSearchResultsProps>(({
     );
   }
 
-  // For larger result sets, use virtualization
+  // For very large result sets with explicit container height, use virtualization
+  // This should only be used in specific contexts where performance is critical
   return (
     <div className="search-results-container virtualized-search-results">
+      <div className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+        Showing results in virtualized view for performance ({results.length} total results)
+      </div>
       <List
         height={containerHeight}
         width="100%"
