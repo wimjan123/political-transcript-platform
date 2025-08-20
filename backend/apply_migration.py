@@ -111,6 +111,60 @@ def apply_migration():
         else:
             print("✓ vimeo_embed_url column already exists")
         
+        # Check if import_progress table exists
+        cursor.execute("""
+            SELECT 1 FROM information_schema.tables 
+            WHERE table_name = 'import_progress';
+        """)
+        
+        if not cursor.fetchone():
+            print("Creating import_progress table...")
+            # Read and execute the import progress migration
+            cursor.execute("""
+                CREATE TABLE import_progress (
+                    id SERIAL PRIMARY KEY,
+                    job_id VARCHAR(50) UNIQUE NOT NULL,
+                    job_type VARCHAR(20) NOT NULL,
+                    status VARCHAR(20) NOT NULL DEFAULT 'running',
+                    total_files INTEGER NOT NULL DEFAULT 0,
+                    processed_files INTEGER NOT NULL DEFAULT 0,
+                    failed_files INTEGER NOT NULL DEFAULT 0,
+                    current_file TEXT,
+                    error_messages TEXT[],
+                    started_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                    completed_at TIMESTAMP NULL
+                );
+            """)
+            
+            # Create indexes
+            cursor.execute("CREATE INDEX idx_import_progress_job_id ON import_progress(job_id);")
+            cursor.execute("CREATE INDEX idx_import_progress_status ON import_progress(status);")
+            cursor.execute("CREATE INDEX idx_import_progress_started_at ON import_progress(started_at);")
+            
+            # Create function and trigger
+            cursor.execute("""
+                CREATE OR REPLACE FUNCTION update_import_progress_timestamp()
+                RETURNS TRIGGER AS $$
+                BEGIN
+                    NEW.updated_at = NOW();
+                    RETURN NEW;
+                END;
+                $$ LANGUAGE plpgsql;
+            """)
+            
+            cursor.execute("""
+                CREATE TRIGGER trigger_update_import_progress_timestamp
+                    BEFORE UPDATE ON import_progress
+                    FOR EACH ROW
+                    EXECUTE FUNCTION update_import_progress_timestamp();
+            """)
+            
+            conn.commit()
+            print("✓ Migration applied successfully: import_progress table created")
+        else:
+            print("✓ import_progress table already exists")
+        
         cursor.close()
         conn.close()
         
