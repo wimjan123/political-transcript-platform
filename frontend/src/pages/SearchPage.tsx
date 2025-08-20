@@ -843,6 +843,17 @@ const SearchPage: React.FC = () => {
           </div>
         )}
 
+        {/* Loading State */}
+        {isLoading && query && (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">Searching...</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Looking for "{query}"
+            </p>
+          </div>
+        )}
+
         {/* Search Results */}
         {searchResults && (
           <div>
@@ -914,6 +925,16 @@ const SearchPage: React.FC = () => {
             <p className="mt-1 text-sm text-gray-500">
               Try adjusting your search terms or filters
             </p>
+          </div>
+        )}
+
+        {/* Debug Info - Remove in production */}
+        {query && (
+          <div className="bg-gray-100 p-4 rounded mb-4 text-xs font-mono">
+            <div>Query: "{query}" | Debounced: "{debouncedQuery}"</div>
+            <div>Loading: {isLoading.toString()} | Has Results: {!!searchResults}</div>
+            <div>Error: {error ? error.message : 'none'}</div>
+            <div>Results Count: {searchResults?.results?.length || 0}</div>
           </div>
         )}
 
