@@ -39,7 +39,7 @@ const Row = memo<{
   
   return (
     <div style={style}>
-      <div className="pb-4"> {/* Add padding between cards */}
+      <div className="px-0 pb-6"> {/* Increased padding between cards */}
         <SearchSegmentCard
           segment={segment}
           query={data.query}
@@ -82,10 +82,10 @@ const VirtualizedSearchResults = memo<VirtualizedSearchResultsProps>(({
     const segment = results[index];
     const isExpanded = expandedSegments.has(segment.id);
     
-    // Base height + extra for expanded content + padding
-    const baseHeight = 280;
-    const expandedAddition = 200; // Additional height for expanded details
-    const padding = 16; // Padding between cards
+    // Increased base height for mobile compatibility + extra for expanded content + padding
+    const baseHeight = 350; // Increased from 280 to 350
+    const expandedAddition = 300; // Increased from 200 to 300 for expanded details
+    const padding = 24; // Increased padding between cards
     
     return baseHeight + (isExpanded ? expandedAddition : 0) + padding;
   };
@@ -99,10 +99,13 @@ const VirtualizedSearchResults = memo<VirtualizedSearchResultsProps>(({
     );
   }
 
-  // For small result sets (< 10), use regular rendering for better UX
-  if (results.length < 10) {
+  // For small result sets (< 20) or mobile, use regular rendering for better UX
+  // Check for mobile width (assuming typical mobile breakpoint)
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  
+  if (results.length < 20 || isMobile) {
     return (
-      <div className="space-y-4">
+      <div className="search-results-container space-y-4">
         {results.map(segment => (
           <SearchSegmentCard
             key={segment.id}
@@ -121,13 +124,13 @@ const VirtualizedSearchResults = memo<VirtualizedSearchResultsProps>(({
 
   // For larger result sets, use virtualization
   return (
-    <div className="virtualized-search-results">
+    <div className="search-results-container virtualized-search-results">
       <List
         height={containerHeight}
         width="100%"
         itemCount={results.length}
         itemData={itemData}
-        itemSize={280} // Average item height - react-window will handle dynamic sizing
+        itemSize={374} // Increased from 280 to 374 (350 base + 24 padding)
         overscanCount={2} // Render 2 extra items outside the visible area
         className="custom-scrollbar"
       >

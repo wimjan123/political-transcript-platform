@@ -448,11 +448,11 @@ const SearchPage: React.FC = () => {
               </button>
 
               {/* Quick Actions */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:space-x-2">
+              <div className="flex flex-col space-y-3">
                 <select
                   value={pageSize}
                   onChange={(e) => setPageSize(parseInt(e.target.value))}
-                  className="text-sm border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                  className="text-sm border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 w-full sm:w-auto"
                 >
                   <option value="10">10 per page</option>
                   <option value="25">25 per page</option>
@@ -461,41 +461,39 @@ const SearchPage: React.FC = () => {
                 </select>
                 
                 {searchResults && searchResults.results.length > 0 && (
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:space-x-2">
-                    <button
-                      type="button"
-                      onClick={() => setSelectionMode(!selectionMode)}
-                      className={`inline-flex items-center px-3 py-2 border text-sm font-medium rounded-md ${selectionMode ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700'} hover:bg-gray-50 dark:hover:bg-gray-700`}
-                    >
-                      {selectionMode ? 'Exit Selection' : 'Select Segments'}
-                    </button>
-                    {selectionMode && (
-                      <div className="flex flex-wrap gap-2">
-                        <button type="button" onClick={selectAllVisible} className="btn btn-outline text-xs sm:text-sm px-2 sm:px-3">Select Page</button>
-                        <button type="button" onClick={clearSelection} className="btn btn-outline text-xs sm:text-sm px-2 sm:px-3">Clear</button>
-                        <button type="button" onClick={exportSelectedTxt} className="btn btn-primary text-xs sm:text-sm px-2 sm:px-3">Export Text</button>
-                        <button type="button" onClick={exportSelectedWithLinks} className="btn btn-primary text-xs sm:text-sm px-2 sm:px-3">Export + Links</button>
-                      </div>
-                    )}
+                  <div className="space-y-3">
                     <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectionMode(!selectionMode)}
+                        className={`inline-flex items-center px-3 py-2 border text-sm font-medium rounded-md ${selectionMode ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700'} hover:bg-gray-50 dark:hover:bg-gray-700`}
+                      >
+                        {selectionMode ? 'Exit Selection' : 'Select Segments'}
+                      </button>
                       <button
                         onClick={() => handleExport('csv')}
                         disabled={isExporting}
-                        className="inline-flex items-center px-2 sm:px-3 py-2 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 transition-colors dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 transition-colors dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
                       >
-                        <Download className="h-4 w-4 sm:mr-2" />
-                        <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export CSV'}</span>
-                        <span className="sm:hidden">CSV</span>
+                        <Download className="h-4 w-4 mr-2" />
+                        {isExporting ? 'Exporting...' : 'CSV'}
                       </button>
                       <button
                         onClick={() => handleExport('json')}
                         disabled={isExporting}
-                        className="inline-flex items-center px-2 sm:px-3 py-2 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 transition-colors dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 transition-colors dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
                       >
-                        <span className="hidden sm:inline">Export JSON</span>
-                        <span className="sm:hidden">JSON</span>
+                        JSON
                       </button>
                     </div>
+                    {selectionMode && (
+                      <div className="flex flex-wrap gap-2">
+                        <button type="button" onClick={selectAllVisible} className="btn btn-outline text-sm px-3">Select Page</button>
+                        <button type="button" onClick={clearSelection} className="btn btn-outline text-sm px-3">Clear</button>
+                        <button type="button" onClick={exportSelectedTxt} className="btn btn-primary text-sm px-3">Export Text</button>
+                        <button type="button" onClick={exportSelectedWithLinks} className="btn btn-primary text-sm px-3">Export + Links</button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

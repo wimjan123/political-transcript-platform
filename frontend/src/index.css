@@ -151,3 +151,47 @@
 .animate-slide-up {
   animation: slideUp 0.3s ease-out;
 }
+
+/* Mobile search results fixes */
+.search-results-container {
+  min-height: 0;
+  overflow-x: hidden;
+}
+
+.search-card {
+  margin-bottom: 1.5rem;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.search-card .search-card-content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Virtualized search results fixes */
+.virtualized-search-results {
+  overflow: hidden;
+}
+
+.virtualized-search-results [data-react-window-list] {
+  overflow-x: hidden !important;
+}
+
+/* Ensure proper spacing on mobile */
+@media (max-width: 640px) {
+  .search-results-container .space-y-4 > * + * {
+    margin-top: 2rem;
+  }
+  
+  .search-card {
+    margin-bottom: 2rem;
+  }
+  
+  /* Force proper spacing in virtualized lists */
+  .virtualized-search-results [style*="position: absolute"] {
+    padding-bottom: 1rem !important;
+  }
+}

@@ -63,31 +63,35 @@ const SearchSegmentCard = memo<SearchSegmentCardProps>(({
   };
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-6 hover:shadow-xl hover:border-blue-300/50 transition-all duration-300 transform hover:-translate-y-1 dark:bg-gray-800/70 dark:border-gray-700 dark:hover:border-blue-400/30">
+    <div className="search-card bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-4 sm:p-6 hover:shadow-xl hover:border-blue-300/50 transition-all duration-300 transform hover:-translate-y-1 dark:bg-gray-800/70 dark:border-gray-700 dark:hover:border-blue-400/30">
       <div className="flex items-start justify-between">
-        <div className="flex-1">
+        <div className="flex-1 search-card-content min-w-0">
           {/* Header */}
-          <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div className="space-y-2 mb-4">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
                 <User className="h-4 w-4 text-white" />
               </div>
-              <span className="font-semibold text-gray-900 dark:text-gray-100">{segment.speaker_name}</span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{segment.speaker_name}</span>
             </div>
             
-            {segment.video && (
-              <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
-                <Calendar className="h-4 w-4" />
-                <span>{segment.video.date}</span>
-              </div>
-            )}
-            
-            <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
-              <Clock className="h-4 w-4" />
-              <span>{formatTimestamp(segment.video_seconds)}</span>
-              {segment.timestamp_start && segment.timestamp_end && (
-                <span>({segment.timestamp_start}-{segment.timestamp_end})</span>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-500 dark:text-gray-400">
+              {segment.video && (
+                <div className="flex items-center space-x-2">
+                  <Calendar className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">{segment.video.date}</span>
+                </div>
               )}
+              
+              <div className="flex items-center space-x-2">
+                <Clock className="h-4 w-4 flex-shrink-0" />
+                <div className="flex flex-wrap items-center gap-1">
+                  <span>{formatTimestamp(segment.video_seconds)}</span>
+                  {segment.timestamp_start && segment.timestamp_end && (
+                    <span className="text-xs">({segment.timestamp_start}-{segment.timestamp_end})</span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -96,12 +100,12 @@ const SearchSegmentCard = memo<SearchSegmentCardProps>(({
             <div className="text-sm text-gray-600 mb-2 dark:text-gray-300">
               <Link
                 to={`/videos/${segment.video.id}?t=${segment.video_seconds}&segment_id=${segment.id}`}
-                className="font-medium text-primary-600 hover:text-primary-700 hover:underline"
+                className="font-medium text-primary-600 hover:text-primary-700 hover:underline block break-words"
               >
                 {segment.video.title}
               </Link>
               {segment.video.source && (
-                <span className="ml-2 badge badge-blue">{segment.video.source}</span>
+                <span className="inline-block mt-1 badge badge-blue">{segment.video.source}</span>
               )}
             </div>
           )}
@@ -122,11 +126,11 @@ const SearchSegmentCard = memo<SearchSegmentCardProps>(({
           </div>
 
           {/* Metadata Row */}
-          <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 mb-3 dark:text-gray-400">
-            <span>{segment.word_count} words</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-gray-500 mb-3 dark:text-gray-400">
+            <span className="truncate">{segment.word_count} words</span>
             
             {typeof segment.similarity_score === 'number' && (
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center space-x-1 truncate">
                 <span className="font-medium text-blue-600">
                   {(segment.similarity_score * 100).toFixed(1)}% match
                 </span>
@@ -134,29 +138,31 @@ const SearchSegmentCard = memo<SearchSegmentCardProps>(({
             )}
             
             {typeof segment.sentiment_loughran_score === 'number' && (
-              <div className="flex items-center space-x-1">
-                <TrendingUp className="h-4 w-4" />
+              <div className="flex items-center space-x-1 truncate">
+                <TrendingUp className="h-4 w-4 flex-shrink-0" />
                 <span className={sentimentColor}>{sentimentLabel}</span>
               </div>
             )}
             
             {typeof segment.flesch_kincaid_grade === 'number' && (
-              <span>Grade: {segment.flesch_kincaid_grade.toFixed(1)}</span>
+              <span className="truncate">Grade: {segment.flesch_kincaid_grade.toFixed(1)}</span>
             )}
             
             {typeof segment.stresslens_score === 'number' && (
-              <div className="flex items-center space-x-1">
-                <TrendingUp className="h-4 w-4" />
+              <div className="flex items-center space-x-1 truncate">
+                <TrendingUp className="h-4 w-4 flex-shrink-0" />
                 <span>Stress: {segment.stresslens_score.toFixed(3)}</span>
                 {typeof segment.stresslens_rank === 'number' && (
                   <span className="text-gray-400">(#{segment.stresslens_rank})</span>
                 )}
               </div>
             )}
+          </div>
 
-            {/* Match info chips */}
+          {/* Match info chips */}
+          <div className="flex flex-wrap gap-2 mb-3">
             {segment.segment_topics && segment.segment_topics.length > 0 && (
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 max-w-full truncate">
                 Top topic: {segment.segment_topics[0].topic.name}
               </span>
             )}
@@ -192,7 +198,7 @@ const SearchSegmentCard = memo<SearchSegmentCardProps>(({
         </div>
 
         {/* Right-side actions */}
-        <div className="flex items-center ml-4 space-x-1">
+        <div className="flex items-start ml-2 sm:ml-4 space-x-1 flex-shrink-0">
           {segment.video && (
             <button
               type="button"
@@ -297,14 +303,15 @@ const SearchSegmentCard = memo<SearchSegmentCardProps>(({
           )}
 
           {/* Actions */}
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             {segment.video && (
               <Link
                 to={`/videos/${segment.video.id}?t=${segment.video_seconds}&segment_id=${segment.id}`}
                 className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 transition-colors"
               >
-                <Play className="h-4 w-4 mr-1" />
-                Play Clip
+                <Play className="h-4 w-4 mr-1 flex-shrink-0" />
+                <span className="hidden sm:inline">Play Clip</span>
+                <span className="sm:hidden">Play</span>
               </Link>
             )}
             {segment.video && (
@@ -312,8 +319,9 @@ const SearchSegmentCard = memo<SearchSegmentCardProps>(({
                 to={`/videos/${segment.video.id}?t=${segment.video_seconds}&segment_id=${segment.id}`}
                 className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 transition-colors"
               >
-                <ExternalLink className="h-4 w-4 mr-1" />
-                View Context
+                <ExternalLink className="h-4 w-4 mr-1 flex-shrink-0" />
+                <span className="hidden sm:inline">View Context</span>
+                <span className="sm:hidden">Context</span>
               </Link>
             )}
             {segment.video && (
@@ -323,8 +331,9 @@ const SearchSegmentCard = memo<SearchSegmentCardProps>(({
                 className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 transition-colors"
                 title="Add segment to playlist"
               >
-                <Plus className="h-4 w-4 mr-1" />
-                Add to Playlist
+                <Plus className="h-4 w-4 mr-1 flex-shrink-0" />
+                <span className="hidden sm:inline">Add to Playlist</span>
+                <span className="sm:hidden">Add</span>
               </button>
             )}
           </div>
