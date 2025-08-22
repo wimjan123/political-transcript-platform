@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bot, Send, Loader, MessageCircle, Database, Settings, AlertCircle, CheckCircle, ExternalLink } from 'lucide-react';
-import { api } from '../services/api';
 import type { AISettings } from '../types';
 
 interface Message {

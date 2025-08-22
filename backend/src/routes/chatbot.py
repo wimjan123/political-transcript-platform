@@ -43,7 +43,7 @@ class ChatResponse(BaseModel):
 def build_database_context() -> str:
     """Build context about the database schema and capabilities"""
     return """
-You are an AI assistant with access to a political transcript database. You can help users query and analyze political video transcripts.
+You are an AI assistant that helps users analyze a political transcript database. You have access to current database information that will be provided to you in your context.
 
 DATABASE SCHEMA:
 - videos: Contains video metadata (id, title, description, date, thumbnail_url, speaker_name, duration_seconds, video_seconds, sentiment scores, readability metrics)
@@ -52,15 +52,13 @@ DATABASE SCHEMA:
 - video_summaries: AI-generated video summaries (id, video_id, summary, model_used, created_at)
 - topics: Topic categories (id, name, frequency)
 
-KEY CAPABILITIES:
-- Search transcripts by content, speaker, date, sentiment
-- Analyze speaker patterns and frequency
-- Generate statistics about video content
-- Examine sentiment trends over time
-- Find videos by topic or theme
-- Analyze readability and content metrics
+WHAT YOU CAN DO:
+- Answer questions about database statistics and content using the provided data
+- Analyze trends and patterns in the political transcript collection
+- Provide insights about speakers, topics, sentiment, and content
+- Help users understand what's available in the database
 
-When users ask questions about the database, I will query it and provide accurate, data-driven answers. I can search for specific content, analyze trends, and provide insights about the political transcript collection.
+When you receive relevant database information in your context, use it to provide accurate, data-driven answers. If you don't have specific data for a question, explain what information is available and suggest related queries.
 
 The database contains political video transcripts with comprehensive analytics including sentiment analysis, readability metrics, and topic categorization.
 """
@@ -75,14 +73,22 @@ async def query_database(query: str, db: AsyncSession) -> Dict[str, Any]:
     results = {}
     
     try:
-        # Video count queries
-        if "how many videos" in query_lower or "total videos" in query_lower:
-            result = await db.execute(select(func.count(Video.id)))
-            count = result.scalar()
-            results["video_count"] = count
+        # Always provide basic database stats
+        video_result = await db.execute(select(func.count(Video.id)))
+        segment_result = await db.execute(select(func.count(TranscriptSegment.id)))
+        speaker_result = await db.execute(select(func.count(Speaker.id)))
+        
+        results["database_overview"] = {
+            "total_videos": video_result.scalar(),
+            "total_segments": segment_result.scalar(),
+            "unique_speakers": speaker_result.scalar()
+        }
+        # Video count queries (now redundant but keeping for specific responses)
+        if "how many videos" in query_lower or "total videos" in query_lower or "video count" in query_lower:
+            results["video_count_specific"] = results["database_overview"]["total_videos"]
             
         # Speaker queries
-        if "speakers" in query_lower or "who spoke" in query_lower:
+        if "speakers" in query_lower or "who spoke" in query_lower or "speaker" in query_lower:
             result = await db.execute(
                 select(Speaker.name, Speaker.video_count)
                 .order_by(Speaker.video_count.desc())
@@ -139,8 +145,18 @@ async def query_database(query: str, db: AsyncSession) -> Dict[str, Any]:
                 if segments:
                     results[f"{term}_examples"] = [{"video_id": s.video_id, "content": s.content[:200] + "..."} for s in segments[:3]]
                     
+        # Add recent videos for general queries about the database
+        if any(word in query_lower for word in ["database", "data", "what", "tell me", "show me", "available", "content"]):
+            result = await db.execute(
+                select(Video.id, Video.title, Video.date, Video.speaker_name)
+                .order_by(Video.date.desc())
+                .limit(3)
+            )
+            videos = result.all()
+            results["sample_videos"] = [{"id": v.id, "title": v.title, "date": str(v.date), "speaker": v.speaker_name} for v in videos]
+            
         # Database stats
-        if "statistics" in query_lower or "stats" in query_lower:
+        if "statistics" in query_lower or "stats" in query_lower or "overview" in query_lower:
             video_result = await db.execute(select(func.count(Video.id)))
             video_count = video_result.scalar()
             
