@@ -68,10 +68,50 @@ SEARCH CAPABILITIES:
 - Content search supports both English and Dutch keywords
 - Can filter by dataset (e.g., only Dutch content from 'tweede_kamer')
 - Searches are case-insensitive and support partial matches
-- Returns actual transcript content, not just metadata
+- Returns actual transcript content with complete metadata including links
 
-When you receive database search results in your context, you can provide specific quotes and content from the transcripts. The database contains actual transcript text that can be searched and quoted directly.
+SEARCH RESULT FORMAT:
+When you receive search results, each result includes:
+- content: The actual transcript text/quote
+- speaker: The person who said the quote
+- video_title: Title of the video/session
+- video_date: Date when the video was recorded
+- start_time/end_time: Timestamp within the video
+- link: Direct link to the specific quote in the video player
+- dataset: Source dataset (tweede_kamer for Dutch content)
+
+RESPONSE FORMATTING:
+When presenting quotes, always include:
+1. The actual quote in quotation marks
+2. Speaker name
+3. Date of the session/video
+4. Direct link to the quote with timestamp
+5. Brief context about the video/session
+
+Example format:
+"[Quote text here]"
+- **Speaker**: [Speaker Name]
+- **Date**: [Date]
+- **Source**: [Video Title]
+- **Link**: [Direct link with timestamp]
+
+Always provide clickable links so users can verify quotes and see full context.
 """
+
+
+def format_timestamp(seconds: float) -> str:
+    """Format seconds into MM:SS or HH:MM:SS format"""
+    if seconds is None:
+        return "N/A"
+    
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    secs = int(seconds % 60)
+    
+    if hours > 0:
+        return f"{hours}:{minutes:02d}:{secs:02d}"
+    else:
+        return f"{minutes}:{secs:02d}"
 
 
 async def query_database(query: str, db: AsyncSession) -> Dict[str, Any]:
@@ -167,7 +207,18 @@ async def query_database(query: str, db: AsyncSession) -> Dict[str, Any]:
         for category, terms in search_terms.items():
             if any(term in query_lower for term in terms):
                 # Build query with dataset filter for Dutch content if requested
-                query_builder = select(TranscriptSegment).join(Video)
+                query_builder = select(
+                    TranscriptSegment.id,
+                    TranscriptSegment.video_id,
+                    TranscriptSegment.content,
+                    TranscriptSegment.speaker_name,
+                    TranscriptSegment.start_time,
+                    TranscriptSegment.end_time,
+                    Video.title,
+                    Video.date,
+                    Video.dataset,
+                    Video.speaker_name.label('video_speaker')
+                ).join(Video)
                 
                 # Add content search condition
                 content_conditions = [TranscriptSegment.content.ilike(f"%{term}%") for term in terms]
@@ -180,16 +231,24 @@ async def query_database(query: str, db: AsyncSession) -> Dict[str, Any]:
                 query_builder = query_builder.limit(10)
                 
                 result = await db.execute(query_builder)
-                segments = result.scalars().all()
+                segments = result.all()
                 
                 results[f"{category}_mentions"] = len(segments)
                 if segments:
                     results[f"{category}_examples"] = [
                         {
+                            "segment_id": s.id,
                             "video_id": s.video_id, 
                             "content": s.content[:300] + "..." if len(s.content) > 300 else s.content,
                             "speaker": s.speaker_name,
-                            "dataset": segments[0].video.dataset if hasattr(segments[0], 'video') else None
+                            "video_title": s.title,
+                            "video_date": str(s.date) if s.date else None,
+                            "start_time": s.start_time,
+                            "end_time": s.end_time,
+                            "start_time_formatted": format_timestamp(s.start_time),
+                            "end_time_formatted": format_timestamp(s.end_time),
+                            "dataset": s.dataset,
+                            "link": f"http://localhost:3000/videos/{s.video_id}?t={s.start_time}&segment_id={s.id}" if s.start_time else f"http://localhost:3000/videos/{s.video_id}?segment_id={s.id}"
                         } 
                         for s in segments[:5]
                     ]
