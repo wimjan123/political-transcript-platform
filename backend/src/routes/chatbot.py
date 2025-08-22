@@ -190,7 +190,7 @@ async def query_database(query: str, db: AsyncSession) -> Dict[str, Any]:
             "immigration": ["immigration", "immigratie", "migratie", "vreemdeling"],
             "tax": ["tax", "belasting", "btw", "fiscaal"],
             "government_workers": ["ambtenaren", "overheidsmedewerkers", "civil servants", "government workers", "personeelsreductie", "bezuiniging"],
-            "saving_money": ["besparen", "bezuinigen", "kostenreductie", "save money", "cut costs", "reduce spending"]
+            "saving_money": ["besparen", "bezuinigen", "kostenreductie", "save money", "cut costs", "reduce spending", "geld", "money", "kosten", "costs", "besparingen"]
         }
         
         # Check for Dutch language indicators
@@ -217,7 +217,7 @@ async def query_database(query: str, db: AsyncSession) -> Dict[str, Any]:
                     Video.title,
                     Video.date,
                     Video.dataset,
-                    Video.speaker_name.label('video_speaker')
+                    Video.candidate.label('video_speaker')
                 ).join(Video)
                 
                 # Add content search condition
@@ -232,6 +232,10 @@ async def query_database(query: str, db: AsyncSession) -> Dict[str, Any]:
                 
                 result = await db.execute(query_builder)
                 segments = result.all()
+                
+                print(f"DEBUG: Found {len(segments)} segments for category '{category}'")
+                if segments:
+                    print(f"DEBUG: First segment: {segments[0].transcript_text[:100]}...")
                 
                 results[f"{category}_mentions"] = len(segments)
                 if segments:
@@ -256,12 +260,12 @@ async def query_database(query: str, db: AsyncSession) -> Dict[str, Any]:
         # Add recent videos for general queries about the database
         if any(word in query_lower for word in ["database", "data", "what", "tell me", "show me", "available", "content"]):
             result = await db.execute(
-                select(Video.id, Video.title, Video.date, Video.speaker_name)
+                select(Video.id, Video.title, Video.date, Video.candidate)
                 .order_by(Video.date.desc())
                 .limit(3)
             )
             videos = result.all()
-            results["sample_videos"] = [{"id": v.id, "title": v.title, "date": str(v.date), "speaker": v.speaker_name} for v in videos]
+            results["sample_videos"] = [{"id": v.id, "title": v.title, "date": str(v.date), "speaker": v.candidate} for v in videos]
             
         # Database stats
         if "statistics" in query_lower or "stats" in query_lower or "overview" in query_lower:
@@ -323,6 +327,33 @@ async def test_connection(request: TestRequest):
         raise HTTPException(status_code=408, detail="Connection timeout")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Connection failed: {str(e)}")
+
+
+@router.post("/debug-query")
+async def debug_query(query: str, db: AsyncSession = Depends(get_db)):
+    """Debug endpoint to test database queries without AI"""
+    results = await query_database(query, db)
+    return {"query": query, "database_results": results}
+
+
+@router.post("/mock-chat")
+async def mock_chat(query: str, db: AsyncSession = Depends(get_db)):
+    """Mock chat endpoint to test AI responses with database results"""
+    results = await query_database(query, db)
+    
+    # Mock AI response using the database results
+    if "saving_money_examples" in results and results["saving_money_examples"]:
+        examples = results["saving_money_examples"]
+        response_text = f"I found {len(examples)} quotes about money/finance in the database:\n\n"
+        
+        for i, example in enumerate(examples[:3], 1):
+            response_text += f"{i}. **{example['speaker']}** - {example['video_title']} ({example['video_date']})\n"
+            response_text += f"   \"{example['content'][:200]}...\"\n"
+            response_text += f"   🔗 [View segment]({example['link']}) at {example['start_time_formatted']}\n\n"
+            
+        return {"response": response_text, "database_context": results}
+    else:
+        return {"response": "I couldn't find specific quotes about that topic in the database.", "database_context": results}
 
 
 @router.post("/chat", response_model=ChatResponse)
