@@ -10,8 +10,8 @@ from contextlib import asynccontextmanager
 from .database import init_db
 from .routes import search, analytics, videos, upload, ingest, clips, chatbot
 from .routes import meili_search, meilisearch_admin, meilisearch_search, summarization
-from .routers import video_files, folder_browser, debug
-from .config import settings
+from .routers import video_files, folder_browser, debug, settings
+from .config import settings as app_settings
 from .routes.upload import import_status
 
 
@@ -37,7 +37,7 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_origins=app_settings.BACKEND_CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -58,6 +58,7 @@ app.include_router(chatbot.router, tags=["chatbot"])
 app.include_router(video_files.router, tags=["video-files"])
 app.include_router(folder_browser.router, tags=["folders"])
 app.include_router(debug.router, tags=["debug"])
+app.include_router(settings.router, tags=["settings"])
 
 
 @app.get("/")
@@ -114,7 +115,7 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         app,
-        host=settings.API_HOST,
-        port=settings.API_PORT,
-        reload=settings.DEBUG
+        host=app_settings.API_HOST,
+        port=app_settings.API_PORT,
+        reload=app_settings.DEBUG
     )

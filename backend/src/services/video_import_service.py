@@ -431,6 +431,7 @@ class VideoImportService:
 def get_video_import_service(video_directory: str = None) -> VideoImportService:
     """Factory function to create VideoImportService"""
     if not video_directory:
-        video_directory = os.getenv('VIDEO_LIBRARY_DIR', '/root/video_library')
+        # Default to Downloads directory since it's mounted from BunkrDownloader
+        video_directory = os.getenv('VIDEO_LIBRARY_DIR', '/Downloads')
     
     return VideoImportService(video_directory)

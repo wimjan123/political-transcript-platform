@@ -25,6 +25,7 @@ const Layout: React.FC = () => {
   const adminItems = [
     { name: 'Chatbot', href: '/chatbot', icon: MessageCircle },
     { name: 'AI Settings', href: '/ai-settings', icon: Bot },
+    { name: 'Video Settings', href: '/video-settings', icon: Film },
     { name: 'Database', href: '/database-status', icon: Database },
     { name: 'Meilisearch', href: '/meilisearch-admin', icon: Settings },
   ];
