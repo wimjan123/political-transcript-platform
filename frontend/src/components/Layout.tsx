@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Search, BarChart3, Video, Database, Upload, Menu, X, ListMusic, Settings, Bot, ChevronDown, Shield, FileText } from 'lucide-react';
+import { Search, BarChart3, Video, Database, Upload, Menu, X, ListMusic, Settings, Bot, ChevronDown, Shield, FileText, MessageCircle } from 'lucide-react';
 import { playlist, usePlaylistCount } from '../services/playlist';
 import ThemeToggle from './ThemeToggle';
 import polibaseLogo from '../assets/polibase-logo.png';
@@ -22,6 +22,7 @@ const Layout: React.FC = () => {
   ];
 
   const adminItems = [
+    { name: 'Chatbot', href: '/chatbot', icon: MessageCircle },
     { name: 'AI Settings', href: '/ai-settings', icon: Bot },
     { name: 'Database', href: '/database-status', icon: Database },
     { name: 'Meilisearch', href: '/meilisearch-admin', icon: Settings },

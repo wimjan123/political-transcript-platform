@@ -20,6 +20,7 @@ const DatabaseStatusPage = React.lazy(() => import('./pages/DatabaseStatusPage')
 const IngestPage = React.lazy(() => import('./pages/IngestPage'));
 const MeilisearchAdminPage = React.lazy(() => import('./pages/MeilisearchAdminPage'));
 const AISettingsPage = React.lazy(() => import('./pages/AISettingsPage'));
+const ChatbotPage = React.lazy(() => import('./pages/ChatbotPage'));
 
 function App() {
   return (
@@ -63,6 +64,14 @@ function App() {
               element={
                 <Suspense fallback={<div className="p-8">Loading...</div>}>
                   <AISettingsPage />
+                </Suspense>
+              } 
+            />
+            <Route 
+              path="chatbot" 
+              element={
+                <Suspense fallback={<div className="p-8">Loading...</div>}>
+                  <ChatbotPage />
                 </Suspense>
               } 
             />
