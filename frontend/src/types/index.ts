@@ -144,6 +144,12 @@ export interface SearchFilters {
   has_violence?: boolean;
   has_sexual?: boolean;
   has_selfharm?: boolean;
+  
+  // Video file filters
+  has_video_file?: boolean;
+  video_format?: string;
+  transcoding_status?: string;
+  has_subtitles?: boolean;
 }
 
 export interface SearchResponse {
@@ -500,6 +506,12 @@ export interface FilterState {
   hasViolence: boolean;
   hasSexual: boolean;
   hasSelfharm: boolean;
+  
+  // Video file filters
+  hasVideoFile: boolean | '';
+  videoFormat: string;
+  transcodingStatus: string;
+  hasSubtitles: boolean | '';
   
   searchType: 'fulltext' | 'exact' | 'fuzzy' | 'semantic';
   sortBy: 'relevance' | 'date' | 'speaker' | 'sentiment' | 'stresslens' | 'similarity';

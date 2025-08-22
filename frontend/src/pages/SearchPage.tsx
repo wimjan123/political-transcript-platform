@@ -53,6 +53,12 @@ const SearchPage: React.FC = () => {
     hasSexual: searchParams.get('has_sexual') === 'true',
     hasSelfharm: searchParams.get('has_selfharm') === 'true',
     
+    // Video file filters
+    hasVideoFile: searchParams.get('has_video_file') === 'true' ? true : searchParams.get('has_video_file') === 'false' ? false : '',
+    videoFormat: searchParams.get('video_format') || '',
+    transcodingStatus: searchParams.get('transcoding_status') || '',
+    hasSubtitles: searchParams.get('has_subtitles') === 'true' ? true : searchParams.get('has_subtitles') === 'false' ? false : '',
+    
     searchType: (searchParams.get('search_type') as FilterState['searchType']) || 'fulltext',
     sortBy: (searchParams.get('sort_by') as FilterState['sortBy']) || 'relevance',
     sortOrder: (searchParams.get('sort_order') as FilterState['sortOrder']) || 'desc',
@@ -108,6 +114,12 @@ const SearchPage: React.FC = () => {
     add('has_violence', filters.hasViolence ? true : undefined);
     add('has_sexual', filters.hasSexual ? true : undefined);
     add('has_selfharm', filters.hasSelfharm ? true : undefined);
+    
+    // Video file filters
+    add('has_video_file', filters.hasVideoFile === true ? true : filters.hasVideoFile === false ? false : undefined);
+    add('video_format', filters.videoFormat);
+    add('transcoding_status', filters.transcodingStatus);
+    add('has_subtitles', filters.hasSubtitles === true ? true : filters.hasSubtitles === false ? false : undefined);
 
     return {
       q: debouncedQuery,
@@ -291,6 +303,12 @@ const SearchPage: React.FC = () => {
       hasViolence: false,
       hasSexual: false,
       hasSelfharm: false,
+      
+      // Video file filters
+      hasVideoFile: '',
+      videoFormat: '',
+      transcodingStatus: '',
+      hasSubtitles: '',
       
       searchType: 'fulltext',
       sortBy: 'relevance',
@@ -745,6 +763,68 @@ const SearchPage: React.FC = () => {
                         className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                       />
                       <label htmlFor="hasSelfharm" className="ml-2 text-sm text-gray-700">Self-harm</label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Video File Filters */}
+                <div>
+                  <label className="label">Video File Filters</label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <label className="label text-sm">Has Video File</label>
+                      <select
+                        value={filters.hasVideoFile === true ? 'true' : filters.hasVideoFile === false ? 'false' : ''}
+                        onChange={(e) => handleFilterChange('hasVideoFile', e.target.value === 'true' ? true : e.target.value === 'false' ? false : '')}
+                        className="input text-sm"
+                      >
+                        <option value="">Any</option>
+                        <option value="true">Yes</option>
+                        <option value="false">No</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="label text-sm">Video Format</label>
+                      <select
+                        value={filters.videoFormat}
+                        onChange={(e) => handleFilterChange('videoFormat', e.target.value)}
+                        className="input text-sm"
+                      >
+                        <option value="">Any Format</option>
+                        <option value="avi">AVI</option>
+                        <option value="mp4">MP4</option>
+                        <option value="mkv">MKV</option>
+                        <option value="mov">MOV</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="label text-sm">Transcoding Status</label>
+                      <select
+                        value={filters.transcodingStatus}
+                        onChange={(e) => handleFilterChange('transcodingStatus', e.target.value)}
+                        className="input text-sm"
+                      >
+                        <option value="">Any Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="processing">Processing</option>
+                        <option value="completed">Completed</option>
+                        <option value="failed">Failed</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="label text-sm">Has Subtitles</label>
+                      <select
+                        value={filters.hasSubtitles === true ? 'true' : filters.hasSubtitles === false ? 'false' : ''}
+                        onChange={(e) => handleFilterChange('hasSubtitles', e.target.value === 'true' ? true : e.target.value === 'false' ? false : '')}
+                        className="input text-sm"
+                      >
+                        <option value="">Any</option>
+                        <option value="true">Yes</option>
+                        <option value="false">No</option>
+                      </select>
                     </div>
                   </div>
                 </div>

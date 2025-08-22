@@ -52,6 +52,12 @@ async def search_transcripts(
     has_sexual: Optional[bool] = Query(None, description="Filter by sexual flag"),
     has_selfharm: Optional[bool] = Query(None, description="Filter by self-harm flag"),
     
+    # Video file filters
+    has_video_file: Optional[bool] = Query(None, description="Filter by presence of video file"),
+    video_format: Optional[str] = Query(None, description="Filter by video format (avi, mp4, mkv)"),
+    transcoding_status: Optional[str] = Query(None, description="Filter by transcoding status (pending, processing, completed, failed)"),
+    has_subtitles: Optional[bool] = Query(None, description="Filter by presence of SRT subtitle file"),
+    
     search_type: str = Query("fulltext", description="Search type: fulltext, exact, fuzzy"),
     sort_by: str = Query("relevance", description="Sort by: relevance, date, speaker, sentiment, stresslens"),
     sort_order: str = Query("desc", description="Sort order: asc, desc"),
@@ -164,6 +170,28 @@ async def search_transcripts(
             conditions.append(TranscriptSegment.moderation_sexual_flag == True)
         if has_selfharm is True:
             conditions.append(TranscriptSegment.moderation_selfharm_flag == True)
+        
+        # Video file filters
+        if has_video_file is not None or video_format or transcoding_status or has_subtitles is not None:
+            if not joined_video:
+                query = query.join(Video)
+                joined_video = True
+        
+        if has_video_file is True:
+            conditions.append(Video.video_file_path.isnot(None))
+        elif has_video_file is False:
+            conditions.append(Video.video_file_path.is_(None))
+        
+        if video_format:
+            conditions.append(Video.video_format.ilike(f"%{video_format}%"))
+        
+        if transcoding_status:
+            conditions.append(Video.transcoding_status == transcoding_status)
+        
+        if has_subtitles is True:
+            conditions.append(Video.srt_file_path.isnot(None))
+        elif has_subtitles is False:
+            conditions.append(Video.srt_file_path.is_(None))
         
         # Apply conditions
         if conditions:
