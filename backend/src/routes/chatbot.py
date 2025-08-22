@@ -210,10 +210,10 @@ async def query_database(query: str, db: AsyncSession) -> Dict[str, Any]:
                 query_builder = select(
                     TranscriptSegment.id,
                     TranscriptSegment.video_id,
-                    TranscriptSegment.content,
+                    TranscriptSegment.transcript_text,
                     TranscriptSegment.speaker_name,
-                    TranscriptSegment.start_time,
-                    TranscriptSegment.end_time,
+                    TranscriptSegment.timestamp_start,
+                    TranscriptSegment.timestamp_end,
                     Video.title,
                     Video.date,
                     Video.dataset,
@@ -221,7 +221,7 @@ async def query_database(query: str, db: AsyncSession) -> Dict[str, Any]:
                 ).join(Video)
                 
                 # Add content search condition
-                content_conditions = [TranscriptSegment.content.ilike(f"%{term}%") for term in terms]
+                content_conditions = [TranscriptSegment.transcript_text.ilike(f"%{term}%") for term in terms]
                 query_builder = query_builder.where(or_(*content_conditions))
                 
                 # Filter for Dutch content if specifically requested
@@ -239,16 +239,16 @@ async def query_database(query: str, db: AsyncSession) -> Dict[str, Any]:
                         {
                             "segment_id": s.id,
                             "video_id": s.video_id, 
-                            "content": s.content[:300] + "..." if len(s.content) > 300 else s.content,
+                            "content": s.transcript_text[:300] + "..." if len(s.transcript_text) > 300 else s.transcript_text,
                             "speaker": s.speaker_name,
                             "video_title": s.title,
                             "video_date": str(s.date) if s.date else None,
-                            "start_time": s.start_time,
-                            "end_time": s.end_time,
-                            "start_time_formatted": format_timestamp(s.start_time),
-                            "end_time_formatted": format_timestamp(s.end_time),
+                            "start_time": s.timestamp_start,
+                            "end_time": s.timestamp_end,
+                            "start_time_formatted": s.timestamp_start if s.timestamp_start else "N/A",
+                            "end_time_formatted": s.timestamp_end if s.timestamp_end else "N/A",
                             "dataset": s.dataset,
-                            "link": f"http://localhost:3000/videos/{s.video_id}?t={s.start_time}&segment_id={s.id}" if s.start_time else f"http://localhost:3000/videos/{s.video_id}?segment_id={s.id}"
+                            "link": f"http://localhost:3000/videos/{s.video_id}?segment_id={s.id}" + (f"&t={s.timestamp_start}" if s.timestamp_start else "")
                         } 
                         for s in segments[:5]
                     ]
