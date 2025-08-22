@@ -166,7 +166,6 @@ async def query_database(query: str, db: AsyncSession) -> Dict[str, Any]:
         
         for category, terms in search_terms.items():
             if any(term in query_lower for term in terms):
-                print(f"DEBUG: Matched category '{category}' with terms {terms}")
                 # Build query with dataset filter for Dutch content if requested
                 query_builder = select(TranscriptSegment).join(Video)
                 
