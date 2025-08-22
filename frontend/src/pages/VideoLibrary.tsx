@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Upload, RefreshCw, Filter, Download, Eye, Clock, FileVideo } from 'lucide-react';
+import { Play, Upload, RefreshCw, Filter, Download, Eye, Clock, FileVideo, FolderOpen } from 'lucide-react';
 import VideoPlayer from '../components/VideoPlayer';
+import FolderBrowser from '../components/FolderBrowser';
 
 interface VideoFile {
   id: number;
@@ -34,6 +35,8 @@ const VideoLibrary: React.FC = () => {
   const [transcoding, setTranscoding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [importStats, setImportStats] = useState<ImportStats | null>(null);
+  const [showFolderBrowser, setShowFolderBrowser] = useState(false);
+  const [selectedFolders, setSelectedFolders] = useState<string[]>([]);
   
   // Filters
   const [formatFilter, setFormatFilter] = useState<string>('');
@@ -71,13 +74,22 @@ const VideoLibrary: React.FC = () => {
     }
   };
 
-  const importVideos = async (forceReimport = false) => {
+  const importVideos = async (forceReimport = false, folders?: string[]) => {
     try {
       setImporting(true);
       setError(null);
       
-      const response = await fetch(`/api/video-files/import?force_reimport=${forceReimport}`, {
-        method: 'POST'
+      const requestBody = {
+        force_reimport: forceReimport,
+        selected_folders: folders && folders.length > 0 ? folders : undefined
+      };
+      
+      const response = await fetch('/api/video-files/import', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
       });
       
       if (!response.ok) {
@@ -89,6 +101,10 @@ const VideoLibrary: React.FC = () => {
       
       // Reload video list
       await loadVideos();
+      
+      // Close folder browser if it was open
+      setShowFolderBrowser(false);
+      setSelectedFolders([]);
       
       // Show import results
       if (stats.imported > 0 || stats.errors > 0) {
@@ -265,12 +281,21 @@ const VideoLibrary: React.FC = () => {
           
           <div className="flex items-center space-x-4 mt-4 md:mt-0">
             <button
+              onClick={() => setShowFolderBrowser(!showFolderBrowser)}
+              disabled={importing}
+              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+            >
+              <FolderOpen className="w-4 h-4 mr-2" />
+              {showFolderBrowser ? 'Hide Folders' : 'Select Folders'}
+            </button>
+            
+            <button
               onClick={() => importVideos(false)}
               disabled={importing}
               className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
               {importing ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
-              {importing ? 'Importing...' : 'Import Videos'}
+              {importing ? 'Importing...' : 'Import All'}
             </button>
             
             <button
@@ -283,6 +308,31 @@ const VideoLibrary: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* Folder Browser */}
+        {showFolderBrowser && (
+          <div className="mb-6">
+            <FolderBrowser
+              onFoldersSelected={setSelectedFolders}
+              showOnlyVideoFolders={true}
+              multiSelect={true}
+            />
+            
+            {/* Import Selected Folders Button */}
+            {selectedFolders.length > 0 && (
+              <div className="mt-4 flex justify-center">
+                <button
+                  onClick={() => importVideos(false, selectedFolders)}
+                  disabled={importing}
+                  className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 shadow-lg"
+                >
+                  {importing ? <RefreshCw className="w-5 h-5 mr-2 animate-spin" /> : <Upload className="w-5 h-5 mr-2" />}
+                  {importing ? 'Importing...' : `Import from ${selectedFolders.length} folder${selectedFolders.length !== 1 ? 's' : ''}`}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Filters */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">

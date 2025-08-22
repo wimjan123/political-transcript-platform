@@ -54,24 +54,35 @@ class VideoFileInfo(BaseModel):
     playback_ready: bool
 
 
+class VideoImportRequest(BaseModel):
+    """Request model for video import"""
+    force_reimport: bool = False
+    video_directory: Optional[str] = None
+    selected_folders: Optional[List[str]] = None
+
+
 @router.post("/import", response_model=VideoImportStats)
 async def import_video_files(
-    background_tasks: BackgroundTasks,
-    force_reimport: bool = False,
-    video_directory: Optional[str] = None
+    request: VideoImportRequest,
+    background_tasks: BackgroundTasks
 ) -> VideoImportStats:
     """
-    Import video files and their SRT subtitles from directory
+    Import video files and their SRT subtitles from directory or selected folders
     
     Args:
-        force_reimport: Whether to reimport existing videos
-        video_directory: Custom directory to import from (optional)
+        request: Import configuration including force_reimport, video_directory, and selected_folders
     """
     try:
-        import_service = get_video_import_service(video_directory)
+        import_service = get_video_import_service(request.video_directory)
         
-        # Run import in background for large directories
-        stats = import_service.import_all_videos(force_reimport=force_reimport)
+        # Import from selected folders or entire directory
+        if request.selected_folders:
+            stats = import_service.import_from_folders(
+                request.selected_folders, 
+                force_reimport=request.force_reimport
+            )
+        else:
+            stats = import_service.import_all_videos(force_reimport=request.force_reimport)
         
         # Start transcoding for any newly imported videos that need it
         if stats['imported'] > 0:

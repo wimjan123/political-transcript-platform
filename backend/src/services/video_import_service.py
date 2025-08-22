@@ -36,21 +36,45 @@ class VideoImportService:
         self.analytics_service = AnalyticsService()
         self.supported_formats = {'.avi', '.mp4', '.mkv', '.mov'}
     
-    def discover_video_files(self) -> List[Dict[str, str]]:
+    def discover_video_files(self, directories: Optional[List[str]] = None) -> List[Dict[str, str]]:
         """
         Discover video files and their corresponding SRT files
+        
+        Args:
+            directories: Specific directories to search (if None, uses self.video_directory)
         
         Returns:
             List of dictionaries containing video_path and srt_path (if exists)
         """
         video_files = []
         
-        if not os.path.exists(self.video_directory):
-            logger.warning(f"Video directory does not exist: {self.video_directory}")
-            return video_files
+        # Use specific directories if provided, otherwise default directory
+        search_directories = directories if directories else [self.video_directory]
+        
+        for directory in search_directories:
+            if not os.path.exists(directory):
+                logger.warning(f"Video directory does not exist: {directory}")
+                continue
+            
+            video_files.extend(self._discover_videos_in_directory(directory))
+        
+        logger.info(f"Discovered {len(video_files)} video files")
+        return video_files
+    
+    def _discover_videos_in_directory(self, directory: str) -> List[Dict[str, str]]:
+        """
+        Discover video files in a specific directory
+        
+        Args:
+            directory: Directory to search
+            
+        Returns:
+            List of video file information dictionaries
+        """
+        video_files = []
         
         for ext in self.supported_formats:
-            pattern = os.path.join(self.video_directory, f"**/*{ext}")
+            pattern = os.path.join(directory, f"**/*{ext}")
             for video_path in glob.glob(pattern, recursive=True):
                 # Look for corresponding SRT file
                 base_path = os.path.splitext(video_path)[0]
@@ -63,7 +87,6 @@ class VideoImportService:
                     'size': os.path.getsize(video_path)
                 })
         
-        logger.info(f"Discovered {len(video_files)} video files in {self.video_directory}")
         return video_files
     
     def get_video_metadata(self, video_path: str) -> Dict:
@@ -351,6 +374,56 @@ class VideoImportService:
         stats['skipped'] = stats['discovered'] - stats['imported'] - stats['errors']
         
         logger.info(f"Video import completed. Stats: {stats}")
+        return stats
+    
+    def import_from_folders(self, folder_paths: List[str], force_reimport: bool = False) -> Dict[str, int]:
+        """
+        Import video files from specific folders
+        
+        Args:
+            folder_paths: List of folder paths to import from
+            force_reimport: Whether to reimport existing videos
+            
+        Returns:
+            Dictionary with import statistics
+        """
+        stats = {
+            'discovered': 0,
+            'imported': 0,
+            'skipped': 0,
+            'errors': 0
+        }
+        
+        # Discover video files in selected folders
+        video_files = self.discover_video_files(folder_paths)
+        stats['discovered'] = len(video_files)
+        
+        # Import each video
+        with next(get_db()) as db:
+            for video_info in video_files:
+                try:
+                    if force_reimport:
+                        # Remove existing video first
+                        existing = db.query(Video).filter(
+                            Video.video_file_path == video_info['video_path']
+                        ).first()
+                        if existing:
+                            db.delete(existing)
+                            db.commit()
+                    
+                    result = self.import_video_file(video_info, db)
+                    if result:
+                        stats['imported'] += 1
+                    else:
+                        stats['errors'] += 1
+                        
+                except Exception as e:
+                    logger.error(f"Error importing {video_info['filename']}: {str(e)}")
+                    stats['errors'] += 1
+        
+        stats['skipped'] = stats['discovered'] - stats['imported'] - stats['errors']
+        
+        logger.info(f"Folder import completed. Stats: {stats}")
         return stats
 
 

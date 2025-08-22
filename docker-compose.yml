@@ -54,6 +54,7 @@ services:
       - ./data:/data
       - /root/polibase/out/html:/data/html:ro
       - /root/tweedekamer_scrape/tweede-kamer-scraper/output/raw_xml:${XML_DATA_DIR:-/root/tweedekamer_scrape/tweede-kamer-scraper/output/xml/}:ro
+      - /Stash/BunkrDownloader/Downloads:/Downloads:ro
     ports:
       - "8000:8000"
     depends_on:
