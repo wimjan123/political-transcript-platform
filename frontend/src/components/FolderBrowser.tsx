@@ -74,7 +74,8 @@ export const FolderBrowser: React.FC<FolderBrowserProps> = ({
       setParentPath(data.parent_path);
       
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load folders');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load folders';
+      setError(`${errorMessage}. Please ensure the backend API is running and the Downloads directory is accessible.`);
       console.error('Error loading folders:', err);
     } finally {
       setLoading(false);

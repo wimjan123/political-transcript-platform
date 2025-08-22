@@ -49,7 +49,12 @@ async def browse_folders(
     try:
         # Ensure path is within the Downloads directory for security
         base_path = "/Downloads"
-        if not path.startswith("/Downloads"):
+        
+        # Handle path normalization and security
+        if not path or path == "/":
+            full_path = base_path
+        elif not path.startswith("/Downloads"):
+            # Remove leading slash if present
             if path.startswith("/"):
                 path = path[1:]
             full_path = os.path.join(base_path, path)
@@ -61,8 +66,13 @@ async def browse_folders(
         if not full_path.startswith(base_path):
             raise HTTPException(status_code=403, detail="Access denied - path outside Downloads directory")
         
-        if not os.path.exists(full_path) or not os.path.isdir(full_path):
-            raise HTTPException(status_code=404, detail="Directory not found")
+        if not os.path.exists(full_path):
+            logger.error(f"Directory does not exist: {full_path}")
+            raise HTTPException(status_code=404, detail=f"Directory not found: {full_path}")
+        
+        if not os.path.isdir(full_path):
+            logger.error(f"Path is not a directory: {full_path}")
+            raise HTTPException(status_code=404, detail=f"Path is not a directory: {full_path}")
         
         # Get parent path
         parent_path = None

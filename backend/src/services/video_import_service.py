@@ -17,7 +17,7 @@ from sqlalchemy import and_, or_
 
 from ..models import Video, TranscriptSegment, Speaker
 from ..database import get_db
-from .analytics_service import AnalyticsService
+# from .analytics_service import AnalyticsService
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class VideoImportService:
             video_directory: Directory to scan for video files
         """
         self.video_directory = video_directory
-        self.analytics_service = AnalyticsService()
+        # self.analytics_service = AnalyticsService()
         self.supported_formats = {'.avi', '.mp4', '.mkv', '.mov'}
     
     def discover_video_files(self, directories: Optional[List[str]] = None) -> List[Dict[str, str]]:
@@ -308,20 +308,21 @@ class VideoImportService:
             )
             
             # Add analytics if service is available
-            try:
-                analytics_data = self.analytics_service.analyze_text(cleaned_text)
-                if analytics_data:
-                    # Add sentiment scores
-                    segment.sentiment_vader_score = analytics_data.get('sentiment', {}).get('vader', {}).get('compound')
-                    segment.sentiment_vader_label = analytics_data.get('sentiment', {}).get('vader', {}).get('label')
-                    
-                    # Add readability metrics
-                    readability = analytics_data.get('readability', {})
-                    segment.flesch_kincaid_grade = readability.get('flesch_kincaid_grade')
-                    segment.flesch_reading_ease = readability.get('flesch_reading_ease')
-                    segment.gunning_fog_index = readability.get('gunning_fog_index')
-            except Exception as e:
-                logger.warning(f"Could not add analytics to segment: {str(e)}")
+            # Note: Analytics service temporarily disabled to avoid import issues
+            # try:
+            #     analytics_data = self.analytics_service.analyze_text(cleaned_text)
+            #     if analytics_data:
+            #         # Add sentiment scores
+            #         segment.sentiment_vader_score = analytics_data.get('sentiment', {}).get('vader', {}).get('compound')
+            #         segment.sentiment_vader_label = analytics_data.get('sentiment', {}).get('vader', {}).get('label')
+            #         
+            #         # Add readability metrics
+            #         readability = analytics_data.get('readability', {})
+            #         segment.flesch_kincaid_grade = readability.get('flesch_kincaid_grade')
+            #         segment.flesch_reading_ease = readability.get('flesch_reading_ease')
+            #         segment.gunning_fog_index = readability.get('gunning_fog_index')
+            # except Exception as e:
+            #     logger.warning(f"Could not add analytics to segment: {str(e)}")
             
             db.add(segment)
         

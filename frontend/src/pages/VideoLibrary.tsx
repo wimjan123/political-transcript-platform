@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Play, Upload, RefreshCw, Filter, Download, Eye, Clock, FileVideo, FolderOpen } from 'lucide-react';
 import VideoPlayer from '../components/VideoPlayer';
 import FolderBrowser from '../components/FolderBrowser';
+import SystemDebugInfo from '../components/SystemDebugInfo';
 
 interface VideoFile {
   id: number;
@@ -67,7 +68,8 @@ const VideoLibrary: React.FC = () => {
       const data = await response.json();
       setVideos(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load videos');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load videos';
+      setError(`${errorMessage}. Please ensure the backend API is running on port 8000.`);
       console.error('Error loading videos:', err);
     } finally {
       setLoading(false);
@@ -112,7 +114,8 @@ const VideoLibrary: React.FC = () => {
         alert(message);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to import videos');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to import videos';
+      setError(`Import failed: ${errorMessage}. Please check that the backend is running and the Downloads directory is accessible.`);
       console.error('Error importing videos:', err);
     } finally {
       setImporting(false);
@@ -308,6 +311,9 @@ const VideoLibrary: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* System Debug Info - Show when there are errors */}
+        {error && <SystemDebugInfo />}
 
         {/* Folder Browser */}
         {showFolderBrowser && (
