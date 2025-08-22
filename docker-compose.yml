@@ -81,8 +81,6 @@ services:
       - CHOWN
       - SETUID
       - SETGID
-    external_links:
-      - traefik:traefik
 
   web:
     build:
@@ -111,15 +109,6 @@ services:
       start_period: 60s
     stdin_open: true
     tty: true
-    networks:
-      - default
-      - pangolin
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.polibase-web.rule=Host(`polibase.nl`)"
-      - "traefik.http.routers.polibase-web.entrypoints=websecure"
-      - "traefik.http.routers.polibase-web.tls.certresolver=myresolver"
-      - "traefik.http.services.polibase-web.loadbalancer.server.port=3000"
 
   elasticsearch:
     image: elasticsearch:8.11.0
@@ -205,5 +194,3 @@ networks:
     ipam:
       config:
         - subnet: 172.20.0.0/16
-  pangolin:
-    external: true
