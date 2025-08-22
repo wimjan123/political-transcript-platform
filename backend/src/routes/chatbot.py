@@ -3,7 +3,7 @@ Chatbot API routes for OpenRouter integration with database access
 """
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from pydantic import BaseModel
 from typing import List, Optional, Any, Dict
 import httpx
@@ -43,24 +43,34 @@ class ChatResponse(BaseModel):
 def build_database_context() -> str:
     """Build context about the database schema and capabilities"""
     return """
-You are an AI assistant that helps users analyze a political transcript database. You have access to current database information that will be provided to you in your context.
+You are an AI assistant that helps users analyze a political transcript database. You have access to current database information and can search through transcript content.
 
 DATABASE SCHEMA:
-- videos: Contains video metadata (id, title, description, date, thumbnail_url, speaker_name, duration_seconds, video_seconds, sentiment scores, readability metrics)
+- videos: Contains video metadata (id, title, description, date, thumbnail_url, speaker_name, duration_seconds, video_seconds, sentiment scores, readability metrics, dataset)
 - transcript_segments: Individual transcript segments with timestamps (id, video_id, start_time, end_time, speaker_name, content, sentiment scores)
 - speakers: Speaker information (id, name, video_count, total_segments)
 - video_summaries: AI-generated video summaries (id, video_id, summary, model_used, created_at)
 - topics: Topic categories (id, name, frequency)
 
+DATASETS AVAILABLE:
+- 'trump': Political video transcripts (primarily English)
+- 'tweede_kamer': Dutch parliament (Tweede Kamer) transcripts (Dutch language)
+
 WHAT YOU CAN DO:
-- Answer questions about database statistics and content using the provided data
+- Search through actual transcript content using keywords in English and Dutch
+- Find specific quotes and segments from transcripts
+- Filter content by language/dataset (e.g., Dutch content from Tweede Kamer)
 - Analyze trends and patterns in the political transcript collection
 - Provide insights about speakers, topics, sentiment, and content
-- Help users understand what's available in the database
+- Return actual transcript excerpts that match search queries
 
-When you receive relevant database information in your context, use it to provide accurate, data-driven answers. If you don't have specific data for a question, explain what information is available and suggest related queries.
+SEARCH CAPABILITIES:
+- Content search supports both English and Dutch keywords
+- Can filter by dataset (e.g., only Dutch content from 'tweede_kamer')
+- Searches are case-insensitive and support partial matches
+- Returns actual transcript content, not just metadata
 
-The database contains political video transcripts with comprehensive analytics including sentiment analysis, readability metrics, and topic categorization.
+When you receive database search results in your context, you can provide specific quotes and content from the transcripts. The database contains actual transcript text that can be searched and quoted directly.
 """
 
 
@@ -131,19 +141,51 @@ async def query_database(query: str, db: AsyncSession) -> Dict[str, Any]:
                     results["average_sentiment"] = round(avg, 3)
                     results["sentiment_analysis"] = f"Average sentiment score: {avg:.3f} (range: -1 to 1)"
         
-        # Search for specific content
-        search_terms = ["climate", "economy", "healthcare", "education", "immigration", "tax"]
-        for term in search_terms:
-            if term in query_lower:
-                result = await db.execute(
-                    select(TranscriptSegment)
-                    .where(TranscriptSegment.content.ilike(f"%{term}%"))
-                    .limit(5)
-                )
+        # Search for specific content - Enhanced with Dutch keywords
+        search_terms = {
+            "climate": ["climate", "klima", "milieu", "klimaat"],
+            "economy": ["economy", "economie", "economic", "economisch"],
+            "healthcare": ["healthcare", "health", "zorg", "gezondheid", "ziekenhuis"],
+            "education": ["education", "onderwijs", "school", "university", "universiteit"],
+            "immigration": ["immigration", "immigratie", "migratie", "vreemdeling"],
+            "tax": ["tax", "belasting", "btw", "fiscaal"],
+            "government_workers": ["ambtenaren", "overheidsmedewerkers", "civil servants", "government workers", "personeelsreductie", "bezuiniging"],
+            "saving_money": ["besparen", "bezuinigen", "kostenreductie", "save money", "cut costs", "reduce spending"]
+        }
+        
+        # Check for Dutch language indicators
+        dutch_indicators = ["dutch", "nederlands", "nederlandse", "holland", "tweede kamer"]
+        is_dutch_query = any(indicator in query_lower for indicator in dutch_indicators)
+        
+        for category, terms in search_terms.items():
+            if any(term in query_lower for term in terms):
+                # Build query with dataset filter for Dutch content if requested
+                query_builder = select(TranscriptSegment).join(Video)
+                
+                # Add content search condition
+                content_conditions = [TranscriptSegment.content.ilike(f"%{term}%") for term in terms]
+                query_builder = query_builder.where(or_(*content_conditions))
+                
+                # Filter for Dutch content if specifically requested
+                if is_dutch_query:
+                    query_builder = query_builder.where(Video.dataset == 'tweede_kamer')
+                
+                query_builder = query_builder.limit(10)
+                
+                result = await db.execute(query_builder)
                 segments = result.scalars().all()
-                results[f"{term}_mentions"] = len(segments)
+                
+                results[f"{category}_mentions"] = len(segments)
                 if segments:
-                    results[f"{term}_examples"] = [{"video_id": s.video_id, "content": s.content[:200] + "..."} for s in segments[:3]]
+                    results[f"{category}_examples"] = [
+                        {
+                            "video_id": s.video_id, 
+                            "content": s.content[:300] + "..." if len(s.content) > 300 else s.content,
+                            "speaker": s.speaker_name,
+                            "dataset": segments[0].video.dataset if hasattr(segments[0], 'video') else None
+                        } 
+                        for s in segments[:5]
+                    ]
                     
         # Add recent videos for general queries about the database
         if any(word in query_lower for word in ["database", "data", "what", "tell me", "show me", "available", "content"]):
