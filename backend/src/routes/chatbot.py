@@ -157,8 +157,16 @@ async def query_database(query: str, db: AsyncSession) -> Dict[str, Any]:
         dutch_indicators = ["dutch", "nederlands", "nederlandse", "holland", "tweede kamer"]
         is_dutch_query = any(indicator in query_lower for indicator in dutch_indicators)
         
+        # Add more flexible keyword matching for common queries
+        if any(word in query_lower for word in ["quotes", "content", "transcripts", "find", "search"]):
+            if any(word in query_lower for word in ["government", "overheid", "ambtenaren", "workers", "medewerkers"]):
+                search_terms["government_workers_broad"] = ["ambtenaren", "overheid", "government", "workers", "medewerkers", "overheidsmedewerkers"]
+            if any(word in query_lower for word in ["money", "geld", "besparen", "saving", "bezuinigen", "costs"]):
+                search_terms["saving_money_broad"] = ["besparen", "bezuinigen", "geld", "money", "kosten", "costs", "besparingen"]
+        
         for category, terms in search_terms.items():
             if any(term in query_lower for term in terms):
+                print(f"DEBUG: Matched category '{category}' with terms {terms}")
                 # Build query with dataset filter for Dutch content if requested
                 query_builder = select(TranscriptSegment).join(Video)
                 
