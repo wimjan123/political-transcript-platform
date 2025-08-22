@@ -38,6 +38,23 @@ class Video(Base):
     place: Mapped[Optional[str]] = mapped_column(String(300), index=True)
     record_type: Mapped[Optional[str]] = mapped_column(String(100), index=True)
     
+    # Video file fields
+    video_file_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)  # Local path to video file (AVI/MP4)
+    srt_file_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)    # Local path to SRT subtitle file
+    video_format: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)      # Original format: avi, mp4
+    video_file_size: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)      # File size in bytes
+    video_duration_seconds: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # Duration from video metadata
+    video_resolution: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # e.g., "1920x1080"
+    video_fps: Mapped[Optional[float]] = mapped_column(Float, nullable=True)            # Frames per second
+    video_bitrate: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)        # Bitrate in bps
+    
+    # Transcoding status
+    transcoding_status: Mapped[Optional[str]] = mapped_column(String(20), default='pending', index=True)  # pending, processing, completed, failed
+    transcoded_file_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)  # Path to transcoded MP4 (for AVI files)
+    transcoding_started_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
+    transcoding_completed_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
+    transcoding_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)       # Error message if transcoding failed
+    
     # Statistics (calculated fields)
     total_words: Mapped[Optional[int]] = mapped_column(Integer, default=0)
     total_characters: Mapped[Optional[int]] = mapped_column(Integer, default=0)
@@ -278,3 +295,9 @@ Index('idx_segment_analytics', TranscriptSegment.stresslens_score, TranscriptSeg
 
 # Indexes for semantic search embeddings
 Index('idx_segment_embedding_generated', TranscriptSegment.embedding_generated_at)
+
+# Indexes for video file fields
+Index('idx_video_file_path', Video.video_file_path)
+Index('idx_video_transcoding_status', Video.transcoding_status)
+Index('idx_video_format', Video.video_format)
+Index('idx_video_file_metadata', Video.video_format, Video.transcoding_status, Video.created_at)

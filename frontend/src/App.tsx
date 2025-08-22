@@ -12,6 +12,7 @@ import VideosPage from './pages/VideosPage';
 import VideoDetailPage from './pages/VideoDetailPage';
 import NotFoundPage from './pages/NotFoundPage';
 import PlaylistPage from './pages/PlaylistPage';
+import VideoLibrary from './pages/VideoLibrary';
 import { AnalyticsDashboardSkeleton } from './components/SkeletonLoader';
 
 // Lazy load heavy components that include charts and admin features
@@ -42,6 +43,7 @@ function App() {
             />
             <Route path="videos" element={<VideosPage />} />
             <Route path="videos/:videoId" element={<VideoDetailPage />} />
+            <Route path="video-library" element={<VideoLibrary />} />
             <Route path="playlist" element={<PlaylistPage />} />
             <Route 
               path="database-status" 

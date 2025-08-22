@@ -65,3 +65,7 @@ isort==5.12.0
 
 # File handling
 openpyxl==3.1.2
+
+# Video processing and subtitle parsing
+ffmpeg-python==0.2.0
+pysrt==1.1.2

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Search, BarChart3, Video, Database, Upload, Menu, X, ListMusic, Settings, Bot, ChevronDown, Shield, FileText, MessageCircle } from 'lucide-react';
+import { Search, BarChart3, Video, Database, Upload, Menu, X, ListMusic, Settings, Bot, ChevronDown, Shield, FileText, MessageCircle, Film } from 'lucide-react';
 import { playlist, usePlaylistCount } from '../services/playlist';
 import ThemeToggle from './ThemeToggle';
 import polibaseLogo from '../assets/polibase-logo.png';
@@ -17,6 +17,7 @@ const Layout: React.FC = () => {
     { name: 'Summaries', href: '/summaries', icon: FileText },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
     { name: 'Videos', href: '/videos', icon: Video },
+    { name: 'Video Library', href: '/video-library', icon: Film },
     { name: 'Ingest', href: '/ingest', icon: Upload },
     { name: 'Playlist', href: '/playlist', icon: ListMusic },
   ];
