@@ -2,6 +2,14 @@
 
 A comprehensive full-stack platform for processing, analyzing, and searching political video transcripts with advanced AI-powered analytics and summarization capabilities.
 
+## Developer Docs Index
+
+- Development workflow and commands: see `DEVELOPMENT.md`
+- Contribution, code style, naming, and PR guidelines: see `CONTRIBUTING.md`
+- API reference: see `API.md`
+- Database schema and search indexing: see `DATABASE.md`
+- Security guidance: see `SECURITY.md`
+
 ## 🎯 Overview
 
 This platform enables users to:
@@ -76,6 +84,11 @@ This platform enables users to:
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:8000
    - API Documentation: http://localhost:8000/docs
+
+### Data Directories
+
+- Place raw HTML transcripts under `data/html` on the host.
+- Containers create and manage app data under `/data` inside the containers (e.g., caches, temp files).
 
 ### Manual Setup (Local Development)
 
@@ -530,16 +543,7 @@ make meili-init
 6. Push to branch (`git push origin feature/amazing-feature`)
 7. Open a Pull Request
 
-### Code Standards
-- **Python**: PEP 8 with Black formatting
-- **TypeScript**: ESLint + Prettier configuration
-- **Git**: Conventional commit messages
-- **Testing**: Minimum 80% test coverage
-
-### Documentation
-- Update README.md for new features
-- Add API documentation for new endpoints
-- Include inline code comments for complex logic
+See `CONTRIBUTING.md` for code style, naming conventions, test layout, and PR checklist.
 
 ## 📝 License
 
