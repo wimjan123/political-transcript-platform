@@ -67,6 +67,8 @@ const VimeoEmbed: React.FC<VimeoEmbedProps> = ({
         <img
           src={thumbnail}
           alt={title}
+          loading="lazy"
+          decoding="async"
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center group-hover:bg-opacity-60 transition-colors">
@@ -89,6 +91,7 @@ const VimeoEmbed: React.FC<VimeoEmbedProps> = ({
           frameBorder="0"
           allow="autoplay; fullscreen; picture-in-picture"
           allowFullScreen
+          loading="lazy"
           title={title}
           className="rounded-lg"
         />
