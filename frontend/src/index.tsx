@@ -6,7 +6,7 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 
 // Setup Chart.js components
-import './utils/chartSetup';
+// Load Chart.js only on analytics routes (moved to AnalyticsPage)
 
 // Apply saved or system theme before render to avoid FOUC
 try {

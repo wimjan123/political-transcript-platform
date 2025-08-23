@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+// Ensure Chart.js is registered only when Analytics page is loaded
+import '../utils/chartSetup';
 import { BarChart3, TrendingUp, Users, MessageSquare, Activity, Bot } from 'lucide-react';
 import { analyticsAPI } from '../services/api';
 import AnalyticsDashboard from '../components/AnalyticsDashboard';
