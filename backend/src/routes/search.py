@@ -64,7 +64,7 @@ async def search_transcripts(
         # Build base query
         query = select(TranscriptSegment).options(
             selectinload(TranscriptSegment.video),
-            selectinload(TranscriptSegment.speaker),
+            # Avoid eager-loading full Speaker objects; not needed for search results
             selectinload(TranscriptSegment.segment_topics).selectinload(SegmentTopic.topic)
         )
         joined_video = False
