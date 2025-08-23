@@ -7,8 +7,8 @@ import {
 import { playlist } from '../services/playlist';
 import { videosAPI, formatDate, formatTimestamp, formatTimestampRange, getSentimentColor, getSentimentLabel, downloadFile } from '../services/api';
 import VimeoEmbed from '../components/VimeoEmbed';
-import EnhancedTranscriptSummarizer from '../components/EnhancedTranscriptSummarizer';
-import SimilarSegmentsModal from '../components/SimilarSegmentsModal';
+const EnhancedTranscriptSummarizer = React.lazy(() => import('../components/EnhancedTranscriptSummarizer'));
+const SimilarSegmentsModal = React.lazy(() => import('../components/SimilarSegmentsModal'));
 import type { Video as VideoType, TranscriptSegment, VideoStats } from '../types';
 
 const VideoDetailPage: React.FC = () => {
@@ -674,7 +674,9 @@ const VideoDetailPage: React.FC = () => {
               <Sparkles className="h-5 w-5 mr-2" />
               AI Transcript Summarization
             </h2>
-            <EnhancedTranscriptSummarizer videoId={parseInt(videoId!)} />
+            <React.Suspense fallback={<div className="text-sm text-gray-500">Loading summarizer…</div>}>
+              <EnhancedTranscriptSummarizer videoId={parseInt(videoId!)} />
+            </React.Suspense>
           </div>
         )}
 
@@ -1215,12 +1217,14 @@ const VideoDetailPage: React.FC = () => {
 
       {/* Similar Segments Modal */}
       {selectedSegmentForSimilar && (
-        <SimilarSegmentsModal
-          segmentId={selectedSegmentForSimilar.id}
-          segmentText={selectedSegmentForSimilar.transcript_text}
-          isOpen={similarModalOpen}
-          onClose={() => setSimilarModalOpen(false)}
-        />
+        <React.Suspense fallback={null}>
+          <SimilarSegmentsModal
+            segmentId={selectedSegmentForSimilar.id}
+            segmentText={selectedSegmentForSimilar.transcript_text}
+            isOpen={similarModalOpen}
+            onClose={() => setSimilarModalOpen(false)}
+          />
+        </React.Suspense>
       )}
     </div>
   );
