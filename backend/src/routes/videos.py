@@ -146,7 +146,7 @@ async def get_video_segments(
         # Build segments query
         query = select(TranscriptSegment).options(
             selectinload(TranscriptSegment.video),
-            selectinload(TranscriptSegment.speaker),
+            # Avoid eager-loading Speaker; not required by UI
             # Ensure topic relationship is eagerly loaded to avoid lazy-load issues
             selectinload(TranscriptSegment.segment_topics).selectinload(SegmentTopic.topic)
         ).where(TranscriptSegment.video_id == video_id)
