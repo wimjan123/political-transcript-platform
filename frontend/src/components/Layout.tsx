@@ -65,6 +65,9 @@ const Layout: React.FC = () => {
                   <img 
                     src={polibaseLogo} 
                     alt="PoliBase" 
+                    loading="lazy"
+                    decoding="async"
+                    height={32}
                     className="h-8 w-auto group-hover:scale-105 transition-transform duration-300"
                   />
                   <span className="ml-3 text-xl font-bold text-gray-900 hidden sm:block dark:text-white">
