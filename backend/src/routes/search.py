@@ -76,9 +76,9 @@ async def search_transcripts(
         
         # Text search
         if search_type == "fulltext":
-            conditions.append(
-                text("to_tsvector('english', transcript_text) @@ plainto_tsquery('english', :query)")
-            )
+            ts_vector = func.to_tsvector('english', TranscriptSegment.transcript_text)
+            ts_query = func.plainto_tsquery('english', q)
+            conditions.append(ts_vector.op('@@')(ts_query))
         elif search_type == "exact":
             conditions.append(TranscriptSegment.transcript_text.ilike(f"%{q}%"))
         elif search_type == "fuzzy":
@@ -173,9 +173,9 @@ async def search_transcripts(
         
         # Add sorting
         if sort_by == "relevance" and search_type == "fulltext":
-            query = query.order_by(
-                text("ts_rank_cd(to_tsvector('english', transcript_text), plainto_tsquery('english', :query)) DESC")
-            )
+            ts_vector = func.to_tsvector('english', TranscriptSegment.transcript_text)
+            ts_query = func.plainto_tsquery('english', q)
+            query = query.order_by(func.ts_rank_cd(ts_vector, ts_query).desc())
         elif sort_by == "date":
             if not joined_video:
                 query = query.join(Video)
@@ -198,10 +198,7 @@ async def search_transcripts(
         
         # Count total results
         count_query = select(func.count()).select_from(query.subquery())
-        if search_type == "fulltext":
-            result = await db.execute(count_query, {"query": q})
-        else:
-            result = await db.execute(count_query)
+        result = await db.execute(count_query)
         total = result.scalar_one()
         
         # Apply pagination
@@ -209,10 +206,7 @@ async def search_transcripts(
         query = query.offset(offset).limit(page_size)
         
         # Execute query
-        if search_type == "fulltext" or search_type == "fuzzy":
-            result = await db.execute(query, {"query": q})
-        else:
-            result = await db.execute(query)
+        result = await db.execute(query)
         
         segments = result.scalars().all()
         
@@ -250,6 +244,7 @@ async def search_transcripts(
         )
     
     except Exception as e:
+        logger.exception("Search error")
         raise HTTPException(status_code=500, detail=f"Search error: {str(e)}")
 
 

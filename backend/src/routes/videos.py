@@ -173,6 +173,8 @@ async def get_video_segments(
     except HTTPException:
         raise
     except Exception as e:
+        import logging
+        logging.getLogger(__name__).exception("Error fetching video segments")
         raise HTTPException(status_code=500, detail=f"Error fetching video segments: {str(e)}")
 
 
