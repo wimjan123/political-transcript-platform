@@ -135,8 +135,7 @@ class YouTubeService:
                     "YouTube verification required. Provide cookies via YTDLP_COOKIES_FILE (.env) "
                     "exported from a logged-in browser to proceed."
                 )
-            raise RuntimeError(f"Failed to extract video information: {msg}
-")
+            raise RuntimeError(f"Failed to extract video information: {msg}")
     
     async def download_audio(self, url: str, output_path: str) -> str:
         """Download audio from YouTube video"""

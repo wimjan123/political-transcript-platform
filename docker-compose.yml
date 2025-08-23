@@ -48,7 +48,7 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       MEILI_HOST: ${MEILI_HOST:-http://meilisearch:7700}
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-}
-      API_WORKERS: ${API_WORKERS:-2}
+      API_WORKERS: ${API_WORKERS:-5}
     volumes:
       - ./backend:/app
       - ./data:/data
