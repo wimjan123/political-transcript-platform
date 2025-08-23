@@ -10,14 +10,27 @@ from datetime import datetime
 import asyncio
 import re
 
+HAS_YTDLP = False
+HAS_MOVIEPY = False
+HAS_OPENAI = False
+
 try:
-    import yt_dlp
-    from moviepy.editor import VideoFileClip
-    from openai import OpenAI
-    HAS_DEPENDENCIES = True
-except ImportError as e:
-    logging.warning(f"Missing dependencies for YouTube service: {e}")
-    HAS_DEPENDENCIES = False
+    import yt_dlp  # type: ignore
+    HAS_YTDLP = True
+except Exception as e:
+    logging.warning(f"Missing yt-dlp for YouTube service: {e}")
+
+try:
+    from moviepy.editor import VideoFileClip  # type: ignore
+    HAS_MOVIEPY = True
+except Exception as e:
+    logging.warning(f"MoviePy not available; will skip audio conversion to WAV: {e}")
+
+try:
+    from openai import OpenAI  # type: ignore
+    HAS_OPENAI = True
+except Exception as e:
+    logging.warning(f"OpenAI client not available: {e}")
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -53,8 +66,8 @@ class YouTubeService:
     
     async def get_video_info(self, url: str) -> Dict[str, Any]:
         """Get video metadata from YouTube"""
-        if not HAS_DEPENDENCIES:
-            raise RuntimeError("Required dependencies not installed (yt-dlp)")
+        if not HAS_YTDLP:
+            raise RuntimeError("Required dependency not installed: yt-dlp")
             
         video_id = self.extract_video_id(url)
         if not video_id:
@@ -104,8 +117,8 @@ class YouTubeService:
     
     async def download_audio(self, url: str, output_path: str) -> str:
         """Download audio from YouTube video"""
-        if not HAS_DEPENDENCIES:
-            raise RuntimeError("Required dependencies not installed (yt-dlp, moviepy)")
+        if not HAS_YTDLP:
+            raise RuntimeError("Required dependency not installed: yt-dlp")
             
         ydl_opts = {
             'format': 'bestaudio/best',
@@ -118,18 +131,27 @@ class YouTubeService:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
                 
-            # Convert to WAV if needed
+            # Prefer returning original bestaudio file (OpenAI supports many formats)
             audio_file = output_path
-            if not audio_file.endswith('.wav'):
-                wav_file = output_path.replace('.%(ext)s', '.wav')
+            if '%(ext)s' in audio_file:
+                # If template remained, yt-dlp probably filled it; derive actual file name
+                # yt-dlp will replace %(ext)s with actual extension; try common extensions
+                for ext in ('.m4a', '.webm', '.mp3', '.opus'):
+                    candidate = output_path.replace('.%(ext)s', ext)
+                    if os.path.exists(candidate):
+                        audio_file = candidate
+                        break
+            # If MoviePy is available and file is not WAV and you prefer WAV, convert; otherwise skip
+            if HAS_MOVIEPY and not audio_file.endswith('.wav'):
                 try:
+                    wav_file = os.path.splitext(audio_file)[0] + '.wav'
                     with VideoFileClip(audio_file) as video:
                         video.audio.write_audiofile(wav_file, verbose=False, logger=None)
-                    os.remove(audio_file)  # Remove original file
+                    os.remove(audio_file)
                     audio_file = wav_file
                 except Exception as e:
-                    logger.warning(f"Could not convert to WAV: {e}, using original file")
-                    
+                    logger.warning(f"Audio conversion skipped due to error: {e}")
+
             return audio_file
             
         except Exception as e:
@@ -140,7 +162,8 @@ class YouTubeService:
         """Transcribe audio using OpenAI Whisper API"""
         if not api_key:
             raise ValueError("OpenAI API key required for transcription")
-            
+        if not HAS_OPENAI:
+            raise RuntimeError("OpenAI client library not installed")
         self.set_openai_api_key(api_key)
         
         # Check file size (OpenAI limit is 25MB)
@@ -282,8 +305,8 @@ class YouTubeService:
         progress_callback=None
     ) -> Dict[str, Any]:
         """Complete pipeline to process a YouTube video"""
-        if not HAS_DEPENDENCIES:
-            raise RuntimeError("Required dependencies not installed")
+        if not HAS_YTDLP:
+            raise RuntimeError("Required dependency not installed: yt-dlp")
             
         temp_dir = None
         audio_file = None

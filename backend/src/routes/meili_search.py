@@ -240,6 +240,7 @@ def _map_hit_to_segment(hit: Dict[str, Any]) -> TranscriptSegmentResponse:
         id=int(hit.get("id") or hit.get("segment_id") or hit.get("video_id") or 0),
         segment_id=str(hit.get("segment_id") or hit.get("id") or "meili"),
         speaker_name=hit.get("speaker") or hit.get("speaker_name") or hit.get("candidate") or "",
+        speaker_party=hit.get("speaker_party") or hit.get("party") or None,
         transcript_text=text,
         video_seconds=start_seconds,
         timestamp_start=hit.get("timestamp_start"),

@@ -471,6 +471,93 @@ class TestVLOSParserEnhanced(unittest.TestCase):
         if pvv_segments:
             self.assertEqual(pvv_segments[0]['speaker_party'], 'PVV')
 
+    def test_realistic_dutch_party_detection(self):
+        """Test party detection with realistic Dutch political parties that were problematic."""
+        
+        # XML with realistic Dutch speakers and their parties (like the ones mentioned in video 26936)
+        xml_content = '''<?xml version="1.0" encoding="UTF-8"?>
+        <vlosCoreDocument xmlns="http://www.tweedekamer.nl/ggm/vergaderverslag/v1.0">
+            <vergadering>
+                <activiteit>
+                    <activiteithoofd>
+                        <activiteitdeel>
+                            <activiteititem>
+                                <tekst>
+                                    <alinea>
+                                        <alineaitem>De heer Jetten (D66):</alineaitem>
+                                        <alineaitem>Minister, wat is uw standpunt over klimaatverandering?</alineaitem>
+                                    </alinea>
+                                </tekst>
+                            </activiteititem>
+                        </activiteitdeel>
+                    </activiteithoofd>
+                </activiteit>
+                <activiteit>
+                    <activiteithoofd>
+                        <activiteitdeel>
+                            <activiteititem>
+                                <tekst>
+                                    <alinea>
+                                        <alineaitem>De heer Akerboom (ChristenUnie):</alineaitem>
+                                        <alineaitem>Ik wil een vraag stellen over het beleid.</alineaitem>
+                                    </alinea>
+                                </tekst>
+                            </activiteititem>
+                        </activiteitdeel>
+                    </activiteithoofd>
+                </activiteit>
+                <activiteit>
+                    <activiteithoofd>
+                        <activiteitdeel>
+                            <activiteititem>
+                                <tekst>
+                                    <alinea>
+                                        <alineaitem>Mevrouw Van der Lee (GroenLinks):</alineaitem>
+                                        <alineaitem>Dank je wel, voorzitter. Ik heb een opmerking.</alineaitem>
+                                    </alinea>
+                                </tekst>
+                            </activiteititem>
+                        </activiteitdeel>
+                    </activiteithoofd>
+                </activiteit>
+                <activiteit>
+                    <activiteithoofd>
+                        <activiteitdeel>
+                            <activiteititem>
+                                <tekst>
+                                    <alinea>
+                                        <alineaitem>De heer Van Dijk (P.v.d.A.):</alineaitem>
+                                        <alineaitem>Wat betreft het sociaal beleid...</alineaitem>
+                                    </alinea>
+                                </tekst>
+                            </activiteititem>
+                        </activiteitdeel>
+                    </activiteithoofd>
+                </activiteit>
+            </vergadering>
+        </vlosCoreDocument>'''
+        
+        parser = VLOSParser()
+        result = parser.parse_content(xml_content.encode('utf-8'), 'test_realistic_parties.xml')
+        
+        segments = result['segments']
+        self.assertEqual(len(segments), 4)
+        
+        # Verify party detection for each problematic speaker
+        expected_parties = [
+            ('Jetten', 'D66'),
+            ('Akerboom', 'CHRISTENUNIE'),  # Should be normalized to uppercase
+            ('Van der Lee', 'GROENLINKS'),  # Should be normalized to uppercase
+            ('Van Dijk', 'PVDA')  # Should normalize P.v.d.A. to PVDA
+        ]
+        
+        for i, (expected_speaker, expected_party) in enumerate(expected_parties):
+            with self.subTest(speaker=expected_speaker, party=expected_party):
+                segment = segments[i]
+                self.assertEqual(segment['speaker_name'], expected_speaker)
+                self.assertEqual(segment['speaker_party'], expected_party)
+                self.assertGreater(len(segment['transcript_text']), 0)
+
     def tearDown(self):
         """Clean up after tests."""
         self.parser = None

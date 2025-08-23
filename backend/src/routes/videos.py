@@ -69,7 +69,30 @@ async def get_videos(
         result = await db.execute(query)
         videos = result.scalars().all()
         
-        return [VideoResponse.from_orm(video) for video in videos]
+        # Attach primary speaker info for each video (top speaker by segment count)
+        enriched_results = []
+        for video in videos:
+            vr = VideoResponse.from_orm(video)
+            try:
+                top_speaker_q = select(
+                    TranscriptSegment.speaker_name,
+                    TranscriptSegment.speaker_party,
+                    func.count(TranscriptSegment.id).label('cnt')
+                ).where(TranscriptSegment.video_id == video.id).group_by(
+                    TranscriptSegment.speaker_name, TranscriptSegment.speaker_party
+                ).order_by(desc('cnt')).limit(1)
+                top_res = await db.execute(top_speaker_q)
+                top_row = top_res.first()
+                if top_row:
+                    # Assign primary speaker fields if available
+                    vr.primary_speaker_name = top_row.speaker_name
+                    vr.primary_speaker_party = top_row.speaker_party
+            except Exception:
+                # Non-fatal; continue without primary speaker
+                pass
+            enriched_results.append(vr)
+        
+        return enriched_results
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching videos: {str(e)}")

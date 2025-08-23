@@ -33,6 +33,10 @@ class VideoResponse(BaseModel):
     candidate: Optional[str]
     place: Optional[str]
     record_type: Optional[str]
+
+    # Representative speaker (optional): used by the frontend video list to show primary speaker / party
+    primary_speaker_name: Optional[str] = None
+    primary_speaker_party: Optional[str] = None
     
     total_words: Optional[int]
     total_characters: Optional[int]
@@ -85,6 +89,7 @@ class TranscriptSegmentResponse(BaseModel):
     id: int
     segment_id: str
     speaker_name: str
+    speaker_party: Optional[str] = None
     transcript_text: str
     video_seconds: Optional[int]
     timestamp_start: Optional[str]

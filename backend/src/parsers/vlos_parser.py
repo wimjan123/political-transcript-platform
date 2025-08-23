@@ -108,8 +108,9 @@ SPEAKER_FULL_RE = re.compile(
     re.IGNORECASE,
 )
 
-# Enhanced party extraction to handle various party code formats
-_PARTY_RE = re.compile(r"\(([A-Z0-9]{1,8}(?:[-/][A-Z0-9]{1,4})?)\)")
+# Enhanced party extraction to handle various party code formats (allow dots, mixed-case, slashes and hyphens)
+# Matches tokens inside parentheses like "(PVV)", "(PvdA)", "(P.v.d.A.)", "(D66)", "(GroenLinks)", "(50PLUS)"
+_PARTY_RE = re.compile(r"\(\s*([A-Za-z0-9.\-/]{1,20})\s*\)")
 
 # Common speaker patterns for better detection
 COMMON_SPEAKER_PATTERNS = [
@@ -605,16 +606,25 @@ class VLOSXMLParser:
         return "Onbekend"
 
     def _extract_party(self, text: str) -> str:
-        """Extract political party code from speaker line text."""
+        """Extract political party code from speaker line text and normalize it.
+
+        This will:
+        - match party tokens inside parentheses like (PVV), (PvdA), (P.v.d.A.), (D66), (GroenLinks)
+        - normalize by removing dots and whitespace and returning an uppercase token
+        """
         if not text:
             return ""
-        
-        # Extract party using regex
+
         match = _PARTY_RE.search(text)
-        if match:
-            return match.group(1).strip()
-        
-        return ""
+        if not match:
+            return ""
+
+        raw = match.group(1).strip()
+        # Remove dots and spaces commonly used in party abbreviations (e.g., "P.v.d.A." -> "PVDA")
+        normalized = re.sub(r"[.\s]", "", raw)
+        # Uppercase for consistency (downstream code can map to human-friendly names if needed)
+        normalized = normalized.upper()
+        return normalized
 
     def parse_content(self, raw_content: bytes, file_path: str) -> Dict[str, Any]:
         """Parse XML content directly from bytes without file I/O."""
@@ -816,9 +826,7 @@ class VLOSXMLParser:
                         if name != "Onbekend":
                             current_speaker = candidate + ":"
                             # detect party from this speaker line if present - always check, don't just check if None
-                            pm = _PARTY_RE.search(candidate)
-                            if pm:
-                                detected_party = pm.group(1).strip()
+                            detected_party = self._extract_party(candidate)
                             continue  # Skip the label, wait for content
                 
                 # This is actual content - create activity part

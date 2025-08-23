@@ -23,6 +23,10 @@ export interface Video {
   // Dataset tagging
   dataset?: string;
   source_type?: string;
+
+  // Representative speaker metadata (populated for Tweede Kamer videos)
+  primary_speaker_name?: string;
+  primary_speaker_party?: string;
   
   created_at: string;
 }

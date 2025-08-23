@@ -486,14 +486,28 @@ const VideosPage: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     {/* Video Header */}
                     <div className="flex items-start justify-between mb-4">
-                      <h3 className="text-xl font-bold text-gray-900 mb-2 leading-tight dark:text-gray-100">
-                        <Link
-                          to={`/videos/${video.id}`}
-                          className="hover:bg-gradient-to-r hover:from-blue-600 hover:to-purple-600 hover:bg-clip-text hover:text-transparent transition-all duration-200"
-                        >
-                          {video.title}
-                        </Link>
-                      </h3>
+                      <div className="min-w-0">
+                        <h3 className="text-xl font-bold text-gray-900 mb-2 leading-tight dark:text-gray-100">
+                          <Link
+                            to={`/videos/${video.id}`}
+                            className="hover:bg-gradient-to-r hover:from-blue-600 hover:to-purple-600 hover:bg-clip-text hover:text-transparent transition-all duration-200"
+                          >
+                            {video.title}
+                          </Link>
+                        </h3>
+                        {(video.primary_speaker_name || video.primary_speaker_party) && (
+                          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                            {video.primary_speaker_name && (
+                              <span className="truncate">{video.primary_speaker_name}</span>
+                            )}
+                            {video.primary_speaker_party && (
+                              <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full font-medium">
+                                {video.primary_speaker_party}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Video Metadata */}

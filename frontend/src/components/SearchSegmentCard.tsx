@@ -72,7 +72,14 @@ const SearchSegmentCard = memo<SearchSegmentCardProps>(({
               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
                 <User className="h-4 w-4 text-white" />
               </div>
-              <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{segment.speaker_name}</span>
+              <div className="flex items-center space-x-2 min-w-0">
+                <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{segment.speaker_name}</span>
+                {segment.speaker_party && segment.video?.dataset === 'tweede_kamer' && (
+                  <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full font-medium">
+                    {segment.speaker_party}
+                  </span>
+                )}
+              </div>
             </div>
             
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-500 dark:text-gray-400">

@@ -218,6 +218,97 @@ class TestVLOSParser(unittest.TestCase):
                 result = self.parser._extract_speaker_name(text)
                 self.assertEqual(result, "Onbekend")
 
+    def test_extract_party_simple_cases(self):
+        """Test extracting political party codes from speaker text."""
+        test_cases = [
+            ("De heer Tony van Dijck (PVV):", "PVV"),
+            ("Mevrouw Leijten (SP):", "SP"),
+            ("De heer Van der Linde (VVD):", "VVD"),
+            ("De heer Nijboer (PvdA):", "PVDA"),  # Should normalize to uppercase
+            ("Mevrouw De Wit (D66):", "D66"),
+            ("De heer Test (CDA):", "CDA"),
+            ("Mevrouw Test (GL):", "GL"),
+            ("De heer Test (50PLUS):", "50PLUS"),
+        ]
+        
+        for text, expected_party in test_cases:
+            with self.subTest(text=text):
+                result = self.parser._extract_party(text)
+                self.assertEqual(result, expected_party)
+
+    def test_extract_party_dotted_abbreviations(self):
+        """Test extracting party codes with dots (e.g., P.v.d.A.)."""
+        test_cases = [
+            ("De heer Test (P.v.d.A.):", "PVDA"),  # Remove dots and normalize
+            ("Mevrouw Test (S.P.):", "SP"),       # Remove dots
+            ("De heer Test (V.V.D.):", "VVD"),    # Remove dots
+            ("De heer Test (C.D.A.):", "CDA"),    # Remove dots
+        ]
+        
+        for text, expected_party in test_cases:
+            with self.subTest(text=text):
+                result = self.parser._extract_party(text)
+                self.assertEqual(result, expected_party)
+
+    def test_extract_party_mixed_case(self):
+        """Test extracting party codes with mixed case."""
+        test_cases = [
+            ("De heer Test (GroenLinks):", "GROENLINKS"),  # Full name, mixed case
+            ("Mevrouw Test (Pvda):", "PVDA"),              # Mixed case
+            ("De heer Test (vvd):", "VVD"),                # Lowercase
+            ("De heer Test (Sp):", "SP"),                  # Mixed case
+        ]
+        
+        for text, expected_party in test_cases:
+            with self.subTest(text=text):
+                result = self.parser._extract_party(text)
+                self.assertEqual(result, expected_party)
+
+    def test_extract_party_with_hyphens_slashes(self):
+        """Test extracting party codes with hyphens and slashes."""
+        test_cases = [
+            ("De heer Test (PVV/JA21):", "PVV/JA21"),      # Slash separator
+            ("Mevrouw Test (50-PLUS):", "50-PLUS"),        # Hyphen in name
+            ("De heer Test (CDA-VVD):", "CDA-VVD"),        # Coalition
+            ("De heer Test (GL/PvdA):", "GL/PVDA"),        # Mixed formats
+        ]
+        
+        for text, expected_party in test_cases:
+            with self.subTest(text=text):
+                result = self.parser._extract_party(text)
+                self.assertEqual(result, expected_party)
+
+    def test_extract_party_no_match(self):
+        """Test party extraction when no party code is found."""
+        test_cases = [
+            "De heer Test:",                    # No parentheses
+            "Minister Hoekstra:",               # No party for ministers
+            "De voorzitter:",                   # No party for chair
+            "De heer Test (invalid format",    # Unclosed parentheses
+            "De heer Test invalid) format:",   # Unmatched parentheses
+            "",                                 # Empty string
+            "Random text without party",       # No pattern match
+        ]
+        
+        for text in test_cases:
+            with self.subTest(text=text):
+                result = self.parser._extract_party(text)
+                self.assertEqual(result, "")
+
+    def test_extract_party_edge_cases(self):
+        """Test party extraction edge cases."""
+        test_cases = [
+            ("De heer Test ( PVV ):", "PVV"),              # Spaces inside parentheses
+            ("De heer Test (PVV) extra text:", "PVV"),     # Extra text after party
+            ("Multiple (VVD) and (PvdA) parties:", "VVD"), # Multiple - should get first
+            ("De heer Test (P.v.d.A) no dot:", "PVDA"),   # Missing final dot
+        ]
+        
+        for text, expected_party in test_cases:
+            with self.subTest(text=text):
+                result = self.parser._extract_party(text)
+                self.assertEqual(result, expected_party)
+
     def test_extract_speaker_name_with_nadruk_formatting(self):
         """Test extracting speaker names with XML nadruk formatting."""
         test_cases = [
