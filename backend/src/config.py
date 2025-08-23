@@ -56,6 +56,13 @@ class Settings(BaseSettings):
     # AI Configuration
     OPENAI_API_KEY: str = ""
     CONVERSATIONAL_LLM_API_KEY: str = ""
+
+    # YouTube / yt-dlp configuration
+    YTDLP_COOKIES_FILE: str = ""  # Path to a Netscape-format cookies.txt (optional)
+    YTDLP_USER_AGENT: str = (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/115.0 Safari/537.36"
+    )
     
     # Airtable Configuration
     AIRTABLE_API_KEY: str = ""

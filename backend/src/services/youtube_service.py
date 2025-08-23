@@ -77,7 +77,22 @@ class YouTubeService:
             'quiet': True,
             'no_warnings': True,
             'extract_flat': False,
+            'noplaylist': True,
+            'geo_bypass': True,
+            'source_address': '0.0.0.0',  # prefer IPv4
+            'http_headers': {
+                'User-Agent': settings.YTDLP_USER_AGENT,
+                'Referer': url,
+            },
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android']
+                }
+            }
         }
+        # Supply cookies if configured
+        if getattr(settings, 'YTDLP_COOKIES_FILE', '') and os.path.exists(settings.YTDLP_COOKIES_FILE):
+            ydl_opts['cookiefile'] = settings.YTDLP_COOKIES_FILE
         
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -112,8 +127,16 @@ class YouTubeService:
             return metadata
             
         except Exception as e:
-            logger.error(f"Error extracting video info: {str(e)}")
-            raise RuntimeError(f"Failed to extract video information: {str(e)}")
+            msg = str(e)
+            logger.error(f"Error extracting video info: {msg}")
+            lowered = msg.lower()
+            if 'not a bot' in lowered or 'sign in to confirm' in lowered:
+                raise RuntimeError(
+                    "YouTube verification required. Provide cookies via YTDLP_COOKIES_FILE (.env) "
+                    "exported from a logged-in browser to proceed."
+                )
+            raise RuntimeError(f"Failed to extract video information: {msg}
+")
     
     async def download_audio(self, url: str, output_path: str) -> str:
         """Download audio from YouTube video"""
@@ -125,7 +148,21 @@ class YouTubeService:
             'outtmpl': output_path,
             'quiet': True,
             'no_warnings': True,
+            'noplaylist': True,
+            'geo_bypass': True,
+            'source_address': '0.0.0.0',
+            'http_headers': {
+                'User-Agent': settings.YTDLP_USER_AGENT,
+                'Referer': url,
+            },
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android']
+                }
+            }
         }
+        if getattr(settings, 'YTDLP_COOKIES_FILE', '') and os.path.exists(settings.YTDLP_COOKIES_FILE):
+            ydl_opts['cookiefile'] = settings.YTDLP_COOKIES_FILE
         
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -155,8 +192,14 @@ class YouTubeService:
             return audio_file
             
         except Exception as e:
-            logger.error(f"Error downloading audio: {str(e)}")
-            raise RuntimeError(f"Failed to download audio: {str(e)}")
+            msg = str(e)
+            logger.error(f"Error downloading audio: {msg}")
+            lowered = msg.lower()
+            if 'not a bot' in lowered or 'sign in to confirm' in lowered:
+                raise RuntimeError(
+                    "YouTube verification required. Provide cookies via YTDLP_COOKIES_FILE (.env)."
+                )
+            raise RuntimeError(f"Failed to download audio: {msg}")
     
     async def transcribe_audio(self, audio_file: str, api_key: str) -> Dict[str, Any]:
         """Transcribe audio using OpenAI Whisper API"""
