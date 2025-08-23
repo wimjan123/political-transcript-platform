@@ -46,71 +46,87 @@ async def init_db():
     from sqlalchemy import text
     
     async with engine.begin() as conn:
-        # Create all tables
-        await conn.run_sync(Base.metadata.create_all)
-        
-        # Enable full-text search extensions (these should already exist from init.sql)
+        # Ensure only one process performs DDL at startup (multiple Uvicorn workers)
+        lock_key = 91540531  # arbitrary unique integer for advisory lock
         try:
-            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
-            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS unaccent"))
-        except Exception as e:
-            print(f"Extensions might already exist: {e}")
+            result = await conn.execute(text("SELECT pg_try_advisory_lock(:k)"), {"k": lock_key})
+            got_lock = bool(result.scalar())
+        except Exception:
+            # If not Postgres (e.g., SQLite in tests), skip locking
+            got_lock = True
+
+        if got_lock:
+            # Create all tables
+            await conn.run_sync(Base.metadata.create_all)
         
-        # Create full-text search indexes
-        await conn.execute(text("""
-            CREATE INDEX IF NOT EXISTS transcript_text_fts_idx 
-            ON transcript_segments 
-            USING gin(to_tsvector('english', transcript_text))
-        """))
-        
-        await conn.execute(text("""
-            CREATE INDEX IF NOT EXISTS transcript_text_trigram_idx 
-            ON transcript_segments 
-            USING gin(transcript_text gin_trgm_ops)
-        """))
-        
-        await conn.execute(text("""
-            CREATE INDEX IF NOT EXISTS speaker_name_idx 
-            ON transcript_segments 
-            USING gin(speaker_name gin_trgm_ops)
-        """))
+            # Enable full-text search extensions (these should already exist from init.sql)
+            try:
+                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
+                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS unaccent"))
+            except Exception as e:
+                print(f"Extensions might already exist: {e}")
+            
+            # Create full-text search indexes
+            await conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS transcript_text_fts_idx 
+                ON transcript_segments 
+                USING gin(to_tsvector('english', transcript_text))
+            """))
+            
+            await conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS transcript_text_trigram_idx 
+                ON transcript_segments 
+                USING gin(transcript_text gin_trgm_ops)
+            """))
+            
+            await conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS speaker_name_idx 
+                ON transcript_segments 
+                USING gin(speaker_name gin_trgm_ops)
+            """))
 
-        # Trigram indexes to speed up ILIKE filters on video metadata and topics
-        await conn.execute(text("""
-            CREATE INDEX IF NOT EXISTS video_source_trgm_idx
-            ON videos
-            USING gin(source gin_trgm_ops)
-        """))
+            # Trigram indexes to speed up ILIKE filters on video metadata and topics
+            await conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS video_source_trgm_idx
+                ON videos
+                USING gin(source gin_trgm_ops)
+            """))
 
-        await conn.execute(text("""
-            CREATE INDEX IF NOT EXISTS video_format_trgm_idx
-            ON videos
-            USING gin(format gin_trgm_ops)
-        """))
+            await conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS video_format_trgm_idx
+                ON videos
+                USING gin(format gin_trgm_ops)
+            """))
 
-        await conn.execute(text("""
-            CREATE INDEX IF NOT EXISTS video_candidate_trgm_idx
-            ON videos
-            USING gin(candidate gin_trgm_ops)
-        """))
+            await conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS video_candidate_trgm_idx
+                ON videos
+                USING gin(candidate gin_trgm_ops)
+            """))
 
-        await conn.execute(text("""
-            CREATE INDEX IF NOT EXISTS video_place_trgm_idx
-            ON videos
-            USING gin(place gin_trgm_ops)
-        """))
+            await conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS video_place_trgm_idx
+                ON videos
+                USING gin(place gin_trgm_ops)
+            """))
 
-        await conn.execute(text("""
-            CREATE INDEX IF NOT EXISTS video_record_type_trgm_idx
-            ON videos
-            USING gin(record_type gin_trgm_ops)
-        """))
+            await conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS video_record_type_trgm_idx
+                ON videos
+                USING gin(record_type gin_trgm_ops)
+            """))
 
-        await conn.execute(text("""
-            CREATE INDEX IF NOT EXISTS topic_name_trgm_idx
-            ON topics
-            USING gin(name gin_trgm_ops)
-        """))
+            await conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS topic_name_trgm_idx
+                ON topics
+                USING gin(name gin_trgm_ops)
+            """))
+
+            # Release advisory lock
+            try:
+                await conn.execute(text("SELECT pg_advisory_unlock(:k)"), {"k": lock_key})
+            except Exception:
+                pass
 
 
 # Enable foreign key constraints for SQLite (if used for testing)
