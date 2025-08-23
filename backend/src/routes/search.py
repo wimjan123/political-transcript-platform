@@ -64,7 +64,9 @@ async def search_transcripts(
         # Build base query
         query = select(TranscriptSegment).options(
             selectinload(TranscriptSegment.video),
-            # Avoid eager-loading full Speaker objects; not needed for search results
+            # IMPORTANT: with SQLAlchemy async, avoid lazy-loading relationships during serialization
+            # Eager-load speaker to prevent MissingGreenlet errors when Pydantic accesses .speaker
+            selectinload(TranscriptSegment.speaker),
             selectinload(TranscriptSegment.segment_topics).selectinload(SegmentTopic.topic)
         )
         joined_video = False
