@@ -19,7 +19,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.get("/", response_model=SearchResponse)
+@router.get("/", response_model=SearchResponse, response_model_exclude_none=True)
 async def search_transcripts(
     q: str = Query(..., description="Search query"),
     page: int = Query(1, ge=1, description="Page number"),

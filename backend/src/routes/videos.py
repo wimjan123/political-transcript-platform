@@ -122,7 +122,7 @@ async def get_video(
         raise HTTPException(status_code=500, detail=f"Error fetching video: {str(e)}")
 
 
-@router.get("/{video_id}/segments", response_model=List[TranscriptSegmentResponse])
+@router.get("/{video_id}/segments", response_model=List[TranscriptSegmentResponse], response_model_exclude_none=True)
 async def get_video_segments(
     video_id: int = Path(..., description="Video ID"),
     page: int = Query(1, ge=1, description="Page number"),
