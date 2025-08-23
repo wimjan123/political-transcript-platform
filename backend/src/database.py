@@ -75,6 +75,43 @@ async def init_db():
             USING gin(speaker_name gin_trgm_ops)
         """))
 
+        # Trigram indexes to speed up ILIKE filters on video metadata and topics
+        await conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS video_source_trgm_idx
+            ON videos
+            USING gin(source gin_trgm_ops)
+        """))
+
+        await conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS video_format_trgm_idx
+            ON videos
+            USING gin(format gin_trgm_ops)
+        """))
+
+        await conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS video_candidate_trgm_idx
+            ON videos
+            USING gin(candidate gin_trgm_ops)
+        """))
+
+        await conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS video_place_trgm_idx
+            ON videos
+            USING gin(place gin_trgm_ops)
+        """))
+
+        await conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS video_record_type_trgm_idx
+            ON videos
+            USING gin(record_type gin_trgm_ops)
+        """))
+
+        await conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS topic_name_trgm_idx
+            ON topics
+            USING gin(name gin_trgm_ops)
+        """))
+
 
 # Enable foreign key constraints for SQLite (if used for testing)
 @event.listens_for(Engine, "connect")
