@@ -157,9 +157,9 @@ class OptimizedSearchService:
         """Build Meilisearch filter conditions from filter dictionary"""
         conditions = []
         
-        # Speaker filter
+        # Speaker filter - use partial matching for better UX
         if filters.get("speaker"):
-            conditions.append(f'speaker_name = "{filters["speaker"]}"')
+            conditions.append(f'speaker_name CONTAINS "{filters["speaker"]}"')
         
         # Dataset filter
         if filters.get("dataset") and filters["dataset"].lower() != "all":
