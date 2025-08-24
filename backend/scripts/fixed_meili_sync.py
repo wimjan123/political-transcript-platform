@@ -98,8 +98,108 @@ class FixedMeiliSync:
         engine = create_engine(db_url)
         return sessionmaker(bind=engine)()
     
+    def get_total_segments(self) -> int:
+        """Get total number of segments in database"""
+        db = self.get_database_connection()
+        try:
+            result = db.execute(text("SELECT COUNT(*) FROM transcript_segments WHERE transcript_text IS NOT NULL AND TRIM(transcript_text) != ''"))
+            return result.scalar()
+        finally:
+            db.close()
+    
+    def fetch_segments_batch(self, batch_size: int = 25000, offset: int = 0) -> List[Dict[str, Any]]:
+        """Fetch a batch of transcript segments from PostgreSQL"""
+        print(f"📋 Fetching batch: {offset} to {offset + batch_size}")
+        
+        db = self.get_database_connection()
+        
+        query = text("""
+            SELECT 
+                ts.id,
+                ts.segment_id,
+                ts.transcript_text,
+                ts.speaker_name,
+                ts.video_id,
+                ts.video_seconds,
+                ts.timestamp_start,
+                ts.timestamp_end,
+                ts.word_count,
+                ts.char_count,
+                ts.sentiment_loughran_score,
+                ts.flesch_kincaid_grade,
+                ts.stresslens_score,
+                ts.stresslens_rank,
+                ts.moderation_harassment_flag,
+                ts.moderation_hate_flag,
+                ts.moderation_violence_flag,
+                ts.moderation_sexual_flag,
+                ts.moderation_selfharm_flag,
+                v.title as video_title,
+                v.source,
+                v.date as video_date,
+                v.dataset,
+                v.format as video_format,
+                v.candidate as video_candidate,
+                v.place as video_place,
+                v.record_type as video_record_type,
+                v.video_thumbnail_url
+            FROM transcript_segments ts
+            LEFT JOIN videos v ON ts.video_id = v.id
+            WHERE ts.transcript_text IS NOT NULL
+            AND TRIM(ts.transcript_text) != ''
+            ORDER BY ts.id
+            LIMIT :batch_size OFFSET :offset
+        """)
+        
+        try:
+            result = db.execute(query, {"batch_size": batch_size, "offset": offset})
+            rows = result.fetchall()
+            
+            segments = []
+            for row in rows:
+                segment = {
+                    "id": row.id,
+                    "segment_id": row.segment_id,
+                    "transcript_text": row.transcript_text,
+                    "speaker_name": row.speaker_name or "Unknown",
+                    "video_id": row.video_id,
+                    "video_seconds": row.video_seconds,
+                    "timestamp_start": row.timestamp_start,
+                    "timestamp_end": row.timestamp_end,
+                    "word_count": row.word_count or 0,
+                    "char_count": row.char_count or 0,
+                    "sentiment_loughran_score": row.sentiment_loughran_score or 0.0,
+                    "flesch_kincaid_grade": row.flesch_kincaid_grade or 0.0,
+                    "stresslens_score": row.stresslens_score or 0.0,
+                    "stresslens_rank": row.stresslens_rank,
+                    "moderation_harassment_flag": row.moderation_harassment_flag or False,
+                    "moderation_hate_flag": row.moderation_hate_flag or False,
+                    "moderation_violence_flag": row.moderation_violence_flag or False,
+                    "moderation_sexual_flag": row.moderation_sexual_flag or False,
+                    "moderation_selfharm_flag": row.moderation_selfharm_flag or False,
+                    "video_title": row.video_title or "",
+                    "source": row.source or "",
+                    "video_date": row.video_date.isoformat() if row.video_date else "",
+                    "dataset": row.dataset or "",
+                    "video_format": row.video_format or "",
+                    "video_candidate": row.video_candidate or "",
+                    "video_place": row.video_place or "",
+                    "video_record_type": row.video_record_type or "",
+                    "video_thumbnail_url": row.video_thumbnail_url or ""
+                }
+                segments.append(segment)
+            
+            print(f"✅ Fetched {len(segments)} segments from batch")
+            return segments
+            
+        except Exception as e:
+            print(f"❌ Database error: {e}")
+            return []
+        finally:
+            db.close()
+
     def fetch_segments(self, limit: int = 1000) -> List[Dict[str, Any]]:
-        """Fetch transcript segments from PostgreSQL"""
+        """Legacy method - fetch transcript segments from PostgreSQL"""
         print(f"📋 Fetching segments from database (limit: {limit})")
         
         db = self.get_database_connection()
@@ -169,7 +269,7 @@ class FixedMeiliSync:
                     "moderation_selfharm_flag": row.moderation_selfharm_flag or False,
                     "video_title": row.video_title or "",
                     "source": row.source or "",
-                    "video_date": int(row.video_date.timestamp()) if row.video_date else 0,
+                    "video_date": row.video_date.isoformat() if row.video_date else "",
                     "dataset": row.dataset or "",
                     "video_format": row.video_format or "",
                     "video_candidate": row.video_candidate or "",
@@ -263,6 +363,68 @@ class FixedMeiliSync:
             print(f"❌ Task wait error: {e}")
             return False
     
+    async def run_full_sync(self, batch_size: int = 25000) -> bool:
+        """Run full sync process with batch processing"""
+        print("🔄 Starting FULL Meilisearch sync...")
+        print("=" * 60)
+        
+        # Test connection
+        if not await self.test_connection():
+            return False
+            
+        # Check index
+        if not await self.check_index():
+            return False
+        
+        # Get total count
+        total_segments = self.get_total_segments()
+        print(f"📊 Total segments in database: {total_segments:,}")
+        
+        if total_segments == 0:
+            print("❌ No segments found to sync")
+            return False
+            
+        total_batches = (total_segments + batch_size - 1) // batch_size
+        print(f"📦 Processing in {total_batches} batches of {batch_size:,} segments each")
+        
+        processed = 0
+        failed_batches = 0
+        
+        for batch_num in range(total_batches):
+            offset = batch_num * batch_size
+            print(f"🔄 Batch {batch_num + 1}/{total_batches} (offset: {offset:,})")
+            
+            # Fetch batch
+            segments = self.fetch_segments_batch(batch_size, offset)
+            if not segments:
+                print(f"⚠️ Empty batch {batch_num + 1}, continuing...")
+                continue
+            
+            # Sync batch to Meilisearch
+            success = await self.sync_to_meilisearch(segments)
+            
+            if success:
+                processed += len(segments)
+                progress = (processed / total_segments) * 100
+                print(f"✅ Batch {batch_num + 1} completed - Progress: {progress:.1f}% ({processed:,}/{total_segments:,})")
+            else:
+                failed_batches += 1
+                print(f"❌ Batch {batch_num + 1} failed")
+                
+                if failed_batches > 3:
+                    print("❌ Too many failed batches, aborting sync")
+                    return False
+        
+        print("=" * 60)
+        if failed_batches == 0:
+            print(f"✅ FULL sync completed successfully!")
+            print(f"📊 Processed {processed:,} segments in {total_batches} batches")
+        else:
+            print(f"⚠️ Sync completed with {failed_batches} failed batches")
+            print(f"📊 Processed {processed:,} segments")
+        
+        return failed_batches == 0
+
     async def run_sync(self, limit: int = 1000) -> bool:
         """Run complete sync process"""
         print("🔄 Starting Meilisearch sync...")
@@ -300,6 +462,8 @@ async def main():
     
     parser = argparse.ArgumentParser(description="Fixed Meilisearch Sync")
     parser.add_argument("--limit", type=int, default=5000, help="Maximum segments to sync")
+    parser.add_argument("--batch-size", type=int, default=25000, help="Batch size for full sync")
+    parser.add_argument("--full-sync", action="store_true", help="Sync ALL segments (2.6M records)")
     parser.add_argument("--test", action="store_true", help="Test connection only")
     args = parser.parse_args()
     
@@ -310,6 +474,9 @@ async def main():
         success = await syncer.test_connection() and await syncer.check_index()
         print("✅ Test passed" if success else "❌ Test failed")
         return success
+    elif args.full_sync:
+        print("🚀 Running FULL sync of all 2.6M segments...")
+        return await syncer.run_full_sync(args.batch_size)
     else:
         return await syncer.run_sync(args.limit)
 

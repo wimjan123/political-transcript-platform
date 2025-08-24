@@ -110,13 +110,14 @@ class OptimizedSearchService:
             "matchingStrategy": self._get_matching_strategy(search_type)
         }
         
-        # Add highlighting if enabled
-        if enable_highlighting:
-            search_params.update({
-                "highlightPreTag": "<mark>",
-                "highlightPostTag": "</mark>",
-                "attributesToHighlight": ["transcript_text", "video_title", "speaker_name"]
-            })
+        # Add highlighting if enabled - DISABLED to let React handle highlighting
+        # Meilisearch highlighting conflicts with React HighlightText component
+        # if enable_highlighting:
+        #     search_params.update({
+        #         "highlightPreTag": "<mark>",
+        #         "highlightPostTag": "</mark>",
+        #         "attributesToHighlight": ["transcript_text", "video_title", "speaker_name"]
+        #     })
         
         # Add filtering
         if filters:
@@ -242,8 +243,8 @@ class OptimizedSearchService:
         # Format individual results
         formatted_results = []
         for hit in hits:
-            # Extract highlighting
-            formatted_hit = hit.get("_formatted", hit)
+            # Use original hit data since highlighting is disabled
+            formatted_hit = hit
             
             result = {
                 "id": hit.get("id"),
@@ -280,9 +281,9 @@ class OptimizedSearchService:
                 "moderation_sexual_flag": hit.get("moderation_sexual_flag"),
                 "moderation_selfharm_flag": hit.get("moderation_selfharm_flag"),
                 
-                # Search metadata
+                # Search metadata  
                 "search_score": hit.get("_rankingScore", 0.0),
-                "highlighted": "_formatted" in hit,  # Indicates if highlighting was applied
+                "highlighted": False,  # Meilisearch highlighting disabled, React handles it
                 
                 # Frontend compatibility - provide empty segment_topics array
                 # TODO: Add proper segment_topics support to Meilisearch sync

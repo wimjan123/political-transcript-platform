@@ -5,7 +5,7 @@ import {
   ExternalLink, Play, Plus, ChevronDown, ChevronRight
 } from 'lucide-react';
 import { playlist } from '../services/playlist';
-import { formatTimestamp, getSentimentColor, getSentimentLabel } from '../services/api';
+import { formatTimestamp, getSentimentColor, getSentimentLabel, formatDate } from '../services/api';
 import type { TranscriptSegment } from '../types';
 
 interface SearchSegmentCardProps {
@@ -86,7 +86,7 @@ const SearchSegmentCard = memo<SearchSegmentCardProps>(({
               {segment.video && (
                 <div className="flex items-center space-x-2">
                   <Calendar className="h-4 w-4 flex-shrink-0" />
-                  <span className="truncate">{segment.video.date}</span>
+                  <span className="truncate">{segment.video.date ? formatDate(segment.video.date) : 'No date'}</span>
                 </div>
               )}
               
