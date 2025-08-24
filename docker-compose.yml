@@ -78,6 +78,12 @@ lservices:
       - SETGID
     external_links:
       - traefik:traefik
+    networks:
+      - default
+      - pangolin
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.polibase-api.loadbalancer.server.port=8000"
 
   meilisearch:
     image: getmeili/meilisearch:latest
@@ -133,6 +139,12 @@ lservices:
       - CHOWN
       - SETUID
       - SETGID
+    networks:
+      - default
+      - pangolin
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.polibase-web.loadbalancer.server.port=3000"
 
   meili-sync:
     build:
