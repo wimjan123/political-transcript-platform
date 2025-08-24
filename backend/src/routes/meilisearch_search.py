@@ -60,7 +60,8 @@ def build_filters(
     filters = []
     
     if speaker:
-        filters.append(f"speaker = '{speaker}'")
+        # Use partial matching for speaker names to allow searching "Trump" for "Donald Trump"
+        filters.append(f"speaker CONTAINS '{speaker}'")
     
     if topic:
         filters.append(f"topic = '{topic}'")

@@ -384,3 +384,24 @@ async def get_version():
         return await _meili_request("GET", "/version")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get version: {str(e)}")
+
+
+@router.post("/enable-experimental-features")
+async def enable_experimental_features():
+    """Enable experimental features like CONTAINS filter"""
+    try:
+        data = {
+            "containsFilter": True
+        }
+        return await _meili_request("PATCH", "/experimental-features", data=data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to enable experimental features: {str(e)}")
+
+
+@router.get("/experimental-features")
+async def get_experimental_features():
+    """Get current experimental features status"""
+    try:
+        return await _meili_request("GET", "/experimental-features")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get experimental features: {str(e)}")
