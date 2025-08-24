@@ -205,6 +205,50 @@ async def search_health_check():
     return await optimized_search_service.health_check()
 
 
+@router.get("/embedding-status")
+async def embedding_status(db: AsyncSession = Depends(get_db)):
+    """
+    Get status of embedding generation for transcript segments
+    """
+    try:
+        from sqlalchemy import select, func
+        from ..models import TranscriptSegment
+        from ..services.embedding_service import embedding_service
+        
+        # Count segments with and without embeddings
+        total_query = select(func.count(TranscriptSegment.id))
+        total_result = await db.execute(total_query)
+        total_segments = total_result.scalar_one()
+        
+        with_embeddings_query = select(func.count(TranscriptSegment.id)).where(
+            TranscriptSegment.embedding_generated_at.isnot(None)
+        )
+        with_embeddings_result = await db.execute(with_embeddings_query)
+        with_embeddings = with_embeddings_result.scalar_one()
+        
+        without_embeddings = total_segments - with_embeddings
+        completion_percentage = (with_embeddings / total_segments * 100) if total_segments > 0 else 0
+        
+        # Get latest embedding generation timestamp
+        latest_query = select(func.max(TranscriptSegment.embedding_generated_at))
+        latest_result = await db.execute(latest_query)
+        latest_generation = latest_result.scalar_one()
+        
+        return {
+            "total_segments": total_segments,
+            "segments_with_embeddings": with_embeddings,
+            "segments_without_embeddings": without_embeddings,
+            "completion_percentage": round(completion_percentage, 2),
+            "latest_generation_time": latest_generation,
+            "embedding_model": embedding_service.model_name,
+            "embedding_dimensions": embedding_service.embedding_dim
+        }
+    
+    except Exception as e:
+        logger.error(f"Embedding status error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Embedding status error: {str(e)}")
+
+
 @router.get("/performance-stats")  
 async def search_performance_stats():
     """

@@ -18,6 +18,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    restart: unless-stopped
 
   api:
     build:
@@ -41,7 +42,7 @@ services:
       - /root/tweedekamer_scrape/tweede-kamer-scraper/output/raw_xml:${XML_DATA_DIR:-/root/tweedekamer_scrape/tweede-kamer-scraper/output/xml/}:ro
     networks:
       - app_network
-      - pangolin
+      - traefik_traefik-network
     depends_on:
       db:
         condition: service_healthy
@@ -55,11 +56,13 @@ services:
       start_period: 40s
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=pangolin"
       - "traefik.http.routers.polibase-api.rule=Host(`polibase.nl`) && PathPrefix(`/api`, `/health`, `/docs`, `/redoc`)"
+      - "traefik.http.routers.polibase-api.entrypoints=websecure"
       - "traefik.http.routers.polibase-api.tls=true"
       - "traefik.http.routers.polibase-api.tls.certresolver=letsencrypt"
       - "traefik.http.services.polibase-api.loadbalancer.server.port=8000"
+      - "traefik.docker.network=traefik_traefik-network"
+    restart: unless-stopped
 
   web:
     build:
@@ -71,7 +74,7 @@ services:
       REACT_APP_TITLE: ${REACT_APP_TITLE:-PoliBase}
     networks:
       - app_network
-      - pangolin
+      - traefik_traefik-network
     depends_on:
       - api
     healthcheck:
@@ -82,11 +85,17 @@ services:
       start_period: 60s
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=pangolin"
       - "traefik.http.routers.polibase-web.rule=Host(`polibase.nl`)"
+      - "traefik.http.routers.polibase-web.entrypoints=websecure"
       - "traefik.http.routers.polibase-web.tls=true"
       - "traefik.http.routers.polibase-web.tls.certresolver=letsencrypt"
       - "traefik.http.services.polibase-web.loadbalancer.server.port=80"
+      - "traefik.http.routers.polibase-web-http.rule=Host(`polibase.nl`)"
+      - "traefik.http.routers.polibase-web-http.entrypoints=web"
+      - "traefik.http.routers.polibase-web-http.middlewares=redirect-to-https@docker"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.docker.network=traefik_traefik-network"
+    restart: unless-stopped
 
   meilisearch:
     image: getmeili/meilisearch:latest
@@ -126,5 +135,5 @@ volumes:
 networks:
   app_network:
     driver: bridge
-  pangolin:
+  traefik_traefik-network:
     external: true

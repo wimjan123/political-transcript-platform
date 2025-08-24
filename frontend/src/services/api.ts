@@ -22,15 +22,12 @@ import type {
 
 // Determine API base URL
 // - If REACT_APP_API_URL is set, use it.
-// - If running via CRA dev server (port 3000), use Docker service URL for direct communication
+// - If running via CRA dev server (port 3000) in Docker, use empty string to rely on proxy
 // - Otherwise default to same-origin relative paths.
 const inferBaseUrl = () => {
   const envUrl = process.env.REACT_APP_API_URL;
   if (envUrl !== undefined && envUrl !== '') return envUrl;
-  if (typeof window !== 'undefined') {
-    const port = window.location.port;
-    if (port === '3000') return 'http://api:8000'; // Direct Docker service communication
-  }
+  // When running in Docker dev mode, use proxy (empty string means same-origin)
   return '';
 };
 
