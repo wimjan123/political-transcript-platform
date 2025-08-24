@@ -33,9 +33,9 @@ yt-dlp>=2023.10.13
 moviepy>=1.0.3
 langdetect==1.0.9
 
-# Search and indexing
+# Search and indexing (Elasticsearch removed - using Meilisearch)
 whoosh==2.7.4
-elasticsearch==8.11.0
+# elasticsearch==8.11.0  # REMOVED: Using Meilisearch for better performance
 
 # Media fetching
 yt-dlp==2024.08.06

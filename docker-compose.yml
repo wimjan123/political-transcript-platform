@@ -193,6 +193,32 @@ services:
       - SETUID
       - SETGID
 
+  meili-sync:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: political_transcripts_meili_sync
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/political_transcripts
+      - MEILI_HOST=http://meilisearch:7700
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+      meilisearch:
+        condition: service_started
+    command: python scripts/auto_meili_sync.py --interval 60
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+
 volumes:
   postgres_data:
   es_data:
