@@ -19,8 +19,8 @@ import {
 interface MeilisearchIndex {
   uid: string;
   primaryKey: string | null;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
   documentCount?: number;
 }
 
@@ -32,7 +32,7 @@ interface MeilisearchTask {
   details: any;
   error?: any;
   duration?: string;
-  enqueuedAt: string;
+  enqueuedAt?: string;
   startedAt?: string;
   finishedAt?: string;
 }
@@ -48,10 +48,10 @@ interface MeilisearchStats {
 }
 
 interface SyncProgress {
-  postgresql_total: number;
-  meilisearch_count: number;
-  progress_percent: number;
-  remaining: number;
+  postgresql_total?: number;
+  meilisearch_count?: number;
+  progress_percent?: number;
+  remaining?: number;
   is_complete: boolean;
   is_indexing: boolean;
 }
@@ -365,12 +365,12 @@ const MeilisearchAdminPage: React.FC = () => {
               <div>
                 <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
                   <span>Documents Indexed</span>
-                  <span>{syncProgress.progress_percent}%</span>
+                  <span>{syncProgress.progress_percent?.toFixed(1) || '0.0'}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
                   <div 
                     className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                    style={{ width: `${Math.min(syncProgress.progress_percent, 100)}%` }}
+                    style={{ width: `${Math.min(syncProgress.progress_percent || 0, 100)}%` }}
                   ></div>
                 </div>
               </div>
@@ -379,25 +379,25 @@ const MeilisearchAdminPage: React.FC = () => {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
                 <div>
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    {syncProgress.meilisearch_count.toLocaleString()}
+                    {syncProgress.meilisearch_count?.toLocaleString() || '0'}
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Indexed</p>
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    {syncProgress.postgresql_total.toLocaleString()}
+                    {syncProgress.postgresql_total?.toLocaleString() || '0'}
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Total</p>
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    {syncProgress.remaining.toLocaleString()}
+                    {syncProgress.remaining?.toLocaleString() || '0'}
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Remaining</p>
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-blue-600">
-                    {syncProgress.progress_percent.toFixed(1)}%
+                    {syncProgress.progress_percent?.toFixed(1) || '0.0'}%
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Complete</p>
                 </div>
@@ -513,7 +513,7 @@ const MeilisearchAdminPage: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {new Date(index.createdAt).toLocaleDateString()}
+                        {index.createdAt ? new Date(index.createdAt).toLocaleDateString() : 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                         <button
@@ -577,7 +577,7 @@ const MeilisearchAdminPage: React.FC = () => {
                       {task.duration || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {new Date(task.enqueuedAt).toLocaleString()}
+                      {task.enqueuedAt ? new Date(task.enqueuedAt).toLocaleString() : 'N/A'}
                     </td>
                   </tr>
                 ))}
