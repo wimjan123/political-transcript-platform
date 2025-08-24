@@ -47,6 +47,15 @@ interface MeilisearchStats {
   }>;
 }
 
+interface SyncProgress {
+  postgresql_total: number;
+  meilisearch_count: number;
+  progress_percent: number;
+  remaining: number;
+  is_complete: boolean;
+  is_indexing: boolean;
+}
+
 interface ExperimentalFeatures {
   vectorStore: boolean;
   metrics: boolean;
@@ -63,6 +72,8 @@ const MeilisearchAdminPage: React.FC = () => {
   const [selectedIndex, setSelectedIndex] = useState<string>('');
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -87,6 +98,16 @@ const MeilisearchAdminPage: React.FC = () => {
       const featuresResponse = await fetch('/api/meilisearch/experimental-features');
       const featuresData = await featuresResponse.json();
       setExperimentalFeatures(featuresData);
+
+      // Fetch sync progress
+      try {
+        const progressResponse = await fetch('/api/meilisearch/sync/progress');
+        const progressData = await progressResponse.json();
+        setSyncProgress(progressData);
+      } catch (progressErr) {
+        // Progress API might not be available, ignore this error
+        console.warn('Could not fetch sync progress:', progressErr);
+      }
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch Meilisearch data');
@@ -124,6 +145,7 @@ const MeilisearchAdminPage: React.FC = () => {
   const triggerSync = async () => {
     try {
       setError(null);
+      setIsSyncing(true);
       const response = await fetch('/api/meilisearch/sync', { method: 'POST' });
       if (!response.ok) {
         throw new Error('Failed to trigger sync');
@@ -131,6 +153,39 @@ const MeilisearchAdminPage: React.FC = () => {
       fetchData(); // Refresh data after triggering sync
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to trigger sync');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const triggerFullSync = async () => {
+    if (!confirm('This will sync ALL 2.6M segments to Meilisearch. This may take 20-30 minutes. Continue?')) {
+      return;
+    }
+    
+    try {
+      setError(null);
+      setIsSyncing(true);
+      const response = await fetch('/api/meilisearch/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_sync: true,
+          batch_size: 25000
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to trigger full sync');
+      }
+      
+      // Start monitoring progress
+      const monitorInterval = setInterval(fetchData, 5000);
+      setTimeout(() => clearInterval(monitorInterval), 1800000); // Stop after 30 minutes
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to trigger full sync');
+      setIsSyncing(false);
     }
   };
 
@@ -260,10 +315,19 @@ const MeilisearchAdminPage: React.FC = () => {
               </button>
               <button
                 onClick={triggerSync}
-                className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+                disabled={isSyncing}
+                className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
               >
-                <Play className="h-4 w-4 mr-2" />
-                Trigger Sync
+                {isSyncing ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Play className="h-4 w-4 mr-2" />}
+                {isSyncing ? 'Syncing...' : 'Sync'}
+              </button>
+              <button
+                onClick={triggerFullSync}
+                disabled={isSyncing}
+                className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 transition-colors"
+              >
+                <Database className="h-4 w-4 mr-2" />
+                Full Sync (2.6M)
               </button>
             </div>
           </div>
@@ -275,6 +339,69 @@ const MeilisearchAdminPage: React.FC = () => {
             <div className="flex items-center">
               <XCircle className="h-5 w-5 text-red-400 mr-3" />
               <span className="text-red-700 dark:text-red-300">{error}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Sync Progress Panel */}
+        {syncProgress && (
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-4 sm:p-6 mb-8 dark:bg-gray-800/70 dark:border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Sync Progress</h2>
+              <div className="flex items-center space-x-2">
+                {syncProgress.is_indexing && <RefreshCw className="h-4 w-4 text-blue-500 animate-spin" />}
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  syncProgress.is_complete ? 'bg-green-100 text-green-800' : 
+                  syncProgress.is_indexing ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {syncProgress.is_complete ? 'Complete' : 
+                   syncProgress.is_indexing ? 'Indexing' : 'Partial'}
+                </span>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              {/* Progress Bar */}
+              <div>
+                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+                  <span>Documents Indexed</span>
+                  <span>{syncProgress.progress_percent}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                    style={{ width: `${Math.min(syncProgress.progress_percent, 100)}%` }}
+                  ></div>
+                </div>
+              </div>
+              
+              {/* Stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                <div>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {syncProgress.meilisearch_count.toLocaleString()}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Indexed</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {syncProgress.postgresql_total.toLocaleString()}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Total</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {syncProgress.remaining.toLocaleString()}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Remaining</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {syncProgress.progress_percent.toFixed(1)}%
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Complete</p>
+                </div>
+              </div>
             </div>
           </div>
         )}

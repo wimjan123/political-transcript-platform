@@ -22,8 +22,9 @@ class CreateIndexRequest(BaseModel):
 
 
 class SyncRequest(BaseModel):
-    batch_size: Optional[int] = 500
+    batch_size: Optional[int] = 25000
     force_reimport: Optional[bool] = False
+    full_sync: Optional[bool] = False
 
 
 async def _meili_request(method: str, path: str, data: Optional[Dict[str, Any]] = None, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -265,40 +266,87 @@ async def cancel_tasks(
 async def trigger_sync(request: Optional[SyncRequest] = None):
     """Trigger data synchronization from PostgreSQL to Meilisearch"""
     try:
-        # Import the sync script functionality
         import subprocess
         import sys
+        import os
         
-        batch_size = request.batch_size if request else 500
+        batch_size = request.batch_size if request else 25000
         force_reimport = request.force_reimport if request else False
+        full_sync = request.full_sync if request else False
         
-        # Run the sync script
+        # Use the fixed sync script
         cmd = [
             sys.executable, 
-            "scripts/meili_sync.py", 
-            "--incremental",
-            f"--batch-size={batch_size}"
+            "scripts/fixed_meili_sync.py"
         ]
         
-        if force_reimport:
-            # First initialize if forcing reimport
-            init_cmd = [sys.executable, "scripts/meili_sync.py", "--init"]
-            init_result = subprocess.run(init_cmd, capture_output=True, text=True, cwd="/app")
-            if init_result.returncode != 0:
-                raise HTTPException(status_code=500, detail=f"Sync initialization failed: {init_result.stderr}")
+        if full_sync:
+            cmd.extend(["--full-sync", f"--batch-size={batch_size}"])
+        else:
+            cmd.extend(["--limit", str(batch_size)])
         
-        # Run the incremental sync in the background
-        process = subprocess.Popen(cmd, cwd="/app")
+        # Set environment variables for the script
+        env = os.environ.copy()
+        env["MEILI_MASTER_KEY"] = settings.MEILI_MASTER_KEY or ""
+        env["MEILI_HOST"] = settings.MEILI_HOST
+        
+        # Run the sync in the background
+        process = subprocess.Popen(
+            cmd, 
+            cwd="/app",
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
         
         return {
             "message": "Sync triggered successfully",
             "process_id": process.pid,
             "batch_size": batch_size,
-            "force_reimport": force_reimport
+            "force_reimport": force_reimport,
+            "full_sync": full_sync,
+            "sync_type": "full" if full_sync else "incremental"
         }
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to trigger sync: {str(e)}")
+
+
+@router.get("/sync/progress")
+async def get_sync_progress():
+    """Get current sync progress by checking Meilisearch stats vs PostgreSQL"""
+    try:
+        from sqlalchemy import create_engine, text
+        
+        # Get PostgreSQL total count
+        engine = create_engine(settings.database_url)
+        with engine.begin() as conn:
+            result = conn.execute(text("""
+                SELECT COUNT(*) as total 
+                FROM transcript_segments 
+                WHERE transcript_text IS NOT NULL 
+                AND TRIM(transcript_text) != ''
+            """))
+            pg_total = result.scalar()
+        
+        # Get Meilisearch current count
+        meili_stats = await _meili_request("GET", "/indexes/segments/stats")
+        meili_count = meili_stats.get("numberOfDocuments", 0)
+        
+        # Calculate progress
+        progress_percent = (meili_count / pg_total * 100) if pg_total > 0 else 0
+        
+        return {
+            "postgresql_total": pg_total,
+            "meilisearch_count": meili_count,
+            "progress_percent": round(progress_percent, 1),
+            "remaining": pg_total - meili_count,
+            "is_complete": meili_count >= pg_total,
+            "is_indexing": meili_stats.get("isIndexing", False)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get sync progress: {str(e)}")
 
 
 @router.get("/keys")
