@@ -1,4 +1,4 @@
-services:
+lservices:
   db:
     image: postgres:15
     container_name: political_transcripts_db
@@ -99,6 +99,31 @@ services:
       retries: 3
       start_period: 30s
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: political_transcripts_web
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+      - REACT_APP_TITLE=PoliBase - Political Transcript Search Platform
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - api
     security_opt:
       - no-new-privileges:true
     read_only: false

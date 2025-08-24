@@ -7,9 +7,10 @@ import {
 import { playlist } from '../services/playlist';
 import { videosAPI, formatDate, formatTimestamp, formatTimestampRange, getSentimentColor, getSentimentLabel, downloadFile } from '../services/api';
 import VimeoEmbed from '../components/VimeoEmbed';
+import type { Video as VideoType, TranscriptSegment, VideoStats } from '../types';
+
 const EnhancedTranscriptSummarizer = React.lazy(() => import('../components/EnhancedTranscriptSummarizer'));
 const SimilarSegmentsModal = React.lazy(() => import('../components/SimilarSegmentsModal'));
-import type { Video as VideoType, TranscriptSegment, VideoStats } from '../types';
 
 const VideoDetailPage: React.FC = () => {
   const { videoId } = useParams<{ videoId: string }>();

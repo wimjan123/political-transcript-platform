@@ -50,20 +50,32 @@ const SearchSegmentCard = memo<SearchSegmentCardProps>(({
   const sentimentColor = getSentimentColor(segment.sentiment_loughran_score);
   const sentimentLabel = getSentimentLabel(segment.sentiment_loughran_score);
 
-  const handleToggleExpansion = () => {
+  const handleToggleExpansion = (e: React.MouseEvent) => {
+    e.stopPropagation();
     onToggleExpansion(segment.id);
   };
 
-  const handleToggleSelect = () => {
+  const handleToggleSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation();
     onToggleSelect?.(segment.id);
   };
 
-  const handleAddToPlaylist = () => {
+  const handleAddToPlaylist = (e: React.MouseEvent) => {
+    e.stopPropagation();
     playlist.addSegment(segment as any);
   };
 
+  const handleCardClick = () => {
+    if (segment.video) {
+      window.location.href = `/videos/${segment.video.id}?t=${segment.video_seconds}&segment_id=${segment.id}`;
+    }
+  };
+
   return (
-    <div className="search-card bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-4 sm:p-6 hover:shadow-xl hover:border-blue-300/50 transition-all duration-300 transform hover:-translate-y-1 dark:bg-gray-800/70 dark:border-gray-700 dark:hover:border-blue-400/30">
+    <div 
+      className="search-card bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-4 sm:p-6 hover:shadow-xl hover:border-blue-300/50 transition-all duration-300 transform hover:-translate-y-1 dark:bg-gray-800/70 dark:border-gray-700 dark:hover:border-blue-400/30 cursor-pointer"
+      onClick={handleCardClick}
+    >
       <div className="flex items-start justify-between">
         <div className="flex-1 search-card-content min-w-0">
           {/* Header */}
@@ -108,6 +120,7 @@ const SearchSegmentCard = memo<SearchSegmentCardProps>(({
               <Link
                 to={`/videos/${segment.video.id}?t=${segment.video_seconds}&segment_id=${segment.id}`}
                 className="font-medium text-primary-600 hover:text-primary-700 hover:underline block break-words"
+                onClick={(e) => e.stopPropagation()}
               >
                 {segment.video.title}
               </Link>
@@ -118,7 +131,7 @@ const SearchSegmentCard = memo<SearchSegmentCardProps>(({
           )}
 
           {/* Transcript Text */}
-          <div className="text-gray-900 mb-4 leading-relaxed dark:text-gray-100">
+          <div className="text-gray-800 mb-4 leading-relaxed dark:text-gray-200">
             {selectionMode && (
               <label className="inline-flex items-center mr-3 align-top">
                 <input
@@ -126,6 +139,7 @@ const SearchSegmentCard = memo<SearchSegmentCardProps>(({
                   className="mr-2"
                   checked={isSelected}
                   onChange={handleToggleSelect}
+                  onClick={(e) => e.stopPropagation()}
                 />
               </label>
             )}
@@ -236,7 +250,7 @@ const SearchSegmentCard = memo<SearchSegmentCardProps>(({
             typeof segment.sentiment_harvard_score === 'number' || 
             typeof segment.sentiment_vader_score === 'number') && (
             <div>
-              <h4 className="text-sm font-medium text-gray-900 mb-2 dark:text-gray-100">Sentiment Analysis</h4>
+              <h4 className="text-sm font-medium text-gray-800 mb-2 dark:text-gray-200">Sentiment Analysis</h4>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                 {typeof segment.sentiment_loughran_score === 'number' && (
                   <div className="flex justify-between">
@@ -271,24 +285,24 @@ const SearchSegmentCard = memo<SearchSegmentCardProps>(({
             typeof segment.flesch_reading_ease === 'number' ||
             typeof segment.gunning_fog_index === 'number') && (
             <div>
-              <h4 className="text-sm font-medium text-gray-900 mb-2 dark:text-gray-100">Readability Metrics</h4>
+              <h4 className="text-sm font-medium text-gray-800 mb-2 dark:text-gray-200">Readability Metrics</h4>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                 {typeof segment.flesch_kincaid_grade === 'number' && (
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-300">Flesch-Kincaid Grade:</span>
-                    <span className="text-gray-900 dark:text-gray-100">{segment.flesch_kincaid_grade.toFixed(1)}</span>
+                    <span className="text-gray-800 dark:text-gray-200">{segment.flesch_kincaid_grade.toFixed(1)}</span>
                   </div>
                 )}
                 {typeof segment.flesch_reading_ease === 'number' && (
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-300">Reading Ease:</span>
-                    <span className="text-gray-900 dark:text-gray-100">{segment.flesch_reading_ease.toFixed(1)}</span>
+                    <span className="text-gray-800 dark:text-gray-200">{segment.flesch_reading_ease.toFixed(1)}</span>
                   </div>
                 )}
                 {typeof segment.gunning_fog_index === 'number' && (
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-300">Gunning Fog:</span>
-                    <span className="text-gray-900 dark:text-gray-100">{segment.gunning_fog_index.toFixed(1)}</span>
+                    <span className="text-gray-800 dark:text-gray-200">{segment.gunning_fog_index.toFixed(1)}</span>
                   </div>
                 )}
               </div>
@@ -298,7 +312,7 @@ const SearchSegmentCard = memo<SearchSegmentCardProps>(({
           {/* Content Moderation */}
           {segment.moderation_overall_score !== undefined && segment.moderation_overall_score !== null && segment.moderation_overall_score > 0.1 && (
             <div>
-              <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Content Moderation</h4>
+              <h4 className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">Content Moderation</h4>
               <div className="flex items-center space-x-2 text-sm">
                 <AlertCircle className="h-4 w-4 text-amber-500" />
                 <span className="text-gray-600">Overall Score:</span>
@@ -315,6 +329,7 @@ const SearchSegmentCard = memo<SearchSegmentCardProps>(({
               <Link
                 to={`/videos/${segment.video.id}?t=${segment.video_seconds}&segment_id=${segment.id}`}
                 className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 transition-colors"
+                onClick={(e) => e.stopPropagation()}
               >
                 <Play className="h-4 w-4 mr-1 flex-shrink-0" />
                 <span className="hidden sm:inline">Play Clip</span>
@@ -325,6 +340,7 @@ const SearchSegmentCard = memo<SearchSegmentCardProps>(({
               <Link
                 to={`/videos/${segment.video.id}?t=${segment.video_seconds}&segment_id=${segment.id}`}
                 className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 transition-colors"
+                onClick={(e) => e.stopPropagation()}
               >
                 <ExternalLink className="h-4 w-4 mr-1 flex-shrink-0" />
                 <span className="hidden sm:inline">View Context</span>

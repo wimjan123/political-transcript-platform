@@ -129,6 +129,13 @@ async def init_db():
                 pass
 
 
+def get_db_engine():
+    """Get synchronous database engine for scripts"""
+    from sqlalchemy import create_engine
+    sync_url = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
+    return create_engine(sync_url)
+
+
 # Enable foreign key constraints for SQLite (if used for testing)
 @event.listens_for(Engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):

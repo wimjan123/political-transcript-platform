@@ -28,7 +28,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-political_transcripts}
       API_HOST: 0.0.0.0
       API_PORT: 8000
-      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-["https://polibase.ai.thewillonline.nl"]}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-["https://polibase.nl"]}
       HTML_DATA_DIR: /data/html
       XML_DATA_DIR: ${XML_DATA_DIR:-/root/tweedekamer_scrape/tweede-kamer-scraper/output/xml/}
       MEILI_HOST: ${MEILI_HOST:-http://meilisearch:7700}
@@ -56,7 +56,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=pangolin"
-      - "traefik.http.routers.polibase-api.rule=Host(`polibase.ai.thewillonline.nl`) && PathPrefix(`/api`, `/health`, `/docs`, `/redoc`)"
+      - "traefik.http.routers.polibase-api.rule=Host(`polibase.nl`) && PathPrefix(`/api`, `/health`, `/docs`, `/redoc`)"
       - "traefik.http.routers.polibase-api.tls=true"
       - "traefik.http.routers.polibase-api.tls.certresolver=letsencrypt"
       - "traefik.http.services.polibase-api.loadbalancer.server.port=8000"
@@ -83,7 +83,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=pangolin"
-      - "traefik.http.routers.polibase-web.rule=Host(`polibase.ai.thewillonline.nl`)"
+      - "traefik.http.routers.polibase-web.rule=Host(`polibase.nl`)"
       - "traefik.http.routers.polibase-web.tls=true"
       - "traefik.http.routers.polibase-web.tls.certresolver=letsencrypt"
       - "traefik.http.services.polibase-web.loadbalancer.server.port=80"

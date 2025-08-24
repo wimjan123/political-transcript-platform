@@ -159,7 +159,7 @@ const MeilisearchAdminPage: React.FC = () => {
   };
 
   const triggerFullSync = async () => {
-    if (!confirm('This will sync ALL 2.6M segments to Meilisearch. This may take 20-30 minutes. Continue?')) {
+    if (!window.confirm('This will sync ALL 2.6M segments to Meilisearch. This may take 20-30 minutes. Continue?')) {
       return;
     }
     
