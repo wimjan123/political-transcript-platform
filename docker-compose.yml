@@ -1,4 +1,4 @@
-lservices:
+services:
   db:
     image: postgres:15
     container_name: political_transcripts_db

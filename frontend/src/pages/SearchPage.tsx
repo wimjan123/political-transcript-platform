@@ -14,57 +14,60 @@ import { SearchResultsSkeleton } from '../components/SkeletonLoader';
 import VirtualizedSearchResults from '../components/VirtualizedSearchResults';
 import type { SearchResponse, SearchParams, FilterState, TranscriptSegment } from '../types';
 
-const SearchPage: React.FC = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [isExporting, setIsExporting] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-  const [expandedSegments, setExpandedSegments] = useState<Set<number>>(new Set());
-  
+const export default function SearchPage() {
+  const [searchParams] = useSearchParams();
   const searchInputRef = useRef<HTMLInputElement>(null);
-
-  // Search state
-  const [query, setQuery] = useState(searchParams.get('q') || '');
+  
+  // Query state
+  const [query, setQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  
+  // Filter state
   const [filters, setFilters] = useState<FilterState>({
-    speaker: searchParams.get('speaker') || '',
-    source: searchParams.get('source') || '',
-    dataset: (searchParams.get('dataset') || 'all'),
-    topic: searchParams.get('topic') || '',
-    dateFrom: searchParams.get('date_from') || '',
-    dateTo: searchParams.get('date_to') || '',
-    sentiment: searchParams.get('sentiment') || '',
-    minReadability: searchParams.get('min_readability') ? parseFloat(searchParams.get('min_readability')!) : '',
-    maxReadability: searchParams.get('max_readability') ? parseFloat(searchParams.get('max_readability')!) : '',
+    speaker: '',
+    source: '',
+    dataset: 'all',
+    topic: '',
+    dateFrom: '',
+    dateTo: '',
+    sentiment: '',
+    minReadability: '',
+    maxReadability: '',
     
     // Event metadata filters
-    format: searchParams.get('format') || '',
-    candidate: searchParams.get('candidate') || '',
-    place: searchParams.get('place') || '',
-    recordType: searchParams.get('record_type') || '',
+    format: '',
+    candidate: '',
+    place: '',
+    recordType: '',
     
     // Stresslens filters
-    minStresslens: searchParams.get('min_stresslens') ? parseFloat(searchParams.get('min_stresslens')!) : '',
-    maxStresslens: searchParams.get('max_stresslens') ? parseFloat(searchParams.get('max_stresslens')!) : '',
-    stresslensRank: searchParams.get('stresslens_rank') ? parseInt(searchParams.get('stresslens_rank')!) : '',
+    minStresslens: '',
+    maxStresslens: '',
+    stresslensRank: '',
     
     // Moderation flags
-    hasHarassment: searchParams.get('has_harassment') === 'true',
-    hasHate: searchParams.get('has_hate') === 'true',
-    hasViolence: searchParams.get('has_violence') === 'true',
-    hasSexual: searchParams.get('has_sexual') === 'true',
-    hasSelfharm: searchParams.get('has_selfharm') === 'true',
+    hasHarassment: false,
+    hasHate: false,
+    hasViolence: false,
+    hasSexual: false,
+    hasSelfharm: false,
     
-    searchType: (searchParams.get('search_type') as FilterState['searchType']) || 'fulltext',
-    sortBy: (searchParams.get('sort_by') as FilterState['sortBy']) || 'relevance',
-    sortOrder: (searchParams.get('sort_order') as FilterState['sortOrder']) || 'desc',
-    similarityThreshold: searchParams.get('similarity_threshold') ? parseFloat(searchParams.get('similarity_threshold')!) : 0.5,
+    searchType: 'fulltext',
+    sortBy: 'relevance',
+    sortOrder: 'desc',
+    similarityThreshold: 0.5,
   });
-  
-  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'));
-  const [pageSize, setPageSize] = useState(parseInt(searchParams.get('page_size') || '25'));
 
-  // Meilisearch toggles
-  const [searchEngine, setSearchEngine] = useState<'postgres' | 'meili'>((searchParams.get('engine') as any) || 'postgres');
-  const [meiliMode, setMeiliMode] = useState<'lexical' | 'hybrid' | 'semantic'>((searchParams.get('mode') as any) || 'lexical');
+  // UI state
+  const [showFilters, setShowFilters] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [expandedSegments, setExpandedSegments] = useState<Set<number>>(new Set());
+  
+  // Use Meilisearch as default (improved search experience)
+  // Backend selector hidden as Meilisearch provides superior search capabilities
+  const [searchEngine] = useState<'postgres' | 'meili'>('meili');
+  const [meiliMode, setMeiliMode] = useState<'lexical' | 'hybrid' | 'semantic'>((searchParams.get('mode') as any) || 'hybrid');
   const [meiliIndex, setMeiliIndex] = useState<'segments' | 'events'>((searchParams.get('index') as any) || 'segments');
   const [selectedLanguage, setSelectedLanguage] = useState<string>(searchParams.get('language') || 'auto');
   
@@ -355,6 +358,572 @@ const SearchPage: React.FC = () => {
                 type="text"
                 value={query}
                 onChange={(e) => {
+                  setQuery(e.target.value);
+                  setIsTyping(true);
+                }}
+                className="block w-full pl-12 pr-28 py-4 border border-gray-300/50 rounded-xl text-base placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 dark:bg-gray-800/70 dark:border-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
+                placeholder="Search transcripts, speakers, topics..."
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="inline-flex items-center px-3 sm:px-6 py-2.5 border border-transparent text-xs sm:text-sm font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Searching...
+                    </>
+                  ) : (
+                    <span className="hidden sm:inline">Search</span>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Search Mode Configuration */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="label">Search Mode</label>
+                <select
+                  value={meiliMode}
+                  onChange={(e) => setMeiliMode(e.target.value as any)}
+                  className="input"
+                >
+                  <option value="lexical">Lexical (keyword-based)</option>
+                  <option value="hybrid">Hybrid (recommended)</option>
+                  <option value="semantic">Semantic (AI-powered)</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">
+                  Hybrid combines keyword and semantic search for best results
+                </p>
+              </div>
+              <div>
+                <label className="label">Search Index</label>
+                <select
+                  value={meiliIndex}
+                  onChange={(e) => setMeiliIndex(e.target.value as any)}
+                  className="input"
+                >
+                  <option value="segments">Segments</option>
+                  <option value="events">Events</option>
+                </select>
+              </div>
+              <div className="text-xs text-gray-500 pt-7 dark:text-gray-400">
+                <div className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 rounded-full">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
+                  Powered by Meilisearch
+                </div>
+              </div>
+            </div>
+
+            {/* Language Selector */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <LanguageSelector
+                  selectedLanguage={selectedLanguage}
+                  onLanguageChange={setSelectedLanguage}
+                  showLabel={true}
+                />
+              </div>
+              <div className="text-xs text-gray-500 pt-7 dark:text-gray-400">
+                Language selection helps improve search accuracy when using semantic or hybrid modes.
+              </div>
+            </div>
+
+            {/* Filter Toggle */}
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setShowFilters(!showFilters)}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Advanced Filters
+                {showFilters ? <ChevronDown className="h-4 w-4 ml-2" /> : <ChevronRight className="h-4 w-4 ml-2" />}
+              </button>
+
+              {/* Quick Actions */}
+              <div className="flex flex-col space-y-3">
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(parseInt(e.target.value))}
+                  className="text-sm border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 w-full sm:w-auto"
+                >
+                  <option value="10">10 per page</option>
+                  <option value="25">25 per page</option>
+                  <option value="50">50 per page</option>
+                  <option value="100">100 per page</option>
+                </select>
+                
+                {searchResults && searchResults.results.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectionMode(!selectionMode)}
+                        className={`inline-flex items-center px-3 py-2 border text-sm font-medium rounded-md ${selectionMode ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700'} hover:bg-gray-50 dark:hover:bg-gray-700`}
+                      >
+                        {selectionMode ? 'Exit Selection' : 'Select Segments'}
+                      </button>
+                      <button
+                        onClick={() => handleExport('csv')}
+                        disabled={isExporting}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 transition-colors dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        {isExporting ? 'Exporting...' : 'CSV'}
+                      </button>
+                      <button
+                        onClick={() => handleExport('json')}
+                        disabled={isExporting}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 transition-colors dark:border-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
+                      >
+                        JSON
+                      </button>
+                    </div>
+                    {selectionMode && (
+                      <div className="flex flex-wrap gap-2">
+                        <button type="button" onClick={selectAllVisible} className="btn btn-outline text-sm px-3">Select Page</button>
+                        <button type="button" onClick={clearSelection} className="btn btn-outline text-sm px-3">Clear</button>
+                        <button type="button" onClick={exportSelectedTxt} className="btn btn-primary text-sm px-3">Export Text</button>
+                        <button type="button" onClick={exportSelectedWithLinks} className="btn btn-primary text-sm px-3">Export + Links</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Advanced Filters */}
+            {showFilters && (
+              <div className="pt-4 border-t border-gray-200 space-y-4 dark:border-gray-700">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Speaker Filter */}
+                  <div>
+                    <label className="label">Speaker</label>
+                    <input
+                      type="text"
+                      value={filters.speaker}
+                      onChange={(e) => handleFilterChange('speaker', e.target.value)}
+                      className="input"
+                      placeholder="Filter by speaker name..."
+                    />
+                  </div>
+
+                  {/* Source Filter */}
+                  <div>
+                    <label className="label">Source</label>
+                    <input
+                      type="text"
+                      value={filters.source}
+                      onChange={(e) => handleFilterChange('source', e.target.value)}
+                      className="input"
+                      placeholder="Filter by source..."
+                    />
+                  </div>
+
+                  {/* Dataset Filter */}
+                  <div>
+                    <label className="label">Dataset</label>
+                    <select
+                      value={filters.dataset}
+                      onChange={(e) => handleFilterChange('dataset', e.target.value)}
+                      className="input"
+                    >
+                      <option value="all">All</option>
+                      <option value="trump">Trump</option>
+                      <option value="tweede_kamer">Tweede Kamer</option>
+                    </select>
+                  </div>
+
+                  {/* Topic Filter */}
+                  <div>
+                    <label className="label">Topic</label>
+                    <input
+                      type="text"
+                      value={filters.topic}
+                      onChange={(e) => handleFilterChange('topic', e.target.value)}
+                      className="input"
+                      placeholder="Filter by topic..."
+                    />
+                  </div>
+
+                  {/* Date From */}
+                  <div>
+                    <label className="label">From Date</label>
+                    <input
+                      type="date"
+                      value={filters.dateFrom}
+                      onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
+                      className="input"
+                    />
+                  </div>
+
+                  {/* Date To */}
+                  <div>
+                    <label className="label">To Date</label>
+                    <input
+                      type="date"
+                      value={filters.dateTo}
+                      onChange={(e) => handleFilterChange('dateTo', e.target.value)}
+                      className="input"
+                    />
+                  </div>
+
+                  {/* Sentiment */}
+                  <div>
+                    <label className="label">Sentiment</label>
+                    <select
+                      value={filters.sentiment}
+                      onChange={(e) => handleFilterChange('sentiment', e.target.value)}
+                      className="input"
+                    >
+                      <option value="">Any sentiment</option>
+                      <option value="positive">Positive</option>
+                      <option value="negative">Negative</option>
+                      <option value="neutral">Neutral</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Event Metadata Filters */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Format Filter */}
+                  <div>
+                    <label className="label">Format</label>
+                    <input
+                      type="text"
+                      value={filters.format}
+                      onChange={(e) => handleFilterChange('format', e.target.value)}
+                      className="input"
+                      placeholder="Event format..."
+                    />
+                  </div>
+
+                  {/* Candidate Filter */}
+                  <div>
+                    <label className="label">Candidate</label>
+                    <input
+                      type="text"
+                      value={filters.candidate}
+                      onChange={(e) => handleFilterChange('candidate', e.target.value)}
+                      className="input"
+                      placeholder="Candidate name..."
+                    />
+                  </div>
+
+                  {/* Place Filter */}
+                  <div>
+                    <label className="label">Place</label>
+                    <input
+                      type="text"
+                      value={filters.place}
+                      onChange={(e) => handleFilterChange('place', e.target.value)}
+                      className="input"
+                      placeholder="Event location..."
+                    />
+                  </div>
+
+                  {/* Record Type Filter */}
+                  <div>
+                    <label className="label">Record Type</label>
+                    <input
+                      type="text"
+                      value={filters.recordType}
+                      onChange={(e) => handleFilterChange('recordType', e.target.value)}
+                      className="input"
+                      placeholder="Record type..."
+                    />
+                  </div>
+                </div>
+
+                {/* Stresslens Filters */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Min Stresslens */}
+                  <div>
+                    <label className="label">Min Stresslens Score</label>
+                    <input
+                      type="number"
+                      step="0.001"
+                      min="0"
+                      max="1"
+                      value={filters.minStresslens}
+                      onChange={(e) => handleFilterChange('minStresslens', e.target.value ? parseFloat(e.target.value) : '')}
+                      className="input"
+                      placeholder="0.000"
+                    />
+                  </div>
+
+                  {/* Max Stresslens */}
+                  <div>
+                    <label className="label">Max Stresslens Score</label>
+                    <input
+                      type="number"
+                      step="0.001"
+                      min="0"
+                      max="1"
+                      value={filters.maxStresslens}
+                      onChange={(e) => handleFilterChange('maxStresslens', e.target.value ? parseFloat(e.target.value) : '')}
+                      className="input"
+                      placeholder="1.000"
+                    />
+                  </div>
+
+                  {/* Stresslens Rank */}
+                  <div>
+                    <label className="label">Stresslens Rank</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={filters.stresslensRank}
+                      onChange={(e) => handleFilterChange('stresslensRank', e.target.value ? parseInt(e.target.value) : '')}
+                      className="input"
+                      placeholder="Rank number..."
+                    />
+                  </div>
+                </div>
+
+                {/* Moderation Flags */}
+                <div>
+                  <label className="label">Content Moderation Flags</label>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="hasHarassment"
+                        checked={filters.hasHarassment}
+                        onChange={(e) => handleFilterChange('hasHarassment', e.target.checked)}
+                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="hasHarassment" className="ml-2 text-sm text-gray-700">Harassment</label>
+                    </div>
+
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="hasHate"
+                        checked={filters.hasHate}
+                        onChange={(e) => handleFilterChange('hasHate', e.target.checked)}
+                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="hasHate" className="ml-2 text-sm text-gray-700">Hate</label>
+                    </div>
+
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="hasViolence"
+                        checked={filters.hasViolence}
+                        onChange={(e) => handleFilterChange('hasViolence', e.target.checked)}
+                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="hasViolence" className="ml-2 text-sm text-gray-700">Violence</label>
+                    </div>
+
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="hasSexual"
+                        checked={filters.hasSexual}
+                        onChange={(e) => handleFilterChange('hasSexual', e.target.checked)}
+                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="hasSexual" className="ml-2 text-sm text-gray-700">Sexual</label>
+                    </div>
+
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="hasSelfharm"
+                        checked={filters.hasSelfharm}
+                        onChange={(e) => handleFilterChange('hasSelfharm', e.target.checked)}
+                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="hasSelfharm" className="ml-2 text-sm text-gray-700">Self-harm</label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Search Type and Sorting */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="label">Search Type</label>
+                    <select
+                      value={filters.searchType}
+                      onChange={(e) => handleFilterChange('searchType', e.target.value)}
+                      className="input"
+                    >
+                      <option value="fulltext">Full-text Search</option>
+                      <option value="exact">Exact Match</option>
+                      <option value="fuzzy">Fuzzy Search</option>
+                      <option value="semantic">Semantic Search</option>
+                    </select>
+                  </div>
+
+                  {filters.searchType === 'semantic' && (
+                    <div>
+                      <label className="label">
+                        Similarity Threshold
+                        <span className="text-sm text-gray-500 ml-2">(0.0 - 1.0)</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        value={filters.similarityThreshold}
+                        onChange={(e) => handleFilterChange('similarityThreshold', parseFloat(e.target.value) || 0.5)}
+                        className="input"
+                        placeholder="0.5"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Higher values return more similar results. Lower values cast a wider net.
+                      </p>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="label">Sort By</label>
+                    <select
+                      value={filters.sortBy}
+                      onChange={(e) => handleFilterChange('sortBy', e.target.value)}
+                      className="input"
+                    >
+                      <option value="relevance">Relevance</option>
+                      <option value="date">Date</option>
+                      <option value="speaker">Speaker</option>
+                      <option value="sentiment">Sentiment</option>
+                      <option value="stresslens">Stresslens</option>
+                      {filters.searchType === 'semantic' && (
+                        <option value="similarity">Similarity Score</option>
+                      )}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="label">Sort Order</label>
+                    <select
+                      value={filters.sortOrder}
+                      onChange={(e) => handleFilterChange('sortOrder', e.target.value)}
+                      className="input"
+                    >
+                      <option value="desc">Descending</option>
+                      <option value="asc">Ascending</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Filter Actions */}
+                <div className="flex justify-between">
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    Clear all filters
+                  </button>
+                </div>
+              </div>
+            )}
+          </form>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-400 mr-3" />
+              <span className="text-red-700">{error.message}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {isLoading && query && (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">Searching...</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Looking for "{query}"
+            </p>
+          </div>
+        )}
+
+        {/* Search Results */}
+        {searchResults && (
+          <div>
+            {/* Results Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-lg font-medium text-gray-900">
+                  Search Results
+                </h2>
+                <p className="text-sm text-gray-500">
+                  {resultsSummary}
+                  <span className="ml-2 inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
+                    {searchTypeDisplay}
+                  </span>
+                  {paginationDisplay && (
+                    <span>
+                      {' '}{paginationDisplay}
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            {/* Results List - Integrated with Page Scrolling */}
+            <div className="mb-8">
+              <VirtualizedSearchResults
+                results={searchResults.results}
+                query={query}
+                expandedSegments={expandedSegments}
+                onToggleExpansion={toggleSegmentExpansion}
+                selectedSegmentIds={selectedSegmentIds}
+                onToggleSelect={toggleSelectSegment}
+                selectionMode={selectionMode}
+                showTimestamp={true}
+                showVideoLink={true}
+                showSpeakerAvatar={true}
+                highlightQuery={true}
+                showMetrics={true}
+                enableDeepLinks={true}
+                searchEngine={searchEngine}
+              />
+            </div>
+
+            {/* Pagination */}
+            {searchResults.total > pageSize && (
+              <div className="flex items-center justify-center space-x-2 mt-8">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Previous
+                </button>
+                
+                <span className="text-sm text-gray-700">
+                  Page {currentPage} of {Math.ceil(searchResults.total / pageSize)}
+                </span>
+                
+                <button
+                  disabled={currentPage >= Math.ceil(searchResults.total / pageSize)}
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+} => {
                   setQuery(e.target.value);
                   setIsTyping(true);
                 }}
