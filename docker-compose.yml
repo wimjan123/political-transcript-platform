@@ -37,8 +37,6 @@ services:
     container_name: political_transcripts_api
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-political_transcripts}
-      ELASTICSEARCH_URL: ${ELASTICSEARCH_URL:-http://elasticsearch:9200}
-      ELASTICSEARCH_INDEX: ${ELASTICSEARCH_INDEX:-transcript_segments}
       API_HOST: ${API_HOST:-0.0.0.0}
       API_PORT: ${API_PORT:-8000}
       BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-["http://localhost:3000", "https://polibase.ai.thewillonline.nl"]}
@@ -58,8 +56,6 @@ services:
       - "8000:8000"
     depends_on:
       db:
-        condition: service_healthy
-      elasticsearch:
         condition: service_healthy
       meilisearch:
         condition: service_started
@@ -82,86 +78,6 @@ services:
       - SETGID
     external_links:
       - traefik:traefik
-
-  web:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: political_transcripts_web
-    environment:
-      # Use relative URLs in dev; CRA proxy will route to the API container
-      REACT_APP_API_URL: ${REACT_APP_API_URL:-}
-      REACT_APP_TITLE: ${REACT_APP_TITLE:-PoliBase}
-      DANGEROUSLY_DISABLE_HOST_CHECK: "true"
-      HOST: "0.0.0.0"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    ports:
-      - "3000:3000"
-    depends_on:
-      - api
-    command: npm start
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
-      interval: 30s
-      timeout: 15s
-      retries: 3
-      start_period: 60s
-    stdin_open: true
-    tty: true
-    networks:
-      - default
-      - pangolin
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.polibase-web.rule=Host(`polibase.nl`)"
-      - "traefik.http.routers.polibase-web.entrypoints=websecure"
-      - "traefik.http.routers.polibase-web.tls.certresolver=myresolver"
-      - "traefik.http.services.polibase-web.loadbalancer.server.port=3000"
-
-  elasticsearch:
-    image: elasticsearch:8.11.0
-    container_name: political_transcripts_elasticsearch
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - xpack.security.enrollment.enabled=false
-      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
-      - cluster.name=political-transcripts
-      - node.name=es-node-1
-    volumes:
-      - es_data:/usr/share/elasticsearch/data
-    ports:
-      - "9200:9200"
-      - "9300:9300"
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    mem_limit: 2g
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-
-  kibana:
-    image: kibana:8.11.0
-    container_name: political_transcripts_kibana
-    environment:
-      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-      XPACK_SECURITY_ENABLED: false
-    ports:
-      - "5601:5601"
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
   meilisearch:
     image: getmeili/meilisearch:latest
@@ -221,7 +137,7 @@ services:
 
 volumes:
   postgres_data:
-  es_data:
+
   meili_data:
 
 networks:

@@ -260,3 +260,5 @@ API_WORKERS=4                      # Uvicorn worker processes (dev/prod)
 - **Container Access**: `docker compose exec api bash`, `docker compose exec db psql -U postgres -d political_transcripts`
 - **Service Health**: Check `http://localhost:8000/health` for API health
 - **Log Monitoring**: `make logs-api`, `make logs-web`, `make logs-db`
+- always use context7, serena and sequential thinking
+- Do git push between big changes
