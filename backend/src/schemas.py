@@ -373,7 +373,7 @@ class VideoSummaryCreateRequest(BaseModel):
 # Segments API Schemas
 class SegmentOut(BaseModel):
     """Simplified segment output schema for the segments API"""
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
     
     id: int
     video_id: int
@@ -401,9 +401,6 @@ class SegmentOut(BaseModel):
     # Timestamps
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        populate_by_name = True
 
 
 class SegmentsPage(BaseModel):

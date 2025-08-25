@@ -2,6 +2,7 @@
 Configuration settings for the Political Transcript Search Platform
 """
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 from typing import List, Optional
 import os
 
@@ -75,17 +76,19 @@ class Settings(BaseSettings):
     AIRTABLE_API_KEY: str = ""
     AIRTABLE_BASE_ID: str = ""
     
+    # Pydantic config
+    model_config = ConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+        extra="ignore"
+    )
+
     @property
     def database_url(self) -> str:
         """Build database URL if not provided"""
         if self.DATABASE_URL:
             return self.DATABASE_URL
         return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
-        extra = "ignore"
 
 
 # Create global settings instance
