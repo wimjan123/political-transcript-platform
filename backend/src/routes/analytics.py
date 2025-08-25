@@ -10,9 +10,11 @@ from datetime import datetime, date, timedelta
 
 from ..database import get_db
 from ..models import TranscriptSegment, Video, Speaker, Topic, SegmentTopic
+from ..services.emotions_service import upsert_emotions, get_emotion_statistics
 from ..schemas import (
     AnalyticsStatsResponse, SentimentAnalyticsResponse, TopicAnalyticsResponse,
-    ReadabilityAnalyticsResponse, ContentModerationAnalyticsResponse, DashboardAnalyticsResponse
+    ReadabilityAnalyticsResponse, ContentModerationAnalyticsResponse, DashboardAnalyticsResponse,
+    EmotionsIngestRequest, EmotionsIngestResult
 )
 
 router = APIRouter()
@@ -534,3 +536,87 @@ async def get_moderation_analytics(
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Moderation analytics error: {str(e)}")
+
+
+@router.post("/ingest-emotions", response_model=EmotionsIngestResult)
+async def ingest_emotions(
+    payload: EmotionsIngestRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Batch ingest emotion annotations for transcript segments
+    
+    Accepts a batch of emotion data items and updates the corresponding transcript
+    segments with emotion labels, intensity scores, heat scores, and heat components.
+    
+    - **items**: List of emotion items (max 10,000 per batch)
+    - **segment_id**: Database ID of the transcript segment to update
+    - **emotion_label**: Primary emotion label (e.g., "Angry", "Joy", "Fear")  
+    - **emotion_intensity**: Intensity score from 0-100
+    - **heat_score**: Optional heat score from 0.0-1.0 for controversial content
+    - **heat_components**: Optional JSON breakdown of heat score components
+    
+    Returns count of updated segments and any per-item errors.
+    """
+    try:
+        # Validate batch size
+        if len(payload.items) > 10000:
+            raise HTTPException(
+                status_code=400, 
+                detail="Batch size exceeds maximum of 10,000 items"
+            )
+        
+        # Process the batch
+        updated, errors = await upsert_emotions(db, payload.items)
+        
+        # Determine response status based on results
+        if errors and not updated:
+            # All items failed
+            return EmotionsIngestResult(
+                updated=updated,
+                errors=errors,
+                message="All items failed to process",
+                status_code=400
+            )
+        elif errors:
+            # Partial success
+            return EmotionsIngestResult(
+                updated=updated,
+                errors=errors,
+                message=f"Partially successful: {updated} updated, {len(errors)} errors",
+                status_code=207  # Multi-status
+            )
+        else:
+            # Complete success
+            return EmotionsIngestResult(
+                updated=updated,
+                errors=errors,
+                message=f"Successfully updated {updated} segments",
+                status_code=200
+            )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in emotions ingest: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Emotions ingest error: {str(e)}")
+
+
+@router.get("/emotion-stats")
+async def get_emotion_stats(db: AsyncSession = Depends(get_db)):
+    """
+    Get statistics about emotion annotations in the database
+    
+    Returns summary statistics about emotion labels, intensity scores,
+    heat scores, and coverage across the transcript segments.
+    """
+    try:
+        stats = await get_emotion_statistics(db)
+        return {
+            "data": stats,
+            "message": "Success",
+            "status_code": 200
+        }
+    except Exception as e:
+        logger.error(f"Error fetching emotion statistics: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Emotion stats error: {str(e)}")

@@ -1185,6 +1185,247 @@ ws.onmessage = function(event) {
 
 ---
 
+## Segments Endpoints
+
+### List Transcript Segments
+
+**GET** `/api/segments/`
+
+Retrieve paginated transcript segments with optional filters.
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `page` | integer | No | Page number (default: 1) |
+| `page_size` | integer | No | Segments per page (default: 50, max: 100) |
+| `speaker` | string | No | Filter by speaker name (partial match) |
+| `video_id` | integer | No | Filter by specific video ID |
+| `dataset` | string | No | Filter by dataset (`trump`, `tweede_kamer`) |
+| `q` | string | No | Text search in transcript content |
+
+#### Example Request
+```bash
+curl -G "http://localhost:8000/api/segments/" \
+  --data-urlencode "page=1" \
+  --data-urlencode "page_size=50" \
+  --data-urlencode "speaker=Wilders" \
+  --data-urlencode "q=immigratie"
+```
+
+#### Example Response
+```json
+{
+  "data": [
+    {
+      "id": 12345,
+      "video_id": 789,
+      "segment_id": "seg_123",
+      "speaker_name": "Geert Wilders",
+      "speaker_party": "PVV",
+      "transcript_text": "We need stricter immigration policies...",
+      "timestamp_start": "00:15:30",
+      "timestamp_end": "00:15:45",
+      "video_seconds": 930,
+      "word_count": 15,
+      "char_count": 87,
+      "sentiment_vader_score": -0.3,
+      "sentiment_harvard_score": -0.2,
+      "sentiment_loughran_score": -0.1,
+      "emotion_label": "Angry",
+      "emotion_intensity": 75,
+      "heat_score": 0.68,
+      "heat_components": {
+        "tox": 0.3,
+        "neg": 0.4,
+        "controversy": 0.8
+      },
+      "created_at": "2024-01-15T20:00:00Z",
+      "updated_at": "2024-01-15T21:30:00Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "page_size": 50,
+    "total": 1250,
+    "total_pages": 25,
+    "has_next": true,
+    "has_prev": false
+  },
+  "message": "Success",
+  "status_code": 200
+}
+```
+
+### Get Single Segment
+
+**GET** `/api/segments/{segment_id}`
+
+Retrieve detailed information about a specific transcript segment.
+
+#### Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `segment_id` | integer | Yes | Unique segment identifier |
+
+#### Example Response
+```json
+{
+  "id": 12345,
+  "segment_id": "seg_123",
+  "video_id": 789,
+  "speaker_name": "Geert Wilders",
+  "speaker_party": "PVV",
+  "transcript_text": "We need stricter immigration policies...",
+  "timestamp_start": "00:15:30",
+  "timestamp_end": "00:15:45",
+  "video_seconds": 930,
+  "word_count": 15,
+  "char_count": 87,
+  "sentiment_loughran_score": -0.1,
+  "sentiment_harvard_score": -0.2,
+  "sentiment_vader_score": -0.3,
+  "emotion_label": "Angry",
+  "emotion_intensity": 75,
+  "heat_score": 0.68,
+  "heat_components": {
+    "tox": 0.3,
+    "neg": 0.4,
+    "controversy": 0.8
+  },
+  "flesch_kincaid_grade": 12.5,
+  "flesch_reading_ease": 45.2,
+  "moderation_harassment": 0.15,
+  "moderation_hate": 0.08,
+  "created_at": "2024-01-15T20:00:00Z",
+  "video": {
+    "id": 789,
+    "title": "Parliamentary Debate on Immigration",
+    "date": "2024-01-15",
+    "source": "Tweede Kamer"
+  },
+  "speaker": {
+    "id": 45,
+    "name": "Geert Wilders",
+    "party": "PVV"
+  }
+}
+```
+
+---
+
+## Emotion Analytics Endpoints
+
+### Ingest Emotion Annotations
+
+**POST** `/api/analytics/ingest-emotions`
+
+Batch ingest emotion annotations for transcript segments computed offline.
+
+#### Request Body
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `items` | array | Yes | List of emotion items (max 10,000) |
+
+#### Emotion Item Schema
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `segment_id` | integer | Yes | Database ID of transcript segment |
+| `emotion_label` | string | Yes | Primary emotion (e.g., "Angry", "Joy", "Fear") |
+| `emotion_intensity` | integer | Yes | Intensity score from 0-100 |
+| `heat_score` | float | No | Heat score from 0.0-1.0 for controversial content |
+| `heat_components` | object | No | JSON breakdown of heat components |
+
+#### Example Request
+```bash
+curl -X POST "http://localhost:8000/api/analytics/ingest-emotions" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "items": [
+      {
+        "segment_id": 123,
+        "emotion_label": "Angry",
+        "emotion_intensity": 82,
+        "heat_score": 0.76,
+        "heat_components": {"tox": 0.31, "neg": 0.62, "controversy": 0.85}
+      },
+      {
+        "segment_id": 124,
+        "emotion_label": "Fear",
+        "emotion_intensity": 65,
+        "heat_score": 0.45,
+        "heat_components": {"uncertainty": 0.7, "threat": 0.3}
+      }
+    ]
+  }'
+```
+
+#### Example Response (Success)
+```json
+{
+  "updated": 2,
+  "errors": [],
+  "message": "Successfully updated 2 segments",
+  "status_code": 200
+}
+```
+
+#### Example Response (Partial Success)
+```json
+{
+  "updated": 1,
+  "errors": [
+    {
+      "segment_id": 999,
+      "error": "segment_not_found",
+      "message": "Segment 999 does not exist"
+    }
+  ],
+  "message": "Partially successful: 1 updated, 1 errors",
+  "status_code": 207
+}
+```
+
+#### Example Response (Validation Error)
+```json
+{
+  "detail": [
+    {
+      "loc": ["body", "items", 0, "emotion_intensity"],
+      "msg": "ensure this value is less than or equal to 100",
+      "type": "value_error.number.not_le",
+      "ctx": {"limit_value": 100}
+    }
+  ]
+}
+```
+
+### Get Emotion Statistics
+
+**GET** `/api/analytics/emotion-stats`
+
+Retrieve statistics about emotion annotations in the database.
+
+#### Example Response
+```json
+{
+  "data": {
+    "total_segments_with_emotions": 1247,
+    "unique_emotion_labels": 8,
+    "average_emotion_intensity": 52.3,
+    "total_segments_with_heat_scores": 1089,
+    "average_heat_score": 0.34
+  },
+  "message": "Success",
+  "status_code": 200
+}
+```
+
+---
+
 ## Examples
 
 ### Complete Search Workflow
@@ -1244,6 +1485,59 @@ curl -X GET "http://localhost:8000/api/analytics/sentiment" \
 
 # 3. Get topic analytics
 curl -X GET "http://localhost:8000/api/analytics/topics"
+```
+
+### Emotion Analytics Workflow
+
+```bash
+# 1. Get existing segments for annotation
+curl -G "http://localhost:8000/api/segments/" \
+  --data-urlencode "page=1" \
+  --data-urlencode "page_size=100"
+
+# 2. Process segments offline (your emotion analysis pipeline)
+# ... run emotion detection on transcript_text ...
+
+# 3. Batch ingest emotion results
+curl -X POST "http://localhost:8000/api/analytics/ingest-emotions" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "items": [
+      {
+        "segment_id": 123,
+        "emotion_label": "Angry",
+        "emotion_intensity": 82,
+        "heat_score": 0.76,
+        "heat_components": {"tox": 0.31, "neg": 0.62, "punc": 0.11}
+      }
+    ]
+  }'
+
+# 4. Check emotion statistics
+curl -X GET "http://localhost:8000/api/analytics/emotion-stats"
+
+# 5. Search segments with emotion data
+curl -G "http://localhost:8000/api/segments/" \
+  --data-urlencode "speaker=Wilders" \
+  --data-urlencode "q=immigration"
+```
+
+### Segment Analysis Pipeline
+
+```bash
+# 1. List segments from specific video
+curl -G "http://localhost:8000/api/segments/" \
+  --data-urlencode "video_id=789" \
+  --data-urlencode "page_size=100"
+
+# 2. Get detailed segment information
+curl -X GET "http://localhost:8000/api/segments/12345"
+
+# 3. Filter segments by dataset and speaker
+curl -G "http://localhost:8000/api/segments/" \
+  --data-urlencode "dataset=tweede_kamer" \
+  --data-urlencode "speaker=Wilders" \
+  --data-urlencode "q=immigration"
 ```
 
 ---

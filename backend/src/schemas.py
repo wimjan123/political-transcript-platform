@@ -1,7 +1,7 @@
 """
 Pydantic schemas for the Political Transcript Search Platform
 """
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime, date
 
@@ -125,6 +125,12 @@ class TranscriptSegmentResponse(BaseModel):
     # Stresslens Analytics
     stresslens_score: Optional[float]
     stresslens_rank: Optional[int]
+    
+    # Emotion Analysis
+    emotion_label: Optional[str]
+    emotion_intensity: Optional[int]
+    heat_score: Optional[float]
+    heat_components: Optional[Dict[str, Any]]
     
     # Content Moderation Flags
     moderation_harassment_flag: Optional[bool]
@@ -362,3 +368,70 @@ class VideoSummaryCreateRequest(BaseModel):
     provider: Optional[str] = None
     model: Optional[str] = None
     bullet_points: Optional[int] = None
+
+
+# Segments API Schemas
+class SegmentOut(BaseModel):
+    """Simplified segment output schema for the segments API"""
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: int
+    video_id: int
+    segment_id: str
+    speaker_name: str
+    speaker_party: Optional[str]
+    transcript_text: str
+    timestamp_start: Optional[str]
+    timestamp_end: Optional[str]
+    video_seconds: Optional[int]
+    word_count: int
+    char_count: int
+    
+    # Sentiment Analysis (with aliases for consistency)
+    sentiment_vader_score: Optional[float] = Field(None, alias="sentiment_vader")
+    sentiment_harvard_score: Optional[float] = Field(None, alias="sentiment_harvard_iv")
+    sentiment_loughran_score: Optional[float] = Field(None, alias="sentiment_loughran_mcdonald")
+    
+    # Emotion Analysis
+    emotion_label: Optional[str]
+    emotion_intensity: Optional[int]
+    heat_score: Optional[float]
+    heat_components: Optional[Dict[str, Any]]
+    
+    # Timestamps
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        populate_by_name = True
+
+
+class SegmentsPage(BaseModel):
+    """Paginated segments response schema"""
+    data: List[SegmentOut]
+    pagination: Dict[str, Any]
+    message: str = "Success"
+    status_code: int = 200
+
+
+# Emotions Ingest Schemas
+class EmotionItemIn(BaseModel):
+    """Single emotion item for batch ingest"""
+    segment_id: int
+    emotion_label: str
+    emotion_intensity: int = Field(ge=0, le=100, description="Emotion intensity from 0-100")
+    heat_score: Optional[float] = Field(None, ge=0.0, le=1.0, description="Heat score from 0.0-1.0")
+    heat_components: Optional[Dict[str, Any]] = Field(None, description="JSON breakdown of heat components")
+
+
+class EmotionsIngestRequest(BaseModel):
+    """Batch emotions ingest request schema"""
+    items: List[EmotionItemIn] = Field(..., min_items=1, max_items=10000, description="Batch of emotion items")
+
+
+class EmotionsIngestResult(BaseModel):
+    """Emotions ingest result schema"""
+    updated: int
+    errors: List[Dict[str, Any]] = []
+    message: str = "Success"
+    status_code: int = 200

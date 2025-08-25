@@ -9,7 +9,7 @@ import os
 from contextlib import asynccontextmanager
 
 from .database import init_db
-from .routes import search, analytics, videos, upload, ingest, clips, chatbot
+from .routes import search, analytics, videos, upload, ingest, clips, chatbot, segments
 from .routes import meili_search, meilisearch_admin, meilisearch_search, summarization
 from .routes import optimized_search, unified_search
 from .config import settings
@@ -57,6 +57,7 @@ app.include_router(meili_search.router, prefix="/api/search-meili", tags=["searc
 app.include_router(meilisearch_search.router, prefix="/api/search-advanced", tags=["search-advanced"])
 app.include_router(meilisearch_admin.router, prefix="/api/meilisearch", tags=["meilisearch-admin"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
+app.include_router(segments.router, tags=["segments"])
 app.include_router(videos.router, prefix="/api/videos", tags=["videos"])
 app.include_router(upload.router, prefix="/api/upload", tags=["upload"])
 app.include_router(ingest.router, prefix="/api/ingest", tags=["ingest"])

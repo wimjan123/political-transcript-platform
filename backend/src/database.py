@@ -136,6 +136,24 @@ def get_db_engine():
     return create_engine(sync_url)
 
 
+def get_db_sync():
+    """Get synchronous database session for testing"""
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    
+    # Use the same URL but synchronous
+    sync_url = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
+    sync_engine = create_engine(sync_url, echo=settings.DEBUG)
+    
+    SessionLocal = sessionmaker(bind=sync_engine)
+    session = SessionLocal()
+    
+    try:
+        yield session
+    finally:
+        session.close()
+
+
 # Enable foreign key constraints for SQLite (if used for testing)
 @event.listens_for(Engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
