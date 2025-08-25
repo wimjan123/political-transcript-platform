@@ -74,6 +74,9 @@ export interface TranscriptSegment {
   word_count: number;
   char_count: number;
   
+  // Dataset information
+  dataset?: string;
+  
   // Sentiment Analysis
   sentiment_loughran_score?: number | null;
   sentiment_loughran_label?: string;

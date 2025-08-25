@@ -169,6 +169,7 @@ def test_segments_list_basic(client, seed_data):
     assert "segment_id" in first_segment
     assert "speaker_name" in first_segment
     assert "transcript_text" in first_segment
+    assert "dataset" in first_segment  # New field
     assert "emotion_label" in first_segment
     assert "emotion_intensity" in first_segment
     assert "heat_score" in first_segment
@@ -258,6 +259,23 @@ def test_segments_list_emotion_fields(client, seed_data):
     assert segment["heat_components"] == {"tox": 0.1, "neg": 0.2}
 
 
+def test_segments_list_includes_dataset(client, seed_data):
+    """Test that segments response includes dataset field"""
+    response = client.get("/api/segments/?page=1&page_size=10")
+    
+    assert response.status_code == 200
+    data = response.json()
+    
+    # Check that all segments have dataset field
+    segments = data["data"]
+    assert len(segments) > 0
+    
+    for segment in segments:
+        assert "dataset" in segment
+        # We seeded with dataset="trump"
+        assert segment["dataset"] == "trump"
+
+
 def test_segments_list_invalid_page(client, seed_data):
     """Test invalid page parameters"""
     # Page must be >= 1
@@ -267,6 +285,30 @@ def test_segments_list_invalid_page(client, seed_data):
     # Page size must be <= 100
     response = client.get("/api/segments/?page_size=101")
     assert response.status_code == 422  # Validation error
+
+
+def test_segments_list_filter_by_dataset(client, seed_data):
+    """Test filtering by dataset"""
+    response = client.get("/api/segments/?dataset=trump")
+    
+    assert response.status_code == 200
+    data = response.json()
+    
+    # Should find all 3 segments (all have dataset="trump")
+    assert len(data["data"]) == 3
+    assert data["pagination"]["total"] == 3
+    for segment in data["data"]:
+        assert segment["dataset"] == "trump"
+    
+    # Test with non-existing dataset
+    response = client.get("/api/segments/?dataset=tweede_kamer")
+    
+    assert response.status_code == 200
+    data = response.json()
+    
+    # Should find 0 segments
+    assert len(data["data"]) == 0
+    assert data["pagination"]["total"] == 0
 
 
 def test_segments_list_empty_results(client):

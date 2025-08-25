@@ -68,7 +68,9 @@ async def list_segments(
                 "heat_score": segment.heat_score,
                 "heat_components": segment.heat_components,
                 "created_at": segment.created_at,
-                "updated_at": segment.updated_at
+                "updated_at": segment.updated_at,
+                # Always include segment_topics as an array (empty for list endpoint)
+                "segment_topics": []
             }
             data.append(SegmentOut.model_validate(segment_dict))
         

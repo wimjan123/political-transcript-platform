@@ -1191,7 +1191,7 @@ ws.onmessage = function(event) {
 
 **GET** `/api/segments/`
 
-Retrieve paginated transcript segments with optional filters.
+Retrieve paginated transcript segments with optional filters. Each segment in the response includes a `dataset` field indicating which dataset the segment belongs to (e.g., `trump`, `tweede_kamer`).
 
 #### Parameters
 
@@ -1229,6 +1229,7 @@ curl -G "http://localhost:8000/api/segments/" \
       "video_seconds": 930,
       "word_count": 15,
       "char_count": 87,
+      "dataset": "tweede_kamer",
       "sentiment_vader_score": -0.3,
       "sentiment_harvard_score": -0.2,
       "sentiment_loughran_score": -0.1,
