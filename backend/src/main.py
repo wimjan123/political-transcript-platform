@@ -47,12 +47,13 @@ app.add_middleware(
 # Enable gzip compression to reduce payload size
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-# Include routers - OPTIMIZED SEARCH
+# Include routers - OPTIMIZED SEARCH (primary)
 app.include_router(optimized_search.router, prefix="/api/search", tags=["search-optimized"])
 # Legacy search (kept for backup during migration)
 app.include_router(search.router, prefix="/api/search-legacy", tags=["search-legacy"])
-app.include_router(meili_search.router, prefix="/api/search", tags=["search-meili"])
-app.include_router(meilisearch_search.router, prefix="/api/search", tags=["search-advanced"])
+# Alternative search endpoints with distinct prefixes to avoid conflicts
+app.include_router(meili_search.router, prefix="/api/search-meili", tags=["search-meili"])
+app.include_router(meilisearch_search.router, prefix="/api/search-advanced", tags=["search-advanced"])
 app.include_router(meilisearch_admin.router, prefix="/api/meilisearch", tags=["meilisearch-admin"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
 app.include_router(videos.router, prefix="/api/videos", tags=["videos"])
