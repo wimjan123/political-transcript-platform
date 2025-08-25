@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 from .database import init_db
 from .routes import search, analytics, videos, upload, ingest, clips, chatbot
 from .routes import meili_search, meilisearch_admin, meilisearch_search, summarization
-from .routes import optimized_search
+from .routes import optimized_search, unified_search
 from .config import settings
 from .routes.upload import import_status
 
@@ -47,9 +47,10 @@ app.add_middleware(
 # Enable gzip compression to reduce payload size
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-# Include routers - OPTIMIZED SEARCH (primary)
-app.include_router(optimized_search.router, prefix="/api/search", tags=["search-optimized"])
-# Legacy search (kept for backup during migration)
+# Include routers - UNIFIED SEARCH (primary with dual engines)
+app.include_router(unified_search.router, prefix="/api/search", tags=["search-unified"])
+# Backup search endpoints for migration and testing
+app.include_router(optimized_search.router, prefix="/api/search-optimized", tags=["search-optimized"])
 app.include_router(search.router, prefix="/api/search-legacy", tags=["search-legacy"])
 # Alternative search endpoints with distinct prefixes to avoid conflicts
 app.include_router(meili_search.router, prefix="/api/search-meili", tags=["search-meili"])

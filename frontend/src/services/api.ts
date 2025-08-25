@@ -22,13 +22,13 @@ import type {
 
 // Determine API base URL
 // - If REACT_APP_API_URL is set, use it.
-// - If running via CRA dev server (port 3000) in Docker, use empty string to rely on proxy
-// - Otherwise default to same-origin relative paths.
+// - For Docker development, browser connects to host-exposed port
+// - Empty string uses proxy (which is broken)
 const inferBaseUrl = () => {
   const envUrl = process.env.REACT_APP_API_URL;
   if (envUrl !== undefined && envUrl !== '') return envUrl;
-  // When running in Docker dev mode, use proxy (empty string means same-origin)
-  return '';
+  // Browser connects to backend via host network (port exposed as 8000)
+  return 'http://localhost:8000';
 };
 
 const API_BASE_URL = inferBaseUrl();
@@ -144,6 +144,71 @@ export const searchAPI = {
   ): Promise<SearchResponse> => {
     const response = await api.get(`/api/search/meili/similar_segments/${segmentId}`, {
       params: { limit, index },
+    });
+    return response.data;
+  },
+
+  // Unified search with dual engine support
+  unifiedSearch: async (params: SearchParams & { engine?: string }): Promise<SearchResponse> => {
+    const response = await api.get('/api/search/', { params });
+    return response.data;
+  },
+
+  // Get search engine status
+  getEngineStatus: async (): Promise<{
+    primary_engine: string;
+    fallback_engine: string;
+    engines: {
+      [key: string]: {
+        healthy: boolean;
+        url?: string;
+        cluster_status?: string;
+        nodes?: number;
+        error?: string;
+      };
+    };
+  }> => {
+    const response = await api.get('/api/search/status');
+    return response.data;
+  },
+
+  // Compare search engines
+  compareEngines: async (query: string, size: number = 10): Promise<{
+    query: string;
+    elasticsearch: any;
+    meilisearch: any;
+    comparison_summary: {
+      es_total: number;
+      meili_total: number;
+      es_took: number;
+      meili_took: number;
+    };
+  }> => {
+    const response = await api.get('/api/search/compare', {
+      params: { q: query, size }
+    });
+    return response.data;
+  },
+
+  // Switch primary search engine
+  switchPrimaryEngine: async (engine: 'elasticsearch' | 'meilisearch'): Promise<{
+    message: string;
+    primary_engine: string;
+    fallback_engine: string;
+  }> => {
+    const response = await api.post('/api/search/switch-primary', null, {
+      params: { engine }
+    });
+    return response.data;
+  },
+
+  // Reindex search engines
+  reindexEngines: async (
+    engine: 'elasticsearch' | 'meilisearch' | 'all' = 'all',
+    batchSize: number = 500
+  ): Promise<any> => {
+    const response = await api.post('/api/search/reindex', null, {
+      params: { engine, batch_size: batchSize }
     });
     return response.data;
   },

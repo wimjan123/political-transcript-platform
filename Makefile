@@ -123,7 +123,45 @@ meili-sync: ## Incremental sync from Postgres into Meilisearch
 	@echo "$(GREEN)Syncing data to Meilisearch...$(NC)"
 	@docker compose run --rm -e MEILI_HOST=http://political_transcripts_meilisearch:7700 -e MEILI_MASTER_KEY=$(MEILI_MASTER_KEY) api \
 		python scripts/meili_sync.py --incremental --batch-size=1000
-	@echo "$(GREEN)Database backup complete!$(NC)"
+	@echo "$(GREEN)Meilisearch sync complete!$(NC)"
+
+# Search Engine Management
+.PHONY: search-health search-create-index search-reindex search-test search-compare search-switch
+
+search-health: ## Check health of both search engines
+	@echo "$(GREEN)Checking search engine health...$(NC)"
+	@docker compose run --rm api python scripts/manage_search.py health
+
+search-create-index: ## Create Elasticsearch index
+	@echo "$(GREEN)Creating Elasticsearch index...$(NC)"
+	@docker compose run --rm api python scripts/manage_search.py create-index
+
+search-reindex: ## Reindex data to all search engines (usage: make search-reindex ENGINE=all BATCH_SIZE=500)
+	@echo "$(GREEN)Reindexing search data...$(NC)"
+	@docker compose run --rm api python scripts/manage_search.py reindex --engine=$(or $(ENGINE),all) --batch-size=$(or $(BATCH_SIZE),500)
+
+search-test: ## Test search functionality (usage: make search-test QUERY="test query" ENGINE=elasticsearch)
+	@echo "$(GREEN)Testing search...$(NC)"
+	$(if $(ENGINE), \
+		@docker compose run --rm api python scripts/manage_search.py test "$(QUERY)" --engine=$(ENGINE), \
+		@docker compose run --rm api python scripts/manage_search.py test "$(QUERY)")
+
+search-compare: ## Compare search engines (usage: make search-compare QUERY="test query")
+	@echo "$(GREEN)Comparing search engines...$(NC)"
+	@docker compose run --rm api python scripts/manage_search.py compare "$(QUERY)"
+
+search-switch: ## Switch primary search engine (usage: make search-switch ENGINE=elasticsearch)
+	@echo "$(GREEN)Switching primary search engine...$(NC)"
+	@docker compose run --rm api python scripts/manage_search.py switch $(ENGINE)
+
+# Elasticsearch specific commands
+es-reindex: ## Reindex data to Elasticsearch only
+	@echo "$(GREEN)Reindexing to Elasticsearch...$(NC)"
+	@docker compose run --rm api python scripts/manage_search.py reindex --engine=elasticsearch
+
+es-test: ## Test Elasticsearch search (usage: make es-test QUERY="test query")
+	@echo "$(GREEN)Testing Elasticsearch...$(NC)"
+	@docker compose run --rm api python scripts/manage_search.py test "$(QUERY)" --engine=elasticsearch
 
 restore-db: ## Restore database (usage: make restore-db FILE=backup.sql)
 	@echo "$(GREEN)Restoring database from $(FILE)...$(NC)"

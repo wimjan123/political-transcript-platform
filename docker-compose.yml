@@ -44,6 +44,7 @@ services:
       XML_DATA_DIR: ${XML_DATA_DIR:-/root/tweedekamer_scrape/tweede-kamer-scraper/output/xml/}
       DEBUG: ${DEBUG:-true}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      ELASTICSEARCH_URL: ${ELASTICSEARCH_URL:-http://elasticsearch:9200}
       MEILI_HOST: ${MEILI_HOST:-http://meilisearch:7700}
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-}
       API_WORKERS: ${API_WORKERS:-5}
@@ -56,6 +57,8 @@ services:
       - "8000:8000"
     depends_on:
       db:
+        condition: service_healthy
+      elasticsearch:
         condition: service_healthy
       meilisearch:
         condition: service_started
@@ -88,6 +91,40 @@ services:
       - "traefik.http.services.polibase-api.loadbalancer.server.port=8000"
       - "traefik.docker.network=traefik_traefik-network"
     restart: unless-stopped
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: political_transcripts_elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
 
   meilisearch:
     image: getmeili/meilisearch:latest
@@ -126,6 +163,7 @@ services:
     container_name: political_transcripts_web
     environment:
       - REACT_APP_TITLE=PoliBase - Political Transcript Search Platform
+      - REACT_APP_API_URL=https://polibase.nl
     ports:
       - "3000:3000"
     volumes:
@@ -187,6 +225,7 @@ services:
 
 volumes:
   postgres_data:
+  es_data:
   meili_data:
 
 networks:

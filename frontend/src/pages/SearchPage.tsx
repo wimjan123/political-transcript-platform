@@ -13,6 +13,7 @@ import LanguageSelector, { SUPPORTED_LANGUAGES } from '../components/LanguageSel
 import { SearchResultsSkeleton } from '../components/SkeletonLoader';
 import VirtualizedSearchResults from '../components/VirtualizedSearchResults';
 import type { SearchResponse, SearchParams, FilterState, TranscriptSegment } from '../types';
+import SearchEngineStatus from '../components/SearchEngineStatus';
 
 export default function SearchPage() {
   const [searchParams] = useSearchParams();
@@ -64,9 +65,8 @@ export default function SearchPage() {
   const [isExporting, setIsExporting] = useState(false);
   const [expandedSegments, setExpandedSegments] = useState<Set<number>>(new Set());
   
-  // Use Meilisearch as default (improved search experience)
-  // Backend selector hidden as Meilisearch provides superior search capabilities
-  const [searchEngine] = useState<'postgres' | 'meili'>('meili');
+  // Engine selection for unified search
+  const [forceEngine, setForceEngine] = useState<'elasticsearch' | 'meilisearch' | 'auto'>('auto');
   const [meiliMode, setMeiliMode] = useState<'lexical' | 'hybrid' | 'semantic'>((searchParams.get('mode') as any) || 'hybrid');
   const [meiliIndex, setMeiliIndex] = useState<'segments' | 'events'>((searchParams.get('index') as any) || 'segments');
   const [selectedLanguage, setSelectedLanguage] = useState<string>(searchParams.get('language') || 'auto');
@@ -119,7 +119,7 @@ export default function SearchPage() {
       search_type: filters.searchType,
       sort_by: filters.sortBy,
       sort_order: filters.sortOrder,
-      engine: searchEngine,
+      engine: forceEngine !== 'auto' ? forceEngine : undefined,
       mode: meiliMode,
       index: meiliIndex,
       similarity_threshold: filters.similarityThreshold !== '' ? Number(filters.similarityThreshold) : undefined,
@@ -127,7 +127,7 @@ export default function SearchPage() {
       ...mappedFilters,
     };
   }, [
-    debouncedQuery, currentPage, pageSize, filters, searchEngine, meiliMode, 
+    debouncedQuery, currentPage, pageSize, filters, forceEngine, meiliMode, 
     meiliIndex, selectedLanguage
   ]);
 
@@ -198,6 +198,24 @@ export default function SearchPage() {
   const resultsSummary = useMemo(() => {
     if (!searchResults) return '';
     return `${searchResults.total.toLocaleString()} results for "${searchResults.query}"`;
+  }, [searchResults]);
+
+  // Memoize engine display for performance
+  const engineDisplay = useMemo(() => {
+    if (!searchResults?.engine) return null;
+    const engineName = searchResults.engine === 'elasticsearch' ? 'Elasticsearch' : 'Meilisearch';
+    const engineIcon = searchResults.engine === 'elasticsearch' ? '🔍' : '⚡';
+    const engineColor = searchResults.engine === 'elasticsearch' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800';
+    
+    return (
+      <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${engineColor}`}>
+        <span className="mr-1">{engineIcon}</span>
+        {engineName}
+        {searchResults.took && (
+          <span className="ml-1 opacity-75">• {searchResults.took}ms</span>
+        )}
+      </span>
+    );
   }, [searchResults]);
 
   // Memoize pagination display for performance
@@ -382,8 +400,23 @@ export default function SearchPage() {
               </div>
             </div>
 
-            {/* Search Mode Configuration */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Search Engine & Mode Configuration */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label className="label">Search Engine</label>
+                <select
+                  value={forceEngine}
+                  onChange={(e) => setForceEngine(e.target.value as any)}
+                  className="input"
+                >
+                  <option value="auto">Auto (Elastic → Meili)</option>
+                  <option value="elasticsearch">Elasticsearch Only</option>
+                  <option value="meilisearch">Meilisearch Only</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">
+                  Auto mode tries Elasticsearch first, falls back to Meilisearch
+                </p>
+              </div>
               <div>
                 <label className="label">Search Mode</label>
                 <select
@@ -410,11 +443,8 @@ export default function SearchPage() {
                   <option value="events">Events</option>
                 </select>
               </div>
-              <div className="text-xs text-gray-500 pt-7 dark:text-gray-400">
-                <div className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 rounded-full">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
-                  Powered by Meilisearch
-                </div>
+              <div className="pt-7">
+                <SearchEngineStatus compact={true} showActions={false} />
               </div>
             </div>
 
@@ -865,6 +895,11 @@ export default function SearchPage() {
                   <span className="ml-2 inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
                     {searchTypeDisplay}
                   </span>
+                  {engineDisplay && (
+                    <span className="ml-2">
+                      {engineDisplay}
+                    </span>
+                  )}
                   {paginationDisplay && (
                     <span>
                       {' '}{paginationDisplay}

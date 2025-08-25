@@ -103,9 +103,9 @@ export const useSimilarSegments = (
  * Custom hook that automatically selects the appropriate search method
  * based on search parameters and provides unified interface
  */
-export const useSmartSearch = (
+export const useUnifiedSearch = (
   params: SearchParams & {
-    engine?: 'postgres' | 'meili';
+    engine?: string;
     mode?: 'lexical' | 'hybrid' | 'semantic';
     index?: 'segments' | 'events';
     similarity_threshold?: number;
@@ -113,27 +113,29 @@ export const useSmartSearch = (
   },
   enabled: boolean = true
 ) => {
-  const { engine = 'postgres', mode = 'lexical', ...searchParams } = params;
+  return useQuery({
+    queryKey: ['search', 'unified', params],
+    queryFn: () => searchAPI.unifiedSearch(params),
+    enabled: enabled && !!params.q?.trim(),
+    placeholderData: keepPreviousData,
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+};
 
-  // Use different hooks based on engine and search type
-  const postgresQuery = useSearch(searchParams, enabled && engine === 'postgres' && params.search_type !== 'semantic');
-  const semanticQuery = useSemanticSearch(
-    { ...searchParams, similarity_threshold: params.similarity_threshold }, 
-    enabled && engine === 'postgres' && params.search_type === 'semantic'
-  );
-  const meiliQuery = useMeilisearch(
-    { ...searchParams, mode, index: params.index, locales: params.locales },
-    enabled && engine === 'meili'
-  );
-
-  // Return the active query based on current settings
-  if (engine === 'meili') {
-    return meiliQuery;
-  } else if (params.search_type === 'semantic') {
-    return semanticQuery;
-  } else {
-    return postgresQuery;
-  }
+export const useSmartSearch = (
+  params: SearchParams & {
+    engine?: string;
+    mode?: 'lexical' | 'hybrid' | 'semantic';
+    index?: 'segments' | 'events';
+    similarity_threshold?: number;
+    locales?: string[];
+  },
+  enabled: boolean = true
+) => {
+  // Use unified search for dual-engine support
+  return useUnifiedSearch(params, enabled);
 };
 
 export default useSearch;

@@ -158,6 +158,9 @@ export interface SearchResponse {
   total_pages: number;
   query: string;
   filters: SearchFilters;
+  engine?: string; // Which search engine was used
+  took?: number;   // Search time in milliseconds
+  max_score?: number; // Maximum relevance score
 }
 
 export interface SearchParams {

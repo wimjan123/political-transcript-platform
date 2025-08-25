@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     # API settings
     API_HOST: str = "0.0.0.0"
     API_PORT: int = 8000
-    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000"]
+    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000", "*"]
     
     # Data settings
     HTML_DATA_DIR: str = "/root/polibase/out/html"
@@ -40,10 +40,17 @@ class Settings(BaseSettings):
     MAX_SEARCH_RESULTS: int = 1000000
     DEFAULT_PAGE_SIZE: int = 25
     
+    # Search engine selection
+    PRIMARY_SEARCH_ENGINE: str = "elasticsearch"  # elasticsearch or meilisearch
+    FALLBACK_SEARCH_ENGINE: str = "meilisearch"   # elasticsearch or meilisearch
+    SEARCH_ENGINE_TIMEOUT: int = 5  # seconds before fallback
+    
     # Elasticsearch settings
     ELASTICSEARCH_URL: str = "http://localhost:9200"
     ELASTICSEARCH_INDEX: str = "transcript_segments"
     ELASTICSEARCH_TIMEOUT: int = 30
+    ELASTICSEARCH_USERNAME: str = ""
+    ELASTICSEARCH_PASSWORD: str = ""
 
     # Meilisearch settings
     MEILI_HOST: str = "http://localhost:7700"
