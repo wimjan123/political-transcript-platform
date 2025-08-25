@@ -102,6 +102,12 @@ export interface TranscriptSegment {
   stresslens_score?: number | null;
   stresslens_rank?: number | null;
   
+  // Emotion Analysis
+  emotion_label?: string | null;
+  emotion_intensity?: number | null;
+  heat_score?: number | null;
+  heat_components?: { [key: string]: number } | null;
+  
   // Content Moderation Flags
   moderation_harassment_flag?: boolean;
   moderation_hate_flag?: boolean;

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { playlist } from '../services/playlist';
 import { formatTimestamp, getSentimentColor, getSentimentLabel, formatDate } from '../services/api';
+import { EmotionSummary } from './EmotionIndicators';
 import type { TranscriptSegment } from '../types';
 
 interface SearchSegmentCardProps {

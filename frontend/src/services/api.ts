@@ -584,6 +584,96 @@ export const getReadabilityGrade = (score?: number): string => {
   return 'College';
 };
 
+export const getEmotionColor = (emotion?: string | null): string => {
+  if (!emotion) return 'text-gray-500 dark:text-gray-400';
+  
+  const emotionColors: { [key: string]: string } = {
+    // Positive emotions
+    'joy': 'text-yellow-600 dark:text-yellow-400',
+    'happy': 'text-yellow-600 dark:text-yellow-400',
+    'excitement': 'text-orange-500 dark:text-orange-400',
+    'hope': 'text-blue-500 dark:text-blue-400',
+    'optimistic': 'text-green-500 dark:text-green-400',
+    'confident': 'text-indigo-600 dark:text-indigo-400',
+    
+    // Negative emotions
+    'anger': 'text-red-600 dark:text-red-400',
+    'angry': 'text-red-600 dark:text-red-400',
+    'rage': 'text-red-700 dark:text-red-500',
+    'fear': 'text-purple-600 dark:text-purple-400',
+    'worried': 'text-purple-500 dark:text-purple-400',
+    'sadness': 'text-blue-700 dark:text-blue-500',
+    'sad': 'text-blue-700 dark:text-blue-500',
+    'frustrated': 'text-orange-700 dark:text-orange-500',
+    'disappointed': 'text-gray-600 dark:text-gray-400',
+    'concerned': 'text-amber-600 dark:text-amber-400',
+    
+    // Neutral emotions
+    'neutral': 'text-gray-600 dark:text-gray-300',
+    'calm': 'text-blue-400 dark:text-blue-300',
+    'serious': 'text-gray-700 dark:text-gray-200',
+    'determined': 'text-indigo-700 dark:text-indigo-300'
+  };
+  
+  const normalizedEmotion = emotion.toLowerCase();
+  return emotionColors[normalizedEmotion] || 'text-gray-600 dark:text-gray-300';
+};
+
+export const getEmotionBgColor = (emotion?: string | null): string => {
+  if (!emotion) return 'bg-gray-100 text-gray-800';
+  
+  const emotionBgColors: { [key: string]: string } = {
+    // Positive emotions
+    'joy': 'bg-yellow-100 text-yellow-800',
+    'happy': 'bg-yellow-100 text-yellow-800',
+    'excitement': 'bg-orange-100 text-orange-800',
+    'hope': 'bg-blue-100 text-blue-800',
+    'optimistic': 'bg-green-100 text-green-800',
+    'confident': 'bg-indigo-100 text-indigo-800',
+    
+    // Negative emotions
+    'anger': 'bg-red-100 text-red-800',
+    'angry': 'bg-red-100 text-red-800',
+    'rage': 'bg-red-200 text-red-900',
+    'fear': 'bg-purple-100 text-purple-800',
+    'worried': 'bg-purple-100 text-purple-800',
+    'sadness': 'bg-blue-100 text-blue-800',
+    'sad': 'bg-blue-100 text-blue-800',
+    'frustrated': 'bg-orange-100 text-orange-800',
+    'disappointed': 'bg-gray-100 text-gray-800',
+    'concerned': 'bg-amber-100 text-amber-800',
+    
+    // Neutral emotions
+    'neutral': 'bg-gray-100 text-gray-800',
+    'calm': 'bg-blue-50 text-blue-700',
+    'serious': 'bg-gray-100 text-gray-800',
+    'determined': 'bg-indigo-100 text-indigo-800'
+  };
+  
+  const normalizedEmotion = emotion.toLowerCase();
+  return emotionBgColors[normalizedEmotion] || 'bg-gray-100 text-gray-800';
+};
+
+export const getHeatColor = (score?: number | null): string => {
+  if (typeof score !== 'number') return 'text-gray-500 dark:text-gray-400';
+  
+  if (score >= 0.8) return 'text-red-700 dark:text-red-400';
+  if (score >= 0.6) return 'text-red-600 dark:text-red-400';
+  if (score >= 0.4) return 'text-orange-600 dark:text-orange-400';
+  if (score >= 0.2) return 'text-yellow-600 dark:text-yellow-400';
+  return 'text-green-600 dark:text-green-400';
+};
+
+export const getHeatLabel = (score?: number | null): string => {
+  if (typeof score !== 'number') return 'Unknown';
+  
+  if (score >= 0.8) return 'Very High';
+  if (score >= 0.6) return 'High';
+  if (score >= 0.4) return 'Medium';
+  if (score >= 0.2) return 'Low';
+  return 'Very Low';
+};
+
 // Ingest API
 export const ingestAPI = {
   // Get YouTube video info
