@@ -59,6 +59,7 @@ async def list_segments(
                 "video_seconds": segment.video_seconds,
                 "word_count": segment.word_count,
                 "char_count": segment.char_count,
+                "dataset": segment.video.dataset if segment.video else None,
                 "sentiment_vader_score": segment.sentiment_vader_score,
                 "sentiment_harvard_score": segment.sentiment_harvard_score,
                 "sentiment_loughran_score": segment.sentiment_loughran_score,

@@ -387,6 +387,9 @@ class SegmentOut(BaseModel):
     word_count: int
     char_count: int
     
+    # Dataset information
+    dataset: Optional[str]
+    
     # Sentiment Analysis (with aliases for consistency)
     sentiment_vader_score: Optional[float] = Field(None, alias="sentiment_vader")
     sentiment_harvard_score: Optional[float] = Field(None, alias="sentiment_harvard_iv")
