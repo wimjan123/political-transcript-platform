@@ -209,11 +209,11 @@ const DatabaseStatusPage: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'running': return 'text-blue-600 bg-blue-50';
-      case 'completed': return 'text-green-600 bg-green-50';
-      case 'failed': return 'text-red-600 bg-red-50';
-      case 'idle': return 'text-gray-600 bg-gray-50';
-      default: return 'text-gray-600 bg-gray-50';
+      case 'running': return 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30';
+      case 'completed': return 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30';
+      case 'failed': return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30';
+      case 'idle': return 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50';
+      default: return 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50';
     }
   };
 
@@ -318,7 +318,7 @@ const DatabaseStatusPage: React.FC = () => {
         )}
 
         {/* Database Controls */}
-        <div className="bg-white shadow-lg rounded-xl mb-8 border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl mb-8 border border-gray-100 dark:border-gray-700">
           <div className="px-4 sm:px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-xl border-b border-gray-100 dark:from-gray-800 dark:to-gray-800 dark:border-gray-700">
             <h2 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center dark:text-gray-100">
               <div className="bg-blue-100 p-2 rounded-lg mr-3">
@@ -333,8 +333,8 @@ const DatabaseStatusPage: React.FC = () => {
               {/* Unified Import Controls */}
               <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 sm:p-5 rounded-xl border border-green-100 dark:from-green-900/20 dark:to-emerald-900/20 dark:border-green-900/30">
                 <div className="flex items-center mb-4">
-                  <div className="bg-green-100 p-2 rounded-lg mr-3">
-                    <Upload className="h-5 w-5 text-green-600" />
+                  <div className="bg-green-100 dark:bg-green-900/50 p-2 rounded-lg mr-3">
+                    <Upload className="h-5 w-5 text-green-600 dark:text-green-400" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-gray-100">Data Import</h3>
@@ -358,14 +358,14 @@ const DatabaseStatusPage: React.FC = () => {
                     <button
                       onClick={() => handleStartImport('html', false)}
                       disabled={actionLoading === 'import' || importStatus?.status === 'running'}
-                      className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
+                      className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-600 hover:bg-gray-50 dark:hover:bg-gray-500 border border-gray-300 dark:border-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
                     >
                       HTML Only
                     </button>
                     <button
                       onClick={() => handleStartImport('vlos', false)}
                       disabled={actionLoading === 'import' || importStatus?.status === 'running'}
-                      className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
+                      className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-600 hover:bg-gray-50 dark:hover:bg-gray-500 border border-gray-300 dark:border-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
                     >
                       Tweede Kamer Only
                     </button>
@@ -373,7 +373,7 @@ const DatabaseStatusPage: React.FC = () => {
                   <button
                     onClick={() => handleStartImport('both', true)}
                     disabled={actionLoading === 'import' || importStatus?.status === 'running'}
-                    className="w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
+                    className="w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-600 hover:bg-gray-50 dark:hover:bg-gray-500 border border-gray-300 dark:border-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Force Reimport All
@@ -398,8 +398,8 @@ const DatabaseStatusPage: React.FC = () => {
               {/* Tweede Kamer Management */}
               <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-4 sm:p-5 rounded-xl border border-indigo-100 dark:from-indigo-900/20 dark:to-blue-900/20 dark:border-indigo-900/30">
                 <div className="flex items-center mb-4">
-                  <div className="bg-indigo-100 p-2 rounded-lg mr-3">
-                    <FileText className="h-5 w-5 text-indigo-600" />
+                  <div className="bg-indigo-100 dark:bg-indigo-900/50 p-2 rounded-lg mr-3">
+                    <FileText className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-gray-100">Tweede Kamer Management</h3>
@@ -425,8 +425,8 @@ const DatabaseStatusPage: React.FC = () => {
               {/* Embedding Controls */}
               <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-4 sm:p-5 rounded-xl border border-purple-100 dark:from-purple-900/20 dark:to-indigo-900/20 dark:border-purple-900/30">
                 <div className="flex items-center mb-4">
-                  <div className="bg-purple-100 p-2 rounded-lg mr-3">
-                    <Brain className="h-5 w-5 text-purple-600" />
+                  <div className="bg-purple-100 dark:bg-purple-900/50 p-2 rounded-lg mr-3">
+                    <Brain className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-gray-100">Embeddings</h3>
@@ -449,7 +449,7 @@ const DatabaseStatusPage: React.FC = () => {
                   <button
                     onClick={() => handleStartEmbeddings(true)}
                     disabled={actionLoading === 'embeddings'}
-                    className="w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
+                    className="w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-600 hover:bg-gray-50 dark:hover:bg-gray-500 border border-gray-300 dark:border-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Regenerate All
@@ -458,36 +458,36 @@ const DatabaseStatusPage: React.FC = () => {
               </div>
 
               {/* Status Summary */}
-              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-4 sm:p-5 rounded-xl border border-blue-100 md:col-span-2 lg:col-span-1">
+              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 p-4 sm:p-5 rounded-xl border border-blue-100 dark:border-blue-900/30 md:col-span-2 lg:col-span-1 lg:row-start-1 lg:col-start-3">
                 <div className="flex items-center mb-4">
-                  <div className="bg-blue-100 p-2 rounded-lg mr-3">
-                    <BarChart3 className="h-5 w-5 text-blue-600" />
+                  <div className="bg-blue-100 dark:bg-blue-900/50 p-2 rounded-lg mr-3">
+                    <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">Quick Stats</h3>
-                    <p className="text-xs text-gray-600">Database overview</p>
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">Quick Stats</h3>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Database overview</p>
                   </div>
                 </div>
                 <div className="space-y-3 text-sm">
                   {databaseStats && (
                     <>
-                      <div className="flex justify-between items-center p-2 bg-white rounded-lg border border-blue-100">
-                        <span className="text-gray-600">Videos</span>
+                      <div className="flex justify-between items-center p-2 bg-white dark:bg-gray-700 rounded-lg border border-blue-100 dark:border-blue-800">
+                        <span className="text-gray-600 dark:text-gray-300">Videos</span>
                         <span className="font-semibold text-blue-600">{databaseStats.total_videos.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between items-center p-2 bg-white rounded-lg border border-blue-100">
-                        <span className="text-gray-600">Segments</span>
+                      <div className="flex justify-between items-center p-2 bg-white dark:bg-gray-700 rounded-lg border border-blue-100 dark:border-blue-800">
+                        <span className="text-gray-600 dark:text-gray-300">Segments</span>
                         <span className="font-semibold text-blue-600">{databaseStats.total_segments.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between items-center p-2 bg-white rounded-lg border border-blue-100">
-                        <span className="text-gray-600">Speakers</span>
+                      <div className="flex justify-between items-center p-2 bg-white dark:bg-gray-700 rounded-lg border border-blue-100 dark:border-blue-800">
+                        <span className="text-gray-600 dark:text-gray-300">Speakers</span>
                         <span className="font-semibold text-blue-600">{databaseStats.total_speakers.toLocaleString()}</span>
                       </div>
                     </>
                   )}
                   {embeddingStatus && (
-                    <div className="flex justify-between items-center p-2 bg-white rounded-lg border border-purple-100">
-                      <span className="text-gray-600">Embeddings</span>
+                    <div className="flex justify-between items-center p-2 bg-white dark:bg-gray-700 rounded-lg border border-purple-100 dark:border-purple-800">
+                      <span className="text-gray-600 dark:text-gray-300">Embeddings</span>
                       <span className="font-semibold text-purple-600">{embeddingStatus.completion_percentage.toFixed(1)}%</span>
                     </div>
                   )}
@@ -500,13 +500,13 @@ const DatabaseStatusPage: React.FC = () => {
         <div className="grid grid-cols-1 gap-6 lg:gap-8">
           {/* Import Status */}
           {importStatus && (
-            <div className="bg-white shadow rounded-lg dark:bg-gray-800">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-medium text-gray-900 flex items-center">
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 flex items-center">
                   {getStatusIcon(importStatus.status)}
                   <span className="ml-2">Import Status</span>
                   {importStatus.job_type && (
-                    <span className="ml-3 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                    <span className="ml-3 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                       {importStatus.job_type}
                     </span>
                   )}
@@ -524,30 +524,30 @@ const DatabaseStatusPage: React.FC = () => {
                   {/* Progress Bar */}
                   {importStatus.status === 'running' && (
                     <div>
-                      <div className="flex justify-between text-sm text-gray-600 mb-1">
+                      <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300 mb-1">
                         <span>Progress</span>
                         <span>{importStatus.progress.toFixed(1)}%</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-2">
                         <div
-                          className="bg-blue-600 h-3 rounded-full transition-all duration-500 flex items-center justify-end pr-2"
+                          className="bg-blue-600 dark:bg-blue-500 h-3 rounded-full transition-all duration-500 flex items-center justify-end pr-2"
                           style={{ width: `${Math.max(importStatus.progress, 2)}%` }}
                         >
                           {importStatus.progress > 10 && (
-                            <div className="w-2 h-2 bg-blue-200 rounded-full animate-pulse"></div>
+                            <div className="w-2 h-2 bg-blue-200 dark:bg-blue-300 rounded-full animate-pulse"></div>
                           )}
                         </div>
                       </div>
                       {importStatus.total_files > 1000 && (
-                        <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded mb-2">
+                        <div className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-2 rounded mb-2">>
                           ⚠️ Large import in progress ({importStatus.total_files.toLocaleString()} files). 
                           This may take several hours to complete. The process will continue even if you close this page.
                         </div>
                       )}
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
                         Processing: {importStatus.processed_files.toLocaleString()} of {importStatus.total_files.toLocaleString()} files
                         {importStatus.job_type && (
-                          <span className="ml-2 px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                          <span className="ml-2 px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded text-xs">
                             {importStatus.job_type === 'vlos_xml_import' ? 'Tweede Kamer' : 'HTML'}
                           </span>
                         )}
@@ -557,33 +557,33 @@ const DatabaseStatusPage: React.FC = () => {
 
                   {/* File Statistics */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <div className="text-2xl font-bold text-gray-900">
+                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
+                      <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                         {importStatus.total_files.toLocaleString()}
                       </div>
-                      <div className="text-sm text-gray-600">Total Files</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">Total Files</div>
                     </div>
-                    <div className="bg-green-50 rounded-lg p-3">
-                      <div className="text-2xl font-bold text-green-600">
+                    <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                         {importStatus.processed_files.toLocaleString()}
                       </div>
-                      <div className="text-sm text-gray-600">Processed</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">Processed</div>
                     </div>
-                    <div className="bg-red-50 rounded-lg p-3">
-                      <div className="text-2xl font-bold text-red-600">
+                    <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+                      <div className="text-2xl font-bold text-red-600 dark:text-red-400">
                         {importStatus.failed_files.toLocaleString()}
                       </div>
-                      <div className="text-sm text-gray-600">Failed</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">Failed</div>
                     </div>
                   </div>
 
                   {/* Current File */}
                   {importStatus.current_file && (
                     <div>
-                      <h3 className="text-sm font-medium text-gray-700 mb-2">
+                      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Currently Processing:
                       </h3>
-                      <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg break-all">
+                      <p className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg break-all">
                         {importStatus.current_file.split('/').pop()}
                       </p>
                     </div>
@@ -592,13 +592,13 @@ const DatabaseStatusPage: React.FC = () => {
                   {/* Errors */}
                   {importStatus.errors.length > 0 && (
                     <div>
-                      <h3 className="text-sm font-medium text-red-700 mb-2 flex items-center">
+                      <h3 className="text-sm font-medium text-red-700 dark:text-red-400 mb-2 flex items-center">
                         <AlertTriangle className="h-4 w-4 mr-1" />
                         Recent Errors:
                       </h3>
                       <div className="max-h-32 overflow-y-auto">
                         {importStatus.errors.slice(-5).map((error, index) => (
-                          <p key={index} className="text-xs text-red-600 bg-red-50 p-2 rounded mb-1">
+                          <p key={index} className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 rounded mb-1">
                             {error}
                           </p>
                         ))}
@@ -612,10 +612,10 @@ const DatabaseStatusPage: React.FC = () => {
 
           {/* Semantic Search Embeddings Status */}
           {embeddingStatus && (
-            <div className="bg-white shadow rounded-lg">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-medium text-gray-900 flex items-center">
-                  <Brain className="h-5 w-5 mr-2 text-purple-600" />
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 flex items-center">
+                  <Brain className="h-5 w-5 mr-2 text-purple-600 dark:text-purple-400" />
                   Semantic Search Embeddings
                 </h2>
               </div>
@@ -624,31 +624,31 @@ const DatabaseStatusPage: React.FC = () => {
                   {/* Progress Section */}
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-gray-700">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         Embedding Generation Progress
                       </span>
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                         embeddingStatus.completion_percentage >= 100 
-                          ? 'text-green-600 bg-green-50'
+                          ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30'
                           : embeddingStatus.completion_percentage > 0
-                          ? 'text-blue-600 bg-blue-50'
-                          : 'text-gray-600 bg-gray-50'
+                          ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30'
+                          : 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50'
                       }`}>
                         {embeddingStatus.completion_percentage >= 100 ? 'Complete' : 
                          embeddingStatus.completion_percentage > 0 ? 'Generating...' : 'Not Started'}
                       </span>
                     </div>
                     
-                    <div className="flex justify-between text-sm text-gray-600 mb-1">
+                    <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300 mb-1">
                       <span>Progress</span>
                       <span>{embeddingStatus.completion_percentage.toFixed(1)}%</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
                       <div
                         className={`h-3 rounded-full transition-all duration-300 ${
                           embeddingStatus.completion_percentage >= 100 
-                            ? 'bg-green-500' 
-                            : 'bg-purple-600'
+                            ? 'bg-green-500 dark:bg-green-400' 
+                            : 'bg-purple-600 dark:bg-purple-500'
                         }`}
                         style={{ width: `${Math.min(embeddingStatus.completion_percentage, 100)}%` }}
                       />
@@ -657,42 +657,42 @@ const DatabaseStatusPage: React.FC = () => {
 
                   {/* Statistics */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <div className="text-xl font-bold text-gray-900">
+                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
+                      <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
                         {embeddingStatus.total_segments.toLocaleString()}
                       </div>
-                      <div className="text-xs text-gray-600">Total Segments</div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400">Total Segments</div>
                     </div>
-                    <div className="bg-purple-50 rounded-lg p-3">
-                      <div className="text-xl font-bold text-purple-600">
+                    <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
+                      <div className="text-xl font-bold text-purple-600 dark:text-purple-400">
                         {embeddingStatus.segments_with_embeddings.toLocaleString()}
                       </div>
-                      <div className="text-xs text-gray-600">With Embeddings</div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400">With Embeddings</div>
                     </div>
-                    <div className="bg-orange-50 rounded-lg p-3">
-                      <div className="text-xl font-bold text-orange-600">
+                    <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3">
+                      <div className="text-xl font-bold text-orange-600 dark:text-orange-400">
                         {embeddingStatus.segments_without_embeddings.toLocaleString()}
                       </div>
-                      <div className="text-xs text-gray-600">Remaining</div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400">Remaining</div>
                     </div>
                   </div>
 
                   {/* Model Information */}
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h3 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
                       <Zap className="h-4 w-4 mr-1" />
                       Model Information
                     </h3>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <span className="text-gray-600">Model:</span>
-                        <span className="ml-2 font-mono text-purple-600">
+                        <span className="text-gray-600 dark:text-gray-400">Model:</span>
+                        <span className="ml-2 font-mono text-purple-600 dark:text-purple-400">
                           {embeddingStatus.embedding_model}
                         </span>
                       </div>
                       <div>
-                        <span className="text-gray-600">Dimensions:</span>
-                        <span className="ml-2 font-mono text-purple-600">
+                        <span className="text-gray-600 dark:text-gray-400">Dimensions:</span>
+                        <span className="ml-2 font-mono text-purple-600 dark:text-purple-400">
                           {embeddingStatus.embedding_dimensions}
                         </span>
                       </div>
@@ -701,16 +701,16 @@ const DatabaseStatusPage: React.FC = () => {
 
                   {/* Last Updated */}
                   {embeddingStatus.latest_generation_time && (
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
                       Last updated: {new Date(embeddingStatus.latest_generation_time).toLocaleString()}
                     </div>
                   )}
 
                   {/* Status Message */}
-                  <div className="bg-blue-50 border-l-4 border-blue-400 p-3">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 dark:border-blue-500 p-3">
                     <div className="flex">
                       <div className="ml-3">
-                        <p className="text-sm text-blue-700">
+                        <p className="text-sm text-blue-700 dark:text-blue-300">
                           {embeddingStatus.completion_percentage >= 100 
                             ? '✅ Semantic search is fully operational with all segments embedded.'
                             : embeddingStatus.completion_percentage > 0 
@@ -727,77 +727,77 @@ const DatabaseStatusPage: React.FC = () => {
           )}
         </div>
 
-        {/* Database Statistics and other sections */}
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-          {/* Database Statistics */}
-          {databaseStats && (
-            <div className="bg-white shadow rounded-lg">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-medium text-gray-900 flex items-center">
+        {/* Database Statistics and Top Statistics - Unified Layout */}
+        {databaseStats && (
+          <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
+            {/* Database Statistics */}
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg xl:col-span-2">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 flex items-center">
                   <BarChart3 className="h-5 w-5 mr-2" />
                   Database Statistics
                 </h2>
               </div>
               <div className="p-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* Videos */}
-                  <div className="bg-blue-50 rounded-lg p-4 flex items-center">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 flex items-center min-h-[100px]">
                     <div className="flex-shrink-0">
-                      <Video className="h-8 w-8 text-blue-600" />
+                      <Video className="h-8 w-8 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <div className="ml-3">
-                      <div className="text-2xl font-bold text-blue-900">
+                    <div className="ml-3 min-w-0 flex-1">
+                      <div className="text-xl lg:text-2xl font-bold text-blue-900 dark:text-blue-100 truncate">
                         {databaseStats.total_videos.toLocaleString()}
                       </div>
-                      <div className="text-sm text-blue-700">Videos</div>
+                      <div className="text-sm text-blue-700 dark:text-blue-300">Videos</div>
                     </div>
                   </div>
 
                   {/* Segments */}
-                  <div className="bg-green-50 rounded-lg p-4 flex items-center">
+                  <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 flex items-center min-h-[100px]">
                     <div className="flex-shrink-0">
-                      <BarChart3 className="h-8 w-8 text-green-600" />
+                      <BarChart3 className="h-8 w-8 text-green-600 dark:text-green-400" />
                     </div>
-                    <div className="ml-3">
-                      <div className="text-2xl font-bold text-green-900">
+                    <div className="ml-3 min-w-0 flex-1">
+                      <div className="text-xl lg:text-2xl font-bold text-green-900 dark:text-green-100 truncate">
                         {databaseStats.total_segments.toLocaleString()}
                       </div>
-                      <div className="text-sm text-green-700">Segments</div>
+                      <div className="text-sm text-green-700 dark:text-green-300">Segments</div>
                     </div>
                   </div>
 
                   {/* Speakers */}
-                  <div className="bg-purple-50 rounded-lg p-4 flex items-center">
+                  <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 flex items-center min-h-[100px]">
                     <div className="flex-shrink-0">
-                      <Users className="h-8 w-8 text-purple-600" />
+                      <Users className="h-8 w-8 text-purple-600 dark:text-purple-400" />
                     </div>
-                    <div className="ml-3">
-                      <div className="text-2xl font-bold text-purple-900">
+                    <div className="ml-3 min-w-0 flex-1">
+                      <div className="text-xl lg:text-2xl font-bold text-purple-900 dark:text-purple-100 truncate">
                         {databaseStats.total_speakers.toLocaleString()}
                       </div>
-                      <div className="text-sm text-purple-700">Speakers</div>
+                      <div className="text-sm text-purple-700 dark:text-purple-300">Speakers</div>
                     </div>
                   </div>
 
                   {/* Topics */}
-                  <div className="bg-orange-50 rounded-lg p-4 flex items-center">
+                  <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 flex items-center min-h-[100px]">
                     <div className="flex-shrink-0">
-                      <Tag className="h-8 w-8 text-orange-600" />
+                      <Tag className="h-8 w-8 text-orange-600 dark:text-orange-400" />
                     </div>
-                    <div className="ml-3">
-                      <div className="text-2xl font-bold text-orange-900">
+                    <div className="ml-3 min-w-0 flex-1">
+                      <div className="text-xl lg:text-2xl font-bold text-orange-900 dark:text-orange-100 truncate">
                         {databaseStats.total_topics.toLocaleString()}
                       </div>
-                      <div className="text-sm text-orange-700">Topics</div>
+                      <div className="text-sm text-orange-700 dark:text-orange-300">Topics</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Date Range */}
                 {databaseStats.date_range && (databaseStats.date_range.min_date || databaseStats.date_range.max_date) && (
-                  <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                    <h3 className="text-sm font-medium text-gray-700 mb-2">Data Coverage</h3>
-                    <div className="text-sm text-gray-600">
+                  <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Data Coverage</h3>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
                       {databaseStats.date_range.min_date && (
                         <div>
                           <strong>From:</strong> {new Date(databaseStats.date_range.min_date).toLocaleDateString()}
@@ -813,35 +813,30 @@ const DatabaseStatusPage: React.FC = () => {
                 )}
               </div>
             </div>
-          )}
-        </div>
 
-        {/* Top Statistics */}
-        {databaseStats && (
-          <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-            {/* Top Speakers */}
+            {/* Top Speakers - Now in same grid */}
             {databaseStats.top_speakers && databaseStats.top_speakers.length > 0 && (
-              <div className="bg-white shadow rounded-lg">
-                <div className="px-6 py-4 border-b border-gray-200">
-                  <h3 className="text-lg font-medium text-gray-900">Top Speakers</h3>
+              <div className="bg-white dark:bg-gray-800 shadow rounded-lg lg:col-span-1">
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Top Speakers</h3>
                 </div>
                 <div className="p-6">
                   <div className="space-y-3">
                     {databaseStats.top_speakers.slice(0, 5).map((speaker, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div>
-                          <div className="font-medium text-gray-900">{speaker.name}</div>
-                          <div className="text-sm text-gray-600">
+                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium text-gray-900 dark:text-gray-100 truncate">{speaker.name}</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
                             {speaker.segment_count.toLocaleString()} segments
                           </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right ml-4 flex-shrink-0">
                           <div className={`text-sm px-2 py-1 rounded ${
                             speaker.avg_sentiment > 0 
-                              ? 'bg-green-100 text-green-800' 
+                              ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
                               : speaker.avg_sentiment < 0 
-                              ? 'bg-red-100 text-red-800' 
-                              : 'bg-gray-100 text-gray-800'
+                              ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' 
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
                           }`}>
                             {speaker.avg_sentiment > 0 ? 'Positive' : speaker.avg_sentiment < 0 ? 'Negative' : 'Neutral'}
                           </div>
@@ -853,24 +848,24 @@ const DatabaseStatusPage: React.FC = () => {
               </div>
             )}
 
-            {/* Top Topics */}
+            {/* Top Topics - Now in same grid */}
             {databaseStats.top_topics && databaseStats.top_topics.length > 0 && (
-              <div className="bg-white shadow rounded-lg">
-                <div className="px-6 py-4 border-b border-gray-200">
-                  <h3 className="text-lg font-medium text-gray-900">Top Topics</h3>
+              <div className="bg-white dark:bg-gray-800 shadow rounded-lg lg:col-span-1 xl:col-span-1">
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Top Topics</h3>
                 </div>
                 <div className="p-6">
                   <div className="space-y-3">
                     {databaseStats.top_topics.slice(0, 5).map((topic, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div>
-                          <div className="font-medium text-gray-900">{topic.name}</div>
-                          <div className="text-sm text-gray-600">
+                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium text-gray-900 dark:text-gray-100 truncate">{topic.name}</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
                             {topic.frequency.toLocaleString()} occurrences
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-sm text-gray-600">
+                        <div className="text-right ml-4 flex-shrink-0">
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
                             Score: {topic.avg_score.toFixed(2)}
                           </div>
                         </div>

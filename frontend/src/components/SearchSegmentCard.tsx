@@ -186,7 +186,7 @@ const SearchSegmentCard = memo<SearchSegmentCardProps>(({
           <div className="flex flex-wrap gap-2 mb-3">
             {segment.segment_topics && segment.segment_topics.length > 0 && (
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 max-w-full truncate">
-                Top topic: {segment.segment_topics[0].topic.name}
+                Top topic: {(segment.segment_topics && segment.segment_topics[0]) ? segment.segment_topics[0].topic.name : 'Unknown'}
               </span>
             )}
             {typeof segment.moderation_overall_score === 'number' && segment.moderation_overall_score > 0 && (
@@ -203,9 +203,9 @@ const SearchSegmentCard = memo<SearchSegmentCardProps>(({
           </div>
 
           {/* Topics */}
-          {segment.segment_topics.length > 0 && (
+          {(segment.segment_topics || []).length > 0 && (
             <div className="flex flex-wrap gap-2 mb-3">
-              {segment.segment_topics.map((segmentTopic) => (
+              {(segment.segment_topics || []).map((segmentTopic) => (
                 <span 
                   key={segmentTopic.topic.id}
                   className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"

@@ -72,12 +72,30 @@ api.interceptors.response.use(
   }
 );
 
+// Helper function to ensure segment_topics is always an array
+const transformSegmentResponse = (segment: any): TranscriptSegment => {
+  return {
+    ...segment,
+    segment_topics: Array.isArray(segment.segment_topics) ? segment.segment_topics : [],
+    video: segment.video || undefined,
+    speaker: segment.speaker || undefined,
+  };
+};
+
+// Helper function to transform search response
+const transformSearchResponse = (response: SearchResponse): SearchResponse => {
+  return {
+    ...response,
+    results: response.results.map(transformSegmentResponse)
+  };
+};
+
 // Search API
 export const searchAPI = {
   // Search transcripts
   search: async (params: SearchParams): Promise<SearchResponse> => {
     const response = await api.get('/api/search/', { params });
-    return response.data;
+    return transformSearchResponse(response.data);
   },
 
   // Get search suggestions
@@ -104,7 +122,7 @@ export const searchAPI = {
   // Semantic search
   semanticSearch: async (params: SearchParams & { similarity_threshold?: number }): Promise<SearchResponse> => {
     const response = await api.get('/api/search/semantic', { params });
-    return response.data;
+    return transformSearchResponse(response.data);
   },
 
   // Meilisearch endpoint (lexical, hybrid, semantic)
@@ -119,7 +137,7 @@ export const searchAPI = {
     } & Record<string, any>
   ): Promise<SearchResponse> => {
     const response = await api.get('/api/search/meili', { params });
-    return response.data;
+    return transformSearchResponse(response.data);
   },
 
   // Generate embeddings
@@ -145,13 +163,13 @@ export const searchAPI = {
     const response = await api.get(`/api/search/meili/similar_segments/${segmentId}`, {
       params: { limit, index },
     });
-    return response.data;
+    return transformSearchResponse(response.data);
   },
 
   // Unified search with dual engine support
   unifiedSearch: async (params: SearchParams & { engine?: string }): Promise<SearchResponse> => {
     const response = await api.get('/api/search/', { params });
-    return response.data;
+    return transformSearchResponse(response.data);
   },
 
   // Get search engine status
