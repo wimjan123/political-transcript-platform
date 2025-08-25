@@ -7,6 +7,7 @@ from sqlalchemy import select, func, desc, asc, text, case
 from sqlalchemy.orm import selectinload
 from typing import Optional, List, Dict, Any
 from datetime import datetime, date, timedelta
+import logging
 
 from ..database import get_db
 from ..models import TranscriptSegment, Video, Speaker, Topic, SegmentTopic
@@ -14,7 +15,8 @@ from ..services.emotions_service import upsert_emotions, get_emotion_statistics
 from ..schemas import (
     AnalyticsStatsResponse, SentimentAnalyticsResponse, TopicAnalyticsResponse,
     ReadabilityAnalyticsResponse, ContentModerationAnalyticsResponse, DashboardAnalyticsResponse,
-    EmotionsIngestRequest, EmotionsIngestResult
+    EmotionsIngestRequest, EmotionsIngestResult,
+    SentimentIngestRequest, SentimentIngestResult
 )
 
 router = APIRouter()
@@ -620,3 +622,176 @@ async def get_emotion_stats(db: AsyncSession = Depends(get_db)):
     except Exception as e:
         logger.error(f"Error fetching emotion statistics: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Emotion stats error: {str(e)}")
+
+
+@router.post("/ingest-sentiment", response_model=SentimentIngestResult)
+async def ingest_sentiment(
+    payload: SentimentIngestRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Batch ingest 5-class sentiment annotations for transcript segments
+    
+    Accepts a batch of 5-class sentiment data items and updates the corresponding transcript
+    segments. Only processes segments from videos with dataset 'tweede_kamer'.
+    
+    - **items**: List of sentiment items (max 10,000 per batch)
+    - **segment_id**: Database ID of the transcript segment to update
+    - **sentiment_label**: 5-class sentiment label: Very Negative, Negative, Neutral, Positive, Very Positive
+    - **sentiment_vneg_prob**: Probability of Very Negative sentiment (0.0-1.0)
+    - **sentiment_neg_prob**: Probability of Negative sentiment (0.0-1.0)
+    - **sentiment_neu_prob**: Probability of Neutral sentiment (0.0-1.0)
+    - **sentiment_pos_prob**: Probability of Positive sentiment (0.0-1.0)
+    - **sentiment_vpos_prob**: Probability of Very Positive sentiment (0.0-1.0)
+    
+    Returns count of updated segments and any per-item errors.
+    """
+    try:
+        # Validate batch size
+        if len(payload.items) > 10000:
+            raise HTTPException(
+                status_code=400, 
+                detail="Batch size exceeds maximum of 10,000 items"
+            )
+        
+        # Process the batch
+        updated = 0
+        errors = []
+        
+        for item in payload.items:
+            try:
+                # Get the segment with video information
+                stmt = select(TranscriptSegment).options(
+                    selectinload(TranscriptSegment.video)
+                ).where(TranscriptSegment.id == item.segment_id)
+                
+                result = await db.execute(stmt)
+                segment = result.scalar_one_or_none()
+                
+                if not segment:
+                    errors.append({
+                        "segment_id": item.segment_id,
+                        "error": "Segment not found"
+                    })
+                    continue
+                
+                # Check if segment's video dataset is tweede_kamer
+                if not segment.video or segment.video.dataset != 'tweede_kamer':
+                    errors.append({
+                        "segment_id": item.segment_id,
+                        "error": f"Segment belongs to dataset '{segment.video.dataset if segment.video else 'unknown'}', expected 'tweede_kamer'"
+                    })
+                    continue
+                
+                # Update sentiment fields
+                segment.sentiment_label = item.sentiment_label
+                segment.sentiment_vneg_prob = item.sentiment_vneg_prob
+                segment.sentiment_neg_prob = item.sentiment_neg_prob
+                segment.sentiment_neu_prob = item.sentiment_neu_prob
+                segment.sentiment_pos_prob = item.sentiment_pos_prob
+                segment.sentiment_vpos_prob = item.sentiment_vpos_prob
+                
+                await db.flush()
+                updated += 1
+                
+            except Exception as e:
+                errors.append({
+                    "segment_id": item.segment_id,
+                    "error": str(e)
+                })
+        
+        # Commit changes
+        await db.commit()
+        
+        # Determine response status based on results
+        if errors and not updated:
+            # All items failed
+            return SentimentIngestResult(
+                updated=updated,
+                errors=errors,
+                message="All items failed to process",
+                status_code=400
+            )
+        elif errors:
+            # Partial success
+            return SentimentIngestResult(
+                updated=updated,
+                errors=errors,
+                message=f"Partially successful: {updated} updated, {len(errors)} errors",
+                status_code=207  # Multi-status
+            )
+        else:
+            # Complete success
+            return SentimentIngestResult(
+                updated=updated,
+                errors=errors,
+                message=f"Successfully updated {updated} segments",
+                status_code=200
+            )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in sentiment ingest: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Sentiment ingest error: {str(e)}")
+
+
+@router.post("/reset-sentiment")
+async def reset_sentiment(
+    dataset: str = Query(..., description="Dataset to reset sentiment for (e.g., 'tweede_kamer')"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Admin helper endpoint to reset 5-class sentiment fields for a specific dataset
+    
+    Sets all 6 sentiment fields (sentiment_label and 5 probability fields) to NULL
+    for all segments belonging to videos with the specified dataset.
+    """
+    try:
+        # Build update statement for segments in the specified dataset
+        stmt = (
+            select(TranscriptSegment.id)
+            .select_from(TranscriptSegment.join(Video))
+            .where(Video.dataset == dataset)
+        )
+        
+        result = await db.execute(stmt)
+        segment_ids = [row.id for row in result]
+        
+        if not segment_ids:
+            return {
+                "affected_count": 0,
+                "message": f"No segments found for dataset '{dataset}'",
+                "status_code": 200
+            }
+        
+        # Update all segments to reset sentiment fields
+        update_stmt = (
+            select(TranscriptSegment)
+            .where(TranscriptSegment.id.in_(segment_ids))
+        )
+        
+        result = await db.execute(update_stmt)
+        segments = result.scalars().all()
+        
+        affected_count = 0
+        for segment in segments:
+            segment.sentiment_label = None
+            segment.sentiment_vneg_prob = None
+            segment.sentiment_neg_prob = None
+            segment.sentiment_neu_prob = None
+            segment.sentiment_pos_prob = None
+            segment.sentiment_vpos_prob = None
+            affected_count += 1
+        
+        await db.commit()
+        
+        return {
+            "affected_count": affected_count,
+            "message": f"Successfully reset sentiment fields for {affected_count} segments in dataset '{dataset}'",
+            "status_code": 200
+        }
+    
+    except Exception as e:
+        logger.error(f"Error resetting sentiment for dataset {dataset}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Reset sentiment error: {str(e)}")

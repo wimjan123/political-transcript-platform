@@ -85,6 +85,14 @@ export interface TranscriptSegment {
   sentiment_vader_score?: number | null;
   sentiment_vader_label?: string;
   
+  // 5-Class Sentiment Analysis
+  sentiment_label?: string | null;
+  sentiment_vneg_prob?: number | null;
+  sentiment_neg_prob?: number | null;
+  sentiment_neu_prob?: number | null;
+  sentiment_pos_prob?: number | null;
+  sentiment_vpos_prob?: number | null;
+  
   // Content Moderation
   moderation_harassment?: number | null;
   moderation_hate?: number | null;
@@ -516,6 +524,9 @@ export interface FilterState {
   hasViolence: boolean;
   hasSexual: boolean;
   hasSelfharm: boolean;
+  
+  // 5-Class Sentiment Processing
+  processed: 'all' | 'processed' | 'unprocessed';
   
   searchType: 'fulltext' | 'exact' | 'fuzzy' | 'semantic';
   sortBy: 'relevance' | 'date' | 'speaker' | 'sentiment' | 'stresslens' | 'similarity';

@@ -23,6 +23,7 @@ async def list_segments(
     video_id: Optional[int] = Query(None, description="Filter by specific video ID"),
     dataset: Optional[str] = Query(None, description="Filter by dataset (trump, tweede_kamer)"),
     q: Optional[str] = Query(None, description="Search query in transcript text"),
+    processed: Optional[bool] = Query(None, description="Filter by 5-class sentiment processing status (true=processed, false=unprocessed)"),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -40,7 +41,8 @@ async def list_segments(
             speaker=speaker,
             video_id=video_id,
             dataset=dataset,
-            q=q
+            q=q,
+            processed=processed
         )
         
         # Convert to response format
@@ -63,6 +65,12 @@ async def list_segments(
                 "sentiment_vader_score": segment.sentiment_vader_score,
                 "sentiment_harvard_score": segment.sentiment_harvard_score,
                 "sentiment_loughran_score": segment.sentiment_loughran_score,
+                "sentiment_label": segment.sentiment_label,
+                "sentiment_vneg_prob": segment.sentiment_vneg_prob,
+                "sentiment_neg_prob": segment.sentiment_neg_prob,
+                "sentiment_neu_prob": segment.sentiment_neu_prob,
+                "sentiment_pos_prob": segment.sentiment_pos_prob,
+                "sentiment_vpos_prob": segment.sentiment_vpos_prob,
                 "emotion_label": segment.emotion_label,
                 "emotion_intensity": segment.emotion_intensity,
                 "heat_score": segment.heat_score,

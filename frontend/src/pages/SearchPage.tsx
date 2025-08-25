@@ -54,6 +54,9 @@ export default function SearchPage() {
     hasSexual: false,
     hasSelfharm: false,
     
+    // 5-Class Sentiment Processing
+    processed: 'all',
+    
     searchType: 'fulltext',
     sortBy: 'relevance',
     sortOrder: 'desc',
@@ -111,6 +114,11 @@ export default function SearchPage() {
     add('has_violence', filters.hasViolence ? true : undefined);
     add('has_sexual', filters.hasSexual ? true : undefined);
     add('has_selfharm', filters.hasSelfharm ? true : undefined);
+    
+    // 5-Class Sentiment Processing
+    if (filters.processed !== 'all') {
+      add('processed', filters.processed === 'processed' ? true : false);
+    }
 
     return {
       q: debouncedQuery,
@@ -312,6 +320,9 @@ export default function SearchPage() {
       hasViolence: false,
       hasSexual: false,
       hasSelfharm: false,
+      
+      // 5-Class Sentiment Processing
+      processed: 'all',
       
       searchType: 'fulltext',
       sortBy: 'relevance',
@@ -615,6 +626,23 @@ export default function SearchPage() {
                       <option value="negative">Negative</option>
                       <option value="neutral">Neutral</option>
                     </select>
+                  </div>
+
+                  {/* 5-Class Sentiment Processing */}
+                  <div>
+                    <label className="label">5-Class Sentiment</label>
+                    <select
+                      value={filters.processed}
+                      onChange={(e) => handleFilterChange('processed', e.target.value)}
+                      className="input"
+                    >
+                      <option value="all">All segments</option>
+                      <option value="processed">Processed only</option>
+                      <option value="unprocessed">Unprocessed only</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">
+                      Filter by 5-class sentiment analysis processing status
+                    </p>
                   </div>
                 </div>
 

@@ -106,6 +106,14 @@ class TranscriptSegmentResponse(BaseModel):
     sentiment_vader_score: Optional[float]
     sentiment_vader_label: Optional[str]
     
+    # 5-Class Sentiment Analysis
+    sentiment_label: Optional[str]
+    sentiment_vneg_prob: Optional[float]
+    sentiment_neg_prob: Optional[float]
+    sentiment_neu_prob: Optional[float]
+    sentiment_pos_prob: Optional[float]
+    sentiment_vpos_prob: Optional[float]
+    
     # Content Moderation
     moderation_harassment: Optional[float]
     moderation_hate: Optional[float]
@@ -395,6 +403,14 @@ class SegmentOut(BaseModel):
     sentiment_harvard_score: Optional[float] = Field(None, alias="sentiment_harvard_iv")
     sentiment_loughran_score: Optional[float] = Field(None, alias="sentiment_loughran_mcdonald")
     
+    # 5-Class Sentiment Analysis
+    sentiment_label: Optional[str]
+    sentiment_vneg_prob: Optional[float]
+    sentiment_neg_prob: Optional[float]
+    sentiment_neu_prob: Optional[float]
+    sentiment_pos_prob: Optional[float]
+    sentiment_vpos_prob: Optional[float]
+    
     # Emotion Analysis
     emotion_label: Optional[str]
     emotion_intensity: Optional[int]
@@ -431,6 +447,32 @@ class EmotionsIngestRequest(BaseModel):
 
 class EmotionsIngestResult(BaseModel):
     """Emotions ingest result schema"""
+    updated: int
+    errors: List[Dict[str, Any]] = []
+    message: str = "Success"
+    status_code: int = 200
+
+
+# 5-Class Sentiment Ingest Schemas
+class SentimentItemIn(BaseModel):
+    """Single sentiment item for batch ingest"""
+    segment_id: int
+    sentiment_label: str = Field(..., pattern="^(Very Negative|Negative|Neutral|Positive|Very Positive)$", 
+                                 description="5-class sentiment label")
+    sentiment_vneg_prob: float = Field(..., ge=0.0, le=1.0, description="Very Negative probability")
+    sentiment_neg_prob: float = Field(..., ge=0.0, le=1.0, description="Negative probability")
+    sentiment_neu_prob: float = Field(..., ge=0.0, le=1.0, description="Neutral probability")
+    sentiment_pos_prob: float = Field(..., ge=0.0, le=1.0, description="Positive probability")
+    sentiment_vpos_prob: float = Field(..., ge=0.0, le=1.0, description="Very Positive probability")
+
+
+class SentimentIngestRequest(BaseModel):
+    """Batch 5-class sentiment ingest request schema"""
+    items: List[SentimentItemIn] = Field(..., min_items=1, max_items=10000, description="Batch of sentiment items")
+
+
+class SentimentIngestResult(BaseModel):
+    """5-class sentiment ingest result schema"""
     updated: int
     errors: List[Dict[str, Any]] = []
     message: str = "Success"

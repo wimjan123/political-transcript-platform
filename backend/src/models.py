@@ -133,6 +133,14 @@ class TranscriptSegment(Base):
     sentiment_vader_score: Mapped[Optional[float]] = mapped_column(Float)
     sentiment_vader_label: Mapped[Optional[str]] = mapped_column(String(20))
     
+    # 5-Class Sentiment Analysis
+    sentiment_label: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    sentiment_vneg_prob: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    sentiment_neg_prob: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    sentiment_neu_prob: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    sentiment_pos_prob: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    sentiment_vpos_prob: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    
     # Content Moderation (OpenAI categories)
     moderation_harassment: Mapped[Optional[float]] = mapped_column(Float)
     moderation_hate: Mapped[Optional[float]] = mapped_column(Float)

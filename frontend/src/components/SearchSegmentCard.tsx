@@ -7,6 +7,7 @@ import {
 import { playlist } from '../services/playlist';
 import { formatTimestamp, getSentimentColor, getSentimentLabel, formatDate } from '../services/api';
 import { EmotionSummary } from './EmotionIndicators';
+import { SentimentSummary, SentimentTag } from './SentimentIndicators';
 import type { TranscriptSegment } from '../types';
 
 interface SearchSegmentCardProps {
@@ -198,6 +199,7 @@ const SearchSegmentCard = memo<SearchSegmentCardProps>(({
                 {segment.video.dataset === 'tweede_kamer' ? 'Tweede Kamer' : segment.video.dataset}
               </span>
             )}
+            <SentimentTag sentiment={segment.sentiment_label} />
           </div>
 
           {/* Topics */}
@@ -280,6 +282,16 @@ const SearchSegmentCard = memo<SearchSegmentCardProps>(({
               </div>
             </div>
           )}
+
+          {/* 5-Class Sentiment Analysis */}
+          <SentimentSummary 
+            sentimentLabel={segment.sentiment_label}
+            veryNegativeProb={segment.sentiment_vneg_prob}
+            negativeProb={segment.sentiment_neg_prob}
+            neutralProb={segment.sentiment_neu_prob}
+            positiveProb={segment.sentiment_pos_prob}
+            veryPositiveProb={segment.sentiment_vpos_prob}
+          />
 
           {/* Readability Metrics */}
           {(typeof segment.flesch_kincaid_grade === 'number' || 

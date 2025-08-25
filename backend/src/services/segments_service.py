@@ -16,6 +16,7 @@ async def fetch_segments_page(
     video_id: Optional[int] = None,
     dataset: Optional[str] = None,
     q: Optional[str] = None,
+    processed: Optional[bool] = None,
 ) -> Tuple[List[TranscriptSegment], int]:
     """
     Fetch paginated transcript segments with optional filters
@@ -28,6 +29,7 @@ async def fetch_segments_page(
         video_id: Filter by specific video ID
         dataset: Filter by dataset (requires join with videos table)
         q: Text search query (partial match in transcript_text)
+        processed: Filter by 5-class sentiment processing status (None=all, True=processed, False=unprocessed)
     
     Returns:
         Tuple of (segments list, total count)
@@ -49,6 +51,14 @@ async def fetch_segments_page(
     if q:
         # Simple ILIKE search in transcript text
         stmt = stmt.where(TranscriptSegment.transcript_text.ilike(f"%{q}%"))
+    
+    if processed is not None:
+        if processed:
+            # Show only processed segments (sentiment_label is not NULL)
+            stmt = stmt.where(TranscriptSegment.sentiment_label.isnot(None))
+        else:
+            # Show only unprocessed segments (sentiment_label IS NULL)
+            stmt = stmt.where(TranscriptSegment.sentiment_label.is_(None))
     
     # Count total results
     count_stmt = select(func.count()).select_from(stmt.subquery())
